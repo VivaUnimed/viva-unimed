@@ -1,8 +1,14 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+import { Column, DataType, HasOne, Model, Table } from "sequelize-typescript";
 import { IUser } from "shared";
+import PasswordModel from "./password.model";
+
+
+interface IUserModel extends IUser {
+  password?: PasswordModel;
+}
 
 @Table({ tableName: "users" })
-export default  class UserModel extends Model<IUser> {
+export default  class UserModel extends Model<IUserModel> {
   @Column({ primaryKey: true, autoIncrement: true })
   declare id: number;
 
@@ -11,14 +17,7 @@ export default  class UserModel extends Model<IUser> {
 
   @Column({ type: DataType.STRING(255), allowNull: false, unique: true })
   declare email: string;
-}
 
-/**
- *
- *
- * Req HTTP
- *  => Controller (roteamento de chamada api)
- *    => Service (logica de negócio)
- *     => Model (representação da tabela do banco de dados)
- *      => DB
- */
+  @HasOne(() => PasswordModel)
+  declare password: PasswordModel;
+}

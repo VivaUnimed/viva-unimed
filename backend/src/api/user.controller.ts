@@ -1,6 +1,6 @@
-import { Controller, Route, Get, Path, Tags, Post, Body } from "tsoa";
+import { Controller, Route, Get, Path, Tags, Post, Body, Queries } from "tsoa";
 import { NotFound } from "../error";
-import type { IUser, IUserCreate } from "shared";
+import type { IUser, IUserCreate, IUserListParams } from "shared";
 import service from "../service";
 
 
@@ -13,8 +13,8 @@ export class UserController extends Controller {
   }
 
   @Get("")
-  async list() {
-    return service.user.list();
+  async list(@Queries() params: IUserListParams): Promise<IUser[]> {
+    return service.user.list(params);
   }
 
   @Get("/{userId}")

@@ -1,5 +1,8 @@
-import { IUser, IUserCreate } from "shared";
+import { IUser, IUserCreate, IUserListParams, IUserUpdate } from "shared";
 import UserModel from "../db/models/user.model";
+import { Op, WhereOptions } from "sequelize";
+import PasswordModel from "../db/models/password.model";
+import { hashPassword } from "../helpers/password";
 
 export class UserService {
   constructor() {
@@ -7,12 +10,32 @@ export class UserService {
   }
 
   async create(user: IUserCreate): Promise<IUser> {
-    const res = await UserModel.create(user);
+    const res = await UserModel.create({
+      name: user.name,
+      email: user.email,
+    });
+    if(user.password) {
+      const { hash, salt } = await hashPassword(user.password);
+      await PasswordModel.create({
+        userId: res.id,
+        hash,
+        salt,
+      });
+    }
     return res.get({ plain: true });
   }
 
-  async list(): Promise<IUser[]> {
-    const res = await UserModel.findAll();
+  async list({ nameLike, emailLike }: IUserListParams = { }): Promise<IUser[]> {
+    const where: WhereOptions<IUser> = {};
+    if (nameLike) {
+      where.name = { [Op.iLike] : `%${nameLike}%` };
+    }
+    if (emailLike) {
+      where.email = { [Op.iLike] : `%${emailLike}%` };
+    }
+    const res = await UserModel.findAll({
+      where,
+    });
     return res.map(r => r.get({ plain: true }));
   }
 
@@ -22,7 +45,7 @@ export class UserService {
     return res.get({ plain: true });
   }
 
-  async update(id: number, user: Partial<IUserCreate>): Promise<IUser | null> {
+  async update(id: number, user: Partial<IUserUpdate>): Promise<IUser | null> {
     const res = await UserModel.findByPk(id);
     if (!res) return null;
     await res.update(user);
