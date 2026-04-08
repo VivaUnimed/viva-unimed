@@ -17,5 +17,8 @@
     "backend": "npm -w backend start",
     "admin": "npm -w frontend/admin run dev",
     "client": "npm -w frontend/client run dev"
+  },
+  "dependencies": {
+    "react-router": "^7.14.0"
   }
 }

@@ -1,5 +1,7 @@
+import { RoutesApp } from "./routes";
+
 function App() {
-  return <div>hello word</div>;
+  return <RoutesApp />;
 }
 
 export default App;
