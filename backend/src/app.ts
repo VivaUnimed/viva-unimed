@@ -7,6 +7,9 @@ import { RegisterRoutes } from "./api/generated/routes/routes";
 import swagger from "./api/generated/spec/swagger.json";
 import swaggerUi from "swagger-ui-express";
 import { Database } from "./db";
+import service from "./service";
+import { JwtMiddleware } from "./api/middleware/jwt.middleware";
+import cookieParser from "cookie-parser";
 
 export class App {
   private app!: express.Application;
@@ -17,6 +20,7 @@ export class App {
     this.app = express();
     this.server = createServer(this.app);
     this.database = new Database(this.config);
+    service.auth.setSecret(this.config.JWT_SECRET);
     this.attachRoutes();
   }
 
@@ -65,6 +69,11 @@ export class App {
     this.app
       .use(express.json())
       .use(express.urlencoded({ extended: true }));
+
+    // Autentição
+    this.app
+      .use(cookieParser())
+      .use(JwtMiddleware);
 
     // Registra rotas geradas pelo tsoa
     const api = Router();

@@ -3,9 +3,16 @@ import UserModel from "../db/models/user.model";
 import PasswordModel from "../db/models/password.model";
 import { Unauthorized } from "../error";
 import { comparePassword } from "../helpers/password";
+import jwt from "jsonwebtoken";
 
 export class AuthService {
+  private tokenSecret?: string;
+
   constructor() {}
+
+  setSecret(secret: string) {
+    this.tokenSecret = secret;
+  }
 
   async authenticate(email: string, password: string): Promise<IUser> {
     const user = await UserModel.findOne({
@@ -26,5 +33,32 @@ export class AuthService {
       throw new Unauthorized();
     }
     return user.get({ plain: true });
+  }
+
+  createToken(user: IUser): string {
+    if(!this.tokenSecret) {
+      throw new Error("Token secret not set");
+    }
+    return jwt.sign({
+        id: user.id,
+        email: user.email
+      },
+      this.tokenSecret,
+      { expiresIn: "1h", algorithm: "HS256" },
+    );
+  }
+
+  verifyToken(token: string): { userId: number, email: string } {
+    if(!this.tokenSecret) {
+      throw new Error("Token secret not set");
+    }
+    const decoded = jwt.verify(token, this.tokenSecret, { algorithms: ["HS256"] });
+    if(typeof decoded === "string" || !decoded.id || !decoded.email) {
+      throw new Unauthorized();
+    }
+    return {
+      userId: decoded.id as number,
+      email: decoded.email as string,
+    }
   }
 }

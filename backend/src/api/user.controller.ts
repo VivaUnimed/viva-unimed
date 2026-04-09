@@ -2,10 +2,12 @@ import { Controller, Route, Get, Path, Tags, Post, Body, Queries } from "tsoa";
 import { NotFound } from "../error";
 import type { IUser, IUserCreate, IUserListParams } from "shared";
 import service from "../service";
+import { Guard, Security } from "./guards";
 
 
 @Route("/api/user")
 @Tags("User")
+@Security(Guard.JWT)
 export class UserController extends Controller {
   @Post("")
   async create(@Body() requestBody: IUserCreate): Promise<IUser> {

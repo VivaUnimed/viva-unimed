@@ -4,9 +4,18 @@
   "controllerPathGlobs": ["src/api/*.controller.ts"],
   "spec": {
     "outputDirectory": "./src/api/generated/spec",
-    "specVersion": 3
+    "specVersion": 3,
+    "securityDefinitions": {
+        "JWT": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Token obtido a partir de /api/auth/login no formato \"Bearer {token}\""
+        }
+    }
   },
   "routes": {
-    "routesDir": "./src/api/generated/routes"
+    "routesDir": "./src/api/generated/routes",
+    "authenticationModule": "./src/api/guards/express.auth.ts"
   }
 }
