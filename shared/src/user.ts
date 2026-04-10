@@ -1,7 +1,11 @@
+import { Permission, Role } from "./permissions";
+
+
 export interface IUserCreate {
   name: string;
   email: string;
   password?: string;
+  roles?: Role[];
 }
 
 export interface IUserUpdate {
@@ -13,6 +17,8 @@ export interface IUser {
   id: number;
   name: string;
   email: string;
+  roles?: Role[];
+  permissions?: Permission[];
 }
 
 

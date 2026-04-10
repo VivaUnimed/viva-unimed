@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ValidateError } from "tsoa";
 import { ValidationError } from "joi";
-import { NotFound, Unauthorized } from "../../error";
+import { NotFound, Unauthorized, Forbidden } from "../../error";
 
 export function ErrorMiddleware(error: any, req: Request, res: Response, next: NextFunction) {
   if(error instanceof ValidateError) {
@@ -29,6 +29,13 @@ export function ErrorMiddleware(error: any, req: Request, res: Response, next: N
       message: "Unauthorized",
     });
   }
+  if(error instanceof Forbidden) {
+    return res.status(403).json({
+      message: "Forbidden",
+      requires: error.requires,
+    });
+  }
+
   console.error("Internal Server Error", error);
   return res.status(500).json({
     message: "Internal Server Error",
