@@ -2,7 +2,7 @@ import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
 import './styles.css';
-import { FaRegEye, FaLock, FaPlusSquare } from 'react-icons/fa';
+import { FaLock, FaPlusSquare } from 'react-icons/fa';
 
 export default function Login() {
   return (
@@ -29,10 +29,6 @@ export default function Login() {
               </h1>
               <p>Sua saúde, gerenciada com inteligência.</p>
             </div>
-            {/* <div className="input-group">
-              <label htmlFor="documento">CPF OU E-MAIL</label>
-              <input id="documento" type="text" placeholder="000.000.000-00" />
-            </div> */}
 
             <InputField
               id="documento"
@@ -42,24 +38,6 @@ export default function Login() {
               placeholder="000.000.000-00"
             />
 
-            {/* <div className="password-header">
-              <label htmlFor="senha">SENHA</label>
-              <button type="button" className="forgot-password-btn">
-                ESQUECI MINHA SENHA
-              </button>
-            </div>
-
-            <div className="input-group password-group">
-              <input id="senha" type="password" placeholder="••••••••" />
-              <button
-                type="button"
-                className="show-password-btn"
-                aria-label="Mostrar senha"
-              >
-                <FaRegEye />
-              </button>
-            </div> */}
-
             <PasswordField
               id="senha"
               name="senha"
@@ -67,14 +45,6 @@ export default function Login() {
               placeholder="••••••••"
               showForgotPassword={true}
             />
-
-            {/* <button type="submit" className="btn-primary">
-              Entrar
-            </button>
-
-            <button type="button" className="btn-secondary">
-              Criar Conta
-            </button> */}
 
             <Button type="submit" variant="primary">
               Entrar
