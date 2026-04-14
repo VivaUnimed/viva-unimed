@@ -1,9 +1,3 @@
-
-button,
-input {
-  font: inherit;
-}
-
 .login-paciente-page {
   min-height: 100vh;
   background: #f3f4f6;
@@ -93,100 +87,6 @@ input {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.input-group label,
-.password-header label {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #374151;
-  letter-spacing: 0.08em;
-}
-
-.input-group input,
-.password-group input {
-  width: 100%;
-  height: 54px;
-  border: none;
-  border-radius: 16px;
-  background: #f3f4f6;
-  background: #e5e7e9;
-  padding: 0 16px;
-  font-size: 18px;
-  color: #374151;
-  outline: none;
-}
-
-.input-group input::placeholder,
-.password-group input::placeholder {
-  color: #9ca3af;
-}
-
-.password-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.forgot-password-btn {
-  background: transparent;
-  border: none;
-  color: #008f4c;
-  font-size: 10.5px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.password-group {
-  position: relative;
-}
-
-.password-group input {
-  padding-right: 50px;
-}
-
-.show-password-btn {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  transform: translateY(-50%);
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.btn-primary,
-.btn-secondary {
-  width: 100%;
-  height: 56px;
-  border-radius: 16px;
-  border: none;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.btn-primary {
-  background: #008f4c;
-  color: #ffffff;
-  margin-top: 8px;
-  box-shadow: 0 6px 14px rgba(0, 143, 76, 0.18);
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #0d7a45;
-  border: 1px solid #e5e7eb;
 }
 
 .login-paciente-security {
@@ -285,14 +185,6 @@ input {
     max-width: 520px;
     margin: 0 auto;
     width: 100%;
-  }
-
-  .input-group input,
-  .password-group input,
-  .btn-primary,
-  .btn-secondary {
-    /* height: 60px; */
-    font-size: 18px;
   }
 
   .login-paciente-security {

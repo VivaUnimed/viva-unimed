@@ -1,0 +1,28 @@
+.button {
+  width: 100%;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+  border: none;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button--primary {
+  background: #008f4c;
+  color: #ffffff;
+  margin-top: 8px;
+  box-shadow: 0 6px 14px rgba(0, 143, 76, 0.18);
+}
+
+.button--secondary {
+  background: #f3f4f6;
+  color: #0d7a45;
+  border: 1px solid #e5e7eb;
+}

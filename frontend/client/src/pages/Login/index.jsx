@@ -1,5 +1,8 @@
-import "./styles.css";
-import { FaRegEye, FaLock, FaPlusSquare } from "react-icons/fa";
+import Button from '../../components/ui/Button';
+import InputField from '../../components/ui/InputField';
+import PasswordField from '../../components/ui/PasswordField';
+import './styles.css';
+import { FaRegEye, FaLock, FaPlusSquare } from 'react-icons/fa';
 
 export default function Login() {
   return (
@@ -17,26 +20,29 @@ export default function Login() {
         </div>
 
         <div className="login-paciente-content">
-
           <form className="login-paciente-form">
             <div className="login-paciente-title-group">
-            <h1>
-              Agenda
-              <br />
-              <span>VivaUnimed</span>
-            </h1>
-            <p>Sua saúde, gerenciada com inteligência.</p>
-          </div>
-            <div className="input-group">
-              <label htmlFor="documento">CPF OU E-MAIL</label>
-              <input
-                id="documento"
-                type="text"
-                placeholder="000.000.000-00"
-              />
+              <h1>
+                Agenda
+                <br />
+                <span>VivaUnimed</span>
+              </h1>
+              <p>Sua saúde, gerenciada com inteligência.</p>
             </div>
+            {/* <div className="input-group">
+              <label htmlFor="documento">CPF OU E-MAIL</label>
+              <input id="documento" type="text" placeholder="000.000.000-00" />
+            </div> */}
 
-            <div className="password-header">
+            <InputField
+              id="documento"
+              name="documento"
+              label="CPF OU E-MAIL"
+              type="text"
+              placeholder="000.000.000-00"
+            />
+
+            {/* <div className="password-header">
               <label htmlFor="senha">SENHA</label>
               <button type="button" className="forgot-password-btn">
                 ESQUECI MINHA SENHA
@@ -44,11 +50,7 @@ export default function Login() {
             </div>
 
             <div className="input-group password-group">
-              <input
-                id="senha"
-                type="password"
-                placeholder="••••••••"
-              />
+              <input id="senha" type="password" placeholder="••••••••" />
               <button
                 type="button"
                 className="show-password-btn"
@@ -56,15 +58,31 @@ export default function Login() {
               >
                 <FaRegEye />
               </button>
-            </div>
+            </div> */}
 
-            <button type="submit" className="btn-primary">
+            <PasswordField
+              id="senha"
+              name="senha"
+              label="SENHA"
+              placeholder="••••••••"
+              showForgotPassword={true}
+            />
+
+            {/* <button type="submit" className="btn-primary">
               Entrar
             </button>
 
             <button type="button" className="btn-secondary">
               Criar Conta
-            </button>
+            </button> */}
+
+            <Button type="submit" variant="primary">
+              Entrar
+            </Button>
+
+            <Button type="button" variant="secondary">
+              Criar Conta
+            </Button>
           </form>
 
           <div className="login-paciente-security">
