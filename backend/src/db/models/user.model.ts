@@ -19,6 +19,9 @@ export default  class UserModel extends Model<IUserModel> {
   @Column({ type: DataType.STRING(255), allowNull: false, unique: true })
   declare email: string;
 
+  @Column({ type: DataType.STRING(255) })
+  declare phone: number;
+
   @HasOne(() => PasswordModel)
   declare password?: PasswordModel;
 
