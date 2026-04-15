@@ -8,42 +8,35 @@ import { Guard, Security } from "./guards";
 @Route("/api/user")
 @Tags("User")
 export class UserController extends Controller {
+  /** Cria um novo usuário no sistema */
   @Post("")
   @Security(Guard.JWT, ["user.create"])
   async create(@Body() requestBody: IUserCreate): Promise<IUser> {
     return service.user.create(requestBody);
   }
 
-  /** Adciona permissão a um usuário */
+  /** Adiciona uma permissão específica a um usuário existente */
   @Put("/{userId}/roles")
   @Security(Guard.JWT, ["user.edit.role"])
   async addUserRole(@Path() userId: number, @Body() data: { role: Role }): Promise<void> {
     return service.user.addUserRole(userId, data.role);
   }
 
-  /** Remove permissão a um usuário */
+  /** Remove uma permissão específica de um usuário */
   @Delete("/{userId}/roles")
   @Security(Guard.JWT, ["user.edit.role"])
   async removeUserRole(@Path() userId: number, @Body() data: { role: Role }): Promise<void> {
     return service.user.removeUserRole(userId, data.role);
   }
 
-  /**
-   * Adciona permissão a um usuário
-   * teste `var1` abc
-   *
-   * - op1
-   * - op2
-   *
-   * __negrito__
-   *
-  */
+  /** Lista usuários com base em filtros e parâmetros de busca */
   @Get("")
   @Security(Guard.JWT, ["user.read"])
   async list(@Queries() params: IUserListParams): Promise<IUser[]> {
     return service.user.list(params);
   }
 
+  /** Retorna o perfil e dados do usuário autenticado na sessão */
   @Get("/me")
   @Security(Guard.JWT)
   async getMe(@Request() req: Express.Request) {
@@ -54,6 +47,7 @@ export class UserController extends Controller {
     return user;
   }
 
+  /** Busca os detalhes de um usuário específico pelo seu ID */
   @Get("/{userId}")
   @Security(Guard.JWT, ["user.read"])
   async getById(@Path() userId: number) {

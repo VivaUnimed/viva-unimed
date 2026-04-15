@@ -2,13 +2,14 @@ import { Column, DataType, Model, Table, BelongsToMany, ForeignKey, BelongsTo } 
 import UserModel from "./user.model";
 import type { Role } from "shared";
 
+/** Interface estendida para incluir os relacionamentos do modelo no TypeScript */
 interface IRoleModel {
   id: number;
   role: Role;
   userId: number;
   users?: UserModel[];
 }
-
+/** Definição da tabela "users" e seus campos no banco de dados */
 @Table({ tableName: "roles" })
 export default class RoleModel extends Model<IRoleModel> {
   @Column({ primaryKey: true, autoIncrement: true })
