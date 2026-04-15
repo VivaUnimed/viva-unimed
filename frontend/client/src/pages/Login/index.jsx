@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router';
 import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
@@ -50,9 +51,11 @@ export default function Login() {
               Entrar
             </Button>
 
-            <Button type="button" variant="secondary">
-              Criar Conta
-            </Button>
+            <NavLink to="/signup">
+              <Button type="button" variant="secondary">
+                Criar Conta
+              </Button>
+            </NavLink>
           </form>
 
           <div className="login-paciente-security">

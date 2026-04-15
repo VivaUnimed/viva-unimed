@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router';
 import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
@@ -78,7 +79,7 @@ export default function Signup() {
               name="senha"
               label="SENHA"
               placeholder="••••••••"
-              showForgotPassword={true}
+              showForgotPassword={false}
             />
 
             <PasswordField
@@ -93,9 +94,11 @@ export default function Signup() {
               Finalizar Cadastro
             </Button>
 
-            <Button type="button" variant="secondary">
-              Cancelar e Voltar
-            </Button>
+              <NavLink to="/login" >
+                <Button type="button" variant="secondary">
+                  Fazer Login
+                </Button>
+              </NavLink>
           </form>
         </div>
 
