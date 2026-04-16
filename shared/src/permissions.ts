@@ -6,10 +6,16 @@ export const PERMISSIONS = [
   "user.edit.role",
   "schedule.aprove",
   "schedule.request",
+  "speciality.read",
+  "speciality.edit",
+  "speciality.create",
+  "speciality.delete",
 ] as const;
+
+
 
 /** Tipo derivado que restringe strings apenas aos valores definidos em PERMISSIONS */
 export type Permission = typeof PERMISSIONS[number];
 
 /** Define os perfis de usuário (cargos) que agrupam conjuntos de permissões */
-export type Role = 'Admin' | 'Tecnico' | 'Cliente';
+export type Role = 'Admin' | 'Tecnico' | 'Paciente';
