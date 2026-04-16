@@ -1,0 +1,39 @@
+import type { ISpeciality, ISpecialityCreate } from "shared";
+import service from "../service";
+import { Body, Controller, Delete, Get, Path, Post, Put, Route, Tags } from "tsoa";
+import { Guard, Security } from "./guards";
+
+
+@Route("/api/speciality")
+@Tags("Speciality")
+export class SpecialityController extends Controller {
+  @Post()
+  @Security(Guard.JWT, ['speciality.create'])
+  create(@Body() data: ISpecialityCreate): Promise<ISpeciality> {
+    return service.speciality.create(data);
+  }
+
+  @Put("/{id}")
+  @Security(Guard.JWT, ['speciality.edit'])
+  update(@Path() id:number, @Body() data: ISpecialityCreate): Promise<ISpeciality> {
+    return service.speciality.update(id, data);
+  }
+
+  @Get("/{id}")
+  @Security(Guard.JWT, ['speciality.read'])
+  getById(@Path() id: number): Promise<ISpeciality> {
+    return service.speciality.getById(id);
+  }
+
+  @Get()
+  @Security(Guard.JWT, ['speciality.read'])
+  list(): Promise<ISpeciality[]> {
+    return service.speciality.list();
+  }
+
+  @Delete("/{id}")
+  @Security(Guard.JWT, ['speciality.delete'])
+  delete(@Path() id: number): Promise<void> {
+    return service.speciality.delete(id);
+  }
+}

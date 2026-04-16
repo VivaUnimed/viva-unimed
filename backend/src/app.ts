@@ -16,6 +16,7 @@ export class App {
   private server!: Server;
   private database!: Database;
 
+  /** Inicializa as instâncias básicas, configura o segredo do JWT e registra o roteamento */
   constructor(private config: Config) {
     this.app = express();
     this.server = createServer(this.app);
@@ -23,7 +24,7 @@ export class App {
     service.auth.setSecret(this.config.JWT_SECRET);
     this.attachRoutes();
   }
-
+  /** Orquestra a inicialização da conexão com o banco e o levantamento do servidor HTTP */
   async start() {
     try {
       await this.database.start();
@@ -33,7 +34,7 @@ export class App {
       await this.stop();
     }
   }
-
+  /** Inicia a escuta de requisições na porta configurada e trata erros de boot do servidor */
   async startServer() {
     return new Promise<void>((resolve, reject) => {
       try {
@@ -51,10 +52,11 @@ export class App {
       }
     });
   }
-
+  /** Configura middlewares (Swagger, JSON, Cookies, Auth), rotas do TSOA e tratamento de erros */
   async attachRoutes() {
 
-    // Ativa página swagger em /api/docs
+    // Configura a documentação interativa da API via Swagger UI
+    console.log(`API Swagger: http://localhost:${this.config.SERVER_PORT}/api/docs`)
     this.app
       .use("/api/swagger.json", (req, res) => res.json(swagger))
       .use("/api/docs", swaggerUi.serve, swaggerUi.setup(swagger, {
@@ -66,23 +68,24 @@ export class App {
         },
       }));
 
+    // Middlewares para parsing de corpo de requisição (JSON e URL encoded)
     this.app
       .use(express.json())
       .use(express.urlencoded({ extended: true }));
 
-    // Autentição
+    // Configuração de cookies e middleware global de validação de token JWT
     this.app
       .use(cookieParser())
       .use(JwtMiddleware);
 
-    // Registra rotas geradas pelo tsoa
+    // Acopla as rotas auto-geradas pelo TSOA ao roteador do Express
     const api = Router();
     RegisterRoutes(api);
     this.app.use(api);
-
+    // Middleware final para captura e formatação centralizada de erros
     this.app.use(ErrorMiddleware)
   }
-
+  /** Finaliza o servidor HTTP */
   async stop() {
     console.log("Stopping server...");
     this.server.close();

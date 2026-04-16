@@ -1,6 +1,7 @@
-import { Column, DataType, HasOne, Model, Table } from "sequelize-typescript";
+import { Column, DataType, HasMany, HasOne, Model, Table } from "sequelize-typescript";
 import { IUser } from "shared";
 import PasswordModel from "./password.model";
+import RoleModel from "./role.model";
 
 
 interface IUserModel extends IUser {
@@ -18,6 +19,12 @@ export default  class UserModel extends Model<IUserModel> {
   @Column({ type: DataType.STRING(255), allowNull: false, unique: true })
   declare email: string;
 
+  @Column({ type: DataType.STRING(255) })
+  declare phone: number;
+
   @HasOne(() => PasswordModel)
-  declare password: PasswordModel;
+  declare password?: PasswordModel;
+
+  @HasMany(() => RoleModel)
+  declare roles?: RoleModel[];
 }
