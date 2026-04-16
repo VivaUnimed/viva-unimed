@@ -3,18 +3,21 @@ import Login from '../pages/Login';
 import Signup from '../pages/Signup';
 import PrivateRoutes from '../components/PrivateRoutes';
 import PrivateLayout from '../components/layouts/PrivateLayout';
+import RedirectIfAuthenticated from '../components/RedirectIfAuthenticated';
 
 export const RoutesApp = () => {
   return (
     <Routes>
       {/* --- Rotas Públicas --- */}
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/login" element={<Login />} />
+      <Route element={<RedirectIfAuthenticated />}>
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+      </Route>
 
       {/* --- Rotas Privadas --- */}
       <Route element={<PrivateRoutes />}>
         <Route element={<PrivateLayout />}>
-          <Route path="/" element={<></>} />
+          <Route path="/" element={<div></div>} />
         </Route>
       </Route>
 
