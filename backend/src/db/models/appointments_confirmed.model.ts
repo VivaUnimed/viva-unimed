@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
-interface AgendamentoAttributes {
+interface AppointmentConfirmedAttributes {
   id_agendamento: string;
   id_paciente: string;
   id_vaga: string;
@@ -9,16 +9,19 @@ interface AgendamentoAttributes {
   tipo_vaga: string;
 }
 
-type AgendamentoCreationAttributes = Optional<
-  AgendamentoAttributes,
+type AppointmentConfirmedCreationAttributes = Optional<
+  AppointmentConfirmedAttributes,
   'id_agendamento' | 'data_confirmacao'
 >;
 
-export class Agendamento
-  extends Model<AgendamentoAttributes, AgendamentoCreationAttributes>
-  implements AgendamentoAttributes {
+export class AppointmentConfirmed
+  extends Model<
+    AppointmentConfirmedAttributes,
+    AppointmentConfirmedCreationAttributes
+  >
+  implements AppointmentConfirmedAttributes {
 
-  public id_agendamento!: string;
+  public id_agendamento!:string ;
   public id_paciente!: string;
   public id_vaga!: string;
   public id_doctor!: string;
@@ -26,8 +29,8 @@ export class Agendamento
   public tipo_vaga!: string;
 }
 
-export function initAgendamento(sequelize: Sequelize): void {
-  Agendamento.init(
+export function initAppointmentConfirmed(sequelize: Sequelize): void {
+  AppointmentConfirmed.init(
     {
       id_agendamento: {
         type: DataTypes.UUID,
@@ -43,11 +46,11 @@ export function initAgendamento(sequelize: Sequelize): void {
         allowNull: false,
       },
       id_doctor: {
-        type: DataTypes.UUID, // assumindo UUID, porque coerência ainda é moda
+        type: DataTypes.UUID,
         allowNull: false,
       },
       data_confirmacao: {
-        type: DataTypes.DATE,
+        type: DataTypes.DATE, // Sequelize já trata como timestamptz no Postgres
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
@@ -58,7 +61,7 @@ export function initAgendamento(sequelize: Sequelize): void {
     },
     {
       sequelize,
-      tableName: 'agendamento',
+      tableName: 'appointments confirmed', // sim, isso exige aspas no SQL
       timestamps: false,
     }
   );

@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
-interface MembroFilaAttributes {
+interface QueueMemberAttributes {
   id_membro_fila: string;
   fila_id: string;
   patient_id: string;
@@ -8,14 +8,14 @@ interface MembroFilaAttributes {
   createdAt: Date;
 }
 
-type MembroFilaCreationAttributes = Optional<
-  MembroFilaAttributes,
+type QueueMemberCreationAttributes = Optional<
+  QueueMemberAttributes,
   'id_membro_fila' | 'createdAt'
 >;
 
-export class MembroFila
-  extends Model<MembroFilaAttributes, MembroFilaCreationAttributes>
-  implements MembroFilaAttributes {
+export class QueueMember
+  extends Model<QueueMemberAttributes, QueueMemberCreationAttributes>
+  implements QueueMemberAttributes {
 
   public id_membro_fila!: string;
   public fila_id!: string;
@@ -24,8 +24,8 @@ export class MembroFila
   public createdAt!: Date;
 }
 
-export function initMembroFila(sequelize: Sequelize): void {
-  MembroFila.init(
+export function initQueueMember(sequelize: Sequelize): void {
+  QueueMember.init(
     {
       id_membro_fila: {
         type: DataTypes.UUID,
@@ -52,8 +52,9 @@ export function initMembroFila(sequelize: Sequelize): void {
     },
     {
       sequelize,
-      tableName: 'membro_fila',
-      timestamps: false, // você já declarou createdAt manualmente
+      tableName: 'Queue_members',
+      timestamps: false, // você já definiu createdAt manualmente
     }
   );
 }
+
