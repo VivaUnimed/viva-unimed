@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>VivaUnimed</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login" class="screen active">
+    <div class="login-container">
+
+        <div class="login-left">
+            <div class="logo">Unimed</div>
+            <h2>Agenda VivaUnimed</h2>
+        </div>
+
+        <div class="login-right">
+            <div class="login-box">
+                <h2>Bem-vindo</h2>
+
+                <input placeholder="E-mail">
+                <input type="password" placeholder="Senha">
+
+                <button class="full-btn" onclick="go('dashboard')">
+                    Entrar
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+<div id="dashboard" class="screen">
+    <div class="sidebar">
+        <div class="logo">Unimed</div>
+        <div class="menu-item" onclick="go('dashboard')">Dashboard</div>
+        <div class="menu-item" onclick="go('agenda')">Agenda</div>
+        <div class="menu-item" onclick="go('profissionais')">Cadastro Profissionais</div>
+        <div class="menu-item" onclick="go('noshow')">Cadastro No-show</div>
+    </div>
+
+    <div class="main">
+        <h1>Visão Geral Operacional</h1>
+
+        <div class="grid grid-3">
+            <div class="card">
+                <div>Taxa de No-show</div>
+                <div class="metric">00.0%</div>
+            </div>
+
+            <div class="card">
+                <div>Taxa de Ocupação</div>
+                <div class="metric">00.0%</div>
+            </div>
+
+            <div class="card">
+                Frequência semanal
+            </div>
+        </div>
+
+        <div class="card">Alerta crítico</div>
+        <div class="card">Insight estratégico</div>
+    </div>
+</div>
+
+<!-- ================= AGENDA ================= -->
+<div id="agenda" class="screen">
+    <div class="sidebar">
+        <div class="logo">Unimed</div>
+        <div class="menu-item" onclick="go('dashboard')">Dashboard</div>
+        <div class="menu-item">Agenda</div>
+        <div class="menu-item" onclick="go('profissionais')">Cadastro Profissionais</div>
+        <div class="menu-item" onclick="go('noshow')">Cadastro No-show</div>
+    </div>
+
+    <div class="main">
+        <h1>Agenda</h1>
+
+        <div class="grid grid-3">
+
+            <div class="card">
+                <div class="calendar" id="calendar"></div>
+            </div>
+
+            <div></div>
+
+            <div class="card">
+                <h3>Consultas</h3>
+                <div class="appointment confirmed">08:00 Confirmada</div>
+                <div class="appointment noshow">09:15 No-show</div>
+                <div class="appointment pending">10:30 Pendente</div>
+                <div class="appointment done">11:45 Realizada</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= PROFISSIONAIS ================= -->
+<div id="profissionais" class="screen">
+    <div class="sidebar">
+        <div class="logo">Unimed</div>
+        <div class="menu-item" onclick="go('dashboard')">Dashboard</div>
+        <div class="menu-item" onclick="go('agenda')">Agenda</div>
+        <div class="menu-item">Cadastro Profissionais</div>
+        <div class="menu-item" onclick="go('noshow')">Cadastro No-show</div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h1>Cadastro de Profissionais</h1>
+            <button>Salvar</button>
+        </div>
+
+        <div class="grid grid-2">
+
+            <div class="card">
+                <label>Nome</label>
+                <input>
+
+                <label>CRM</label>
+                <input>
+
+                <label>Especialidade</label>
+                <select></select>
+            </div>
+
+            <div class="card">
+                <label>Horário</label>
+                <input type="time">
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= NO SHOW ================= -->
+<div id="noshow" class="screen">
+    <div class="sidebar">
+        <div class="logo">Unimed</div>
+        <div class="menu-item" onclick="go('dashboard')">Dashboard</div>
+        <div class="menu-item" onclick="go('agenda')">Agenda</div>
+        <div class="menu-item" onclick="go('profissionais')">Cadastro Profissionais</div>
+        <div class="menu-item">Cadastro No-show</div>
+    </div>
+
+    <div class="main">
+
+        <h1>Nova Vaga No-Show</h1>
+
+        <div class="form">
+
+            <label>Profissional</label>
+            <select></select>
+
+            <label>Especialidade</label>
+            <select></select>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Unidade</label>
+                    <select></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Horário</label>
+                    <input type="time">
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <div class="alert-box">No-show</div>
+                </div>
+            </div>
+
+            <button class="full-btn">Cadastrar Vaga</button>
+
+        </div>
+
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>

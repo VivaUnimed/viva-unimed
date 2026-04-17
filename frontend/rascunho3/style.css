@@ -1,0 +1,187 @@
+/* ================= RESET ================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial;
+}
+
+body {
+    background: #f4f6f8;
+}
+
+/* ================= SCREENS ================= */
+.screen {
+    display: none;
+    height: 100vh;
+}
+.screen.active {
+    display: flex;
+}
+
+/* ================= SIDEBAR ================= */
+.sidebar {
+    width: 260px;
+    background: #0a8f4c;
+    color: white;
+    padding: 30px 20px;
+}
+
+.logo {
+    border: 2px solid white;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    margin-bottom: 40px;
+    font-weight: bold;
+}
+
+.menu-item {
+    margin: 18px 0;
+    cursor: pointer;
+}
+
+/* ================= MAIN ================= */
+.main {
+    flex: 1;
+    padding: 30px;
+}
+
+/* ================= COMMON ================= */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+}
+
+.grid {
+    display: grid;
+    gap: 20px;
+}
+
+.grid-3 {
+    grid-template-columns: 1fr 1fr 300px;
+}
+
+.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* ================= LOGIN ================= */
+.login-container {
+    display: flex;
+    width: 100%;
+}
+
+.login-left {
+    width: 40%;
+    background: #0a8f4c;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.login-right {
+    width: 60%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-box {
+    width: 400px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: #e9ecef;
+    margin-top: 5px;
+}
+
+button {
+    background: #0a8f4c;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.full-btn {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* ================= DASHBOARD ================= */
+.metric {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* ================= AGENDA ================= */
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.day {
+    background: white;
+    border-radius: 10px;
+    padding: 10px;
+    height: 80px;
+}
+
+.day.active {
+    border: 2px solid #0a8f4c;
+}
+
+.appointment {
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.confirmed { background: #e6f4ec; }
+.noshow { background: #fdecea; }
+.pending { background: #fff4e5; }
+.done { background: #e8f0fe; }
+
+/* ================= FORM ================= */
+.form {
+    max-width: 900px;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    flex: 1;
+}
+
+label {
+    font-size: 12px;
+    color: #0a8f4c;
+    font-weight: bold;
+}
+
+.alert-box {
+    background: #f8d7da;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+/* ================= HEADER ================= */
+.header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
