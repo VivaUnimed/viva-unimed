@@ -10,6 +10,10 @@ export const PERMISSIONS = [
   "speciality.edit",
   "speciality.create",
   "speciality.delete",
+  "doctor.create",
+  "doctor.read",
+  "doctor.edit",
+  "doctor.delete"
 ] as const;
 
 
