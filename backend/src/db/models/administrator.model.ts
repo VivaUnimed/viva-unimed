@@ -1,18 +1,34 @@
-import { BelongsTo, Column, DataType, ForeignKey, HasOne, Model, Table } from "sequelize-typescript";
-import { IUser } from "shared";
-import UserModel from "./user.model";
+import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
-interface IAdministrador{bra
-  user_Id: number;
-  
+interface AdministratorAttributes {
+  user_id: string;
 }
 
-@Table({ tableName: "administrador" })
-export default  class AdministradorModel extends Model<IAdministrador> 
-{
-  @Column({ primaryKey: true })
-  @ForeignKey(() => AdministradorModel)
-  declare user_Id: number;
-  @BelongsTo(() => UserModel) // Cria o relacionamento
-  declare user: UserModel;
+type AdministratorCreationAttributes = Optional<
+  AdministratorAttributes,
+  never
+>;
+
+export class Administrator
+  extends Model<AdministratorAttributes, AdministratorCreationAttributes>
+  implements AdministratorAttributes {
+
+  public user_id!: string;
+}
+
+export function initAdministrator(sequelize: Sequelize): void {
+  Administrator.init(
+    {
+      user_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        primaryKey: true, // assumindo que cada admin é único pelo user_id
+      },
+    },
+    {
+      sequelize,
+      tableName: 'administrator',
+      timestamps: false,
+    }
+  );
 }
