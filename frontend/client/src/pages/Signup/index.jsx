@@ -2,10 +2,50 @@ import { NavLink } from 'react-router';
 import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
+import { useAuth } from '../../context/authContext/authContext';
 import './styles.css';
-import { FaLock, FaPlusSquare } from 'react-icons/fa';
+import { FaPlusSquare } from 'react-icons/fa';
+import { useState } from 'react';
 
 export default function Signup() {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [cpf, setCpf] = useState('');
+  const { signup, authState } = useAuth();
+
+  // Atualiza os estados conforme o usuário for digitando
+  const handleFullNameChange = (e) => setFullName(e.target.value);
+  const handleEmailChange = (e) => setEmail(e.target.value);
+  const handlePasswordChange = (e) => setPassword(e.target.value);
+  const handleConfirmPasswordChange = (e) => setConfirmPassword(e.target.value);
+  const handleDateOfBirthChange = (e) => setDateOfBirth(e.target.value);
+  const handlePhoneNumberChange = (e) => setPhoneNumber(e.target.value);
+  const handleCpfChange = (e) => setCpf(e.target.value);
+
+  const userSignup = (e) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      alert('As senhas não coincidem');
+      return;
+    }
+
+    const userCredentials = {
+      email,
+      password,
+      name: fullName,
+      date_of_birth: dateOfBirth,
+      phone_number: phoneNumber,
+      cpf,
+    };
+
+    signup(userCredentials);
+  };
+
   return (
     <div className="signup-paciente-page">
       <div className="signup-paciente-card">
@@ -21,7 +61,7 @@ export default function Signup() {
         </div>
 
         <div className="signup-paciente-content">
-          <form className="signup-paciente-form">
+          <form className="signup-paciente-form" onSubmit={userSignup}>
             <div className="signup-paciente-title-group">
               <h1>
                 Criar Conta
@@ -40,14 +80,18 @@ export default function Signup() {
               label="NOME COMPLETO"
               type="text"
               placeholder="Ex: Maria Silva Oliveira"
+              value={fullName}
+              onChange={handleFullNameChange}
             />
 
             <InputField
               id="email"
               name="email"
               label="E-MAIL DE CONTATO"
-              type="text"
+              type="email"
               placeholder="maria.silva@exemplo.com"
+              value={email}
+              onChange={handleEmailChange}
             />
 
             <InputField
@@ -56,6 +100,8 @@ export default function Signup() {
               label="DATA DE NASCIMENTO"
               type="date"
               placeholder="DD/MM/AA"
+              value={dateOfBirth}
+              onChange={handleDateOfBirthChange}
             />
 
             <InputField
@@ -64,6 +110,8 @@ export default function Signup() {
               label="WHATSAPP / TELEFONE"
               type="text"
               placeholder="(53) 99999-9999"
+              value={phoneNumber}
+              onChange={handlePhoneNumberChange}
             />
 
             <InputField
@@ -72,6 +120,8 @@ export default function Signup() {
               label="CPF (Opcional)"
               type="text"
               placeholder="000.000.000-00"
+              value={cpf}
+              onChange={handleCpfChange}
             />
 
             <PasswordField
@@ -80,6 +130,8 @@ export default function Signup() {
               label="SENHA"
               placeholder="••••••••"
               showForgotPassword={false}
+              value={password}
+              onChange={handlePasswordChange}
             />
 
             <PasswordField
@@ -88,17 +140,19 @@ export default function Signup() {
               label="CONFIRMAR SENHA"
               placeholder="••••••••"
               showForgotPassword={false}
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
             />
 
             <Button type="submit" variant="primary">
               Finalizar Cadastro
             </Button>
 
-              <NavLink to="/login" >
-                <Button type="button" variant="secondary">
-                  Fazer Login
-                </Button>
-              </NavLink>
+            <NavLink to="/login">
+              <Button type="button" variant="secondary">
+                Fazer Login
+              </Button>
+            </NavLink>
           </form>
         </div>
 
