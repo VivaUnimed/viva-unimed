@@ -19,6 +19,7 @@
     "client": "npm -w frontend/client run dev"
   },
   "dependencies": {
-    "react-router": "^7.14.0"
+    "react-router": "^7.14.0",
+    "sequelize-typescript": "^2.1.6"
   }
 }

@@ -1,5 +1,9 @@
 import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
 
+export interface AdministratorParams extends ParamsDictionary {
+  id_administrator: string;
+}
 export interface CreateAdministratorDTO {
   user_id: string;
 }

@@ -1,5 +1,10 @@
 import { Request } from 'express';
 
+import { ParamsDictionary } from 'express-serve-static-core';
+
+export interface AppointmentParams extends ParamsDictionary {
+  id_appointment: string;
+}
 export interface CreateAppointmentDTO {
   id_paciente: string;
   id_vaga: string;
@@ -35,6 +40,6 @@ export interface AppointmentByIdRequest extends Request {
   params: AppointmentParams;
 }
 
-export interface AppointmentByPacienteRequest extends Request {
-  params: PacienteParams;
+export interface PacienteParams extends ParamsDictionary {
+  id_paciente: string;
 }

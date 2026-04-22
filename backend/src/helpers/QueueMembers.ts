@@ -1,4 +1,9 @@
 import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+
+export interface QueueMemberParams extends ParamsDictionary {
+  id_queue: string;
+}
 
 export type StatusQueueMember =
   | 'ativo'
@@ -21,9 +26,12 @@ export interface QueueMemberParams {
 }
 
 export interface FilaParams {
-  fila_id: string;
+  id: string;
 }
 
+export interface FilaExtraParams {
+  nome: string;
+}
 export interface CreateQueueMemberRequest extends Request {
   body: CreateQueueMemberDTO;
 }
@@ -37,6 +45,4 @@ export interface QueueMemberByIdRequest extends Request {
   params: QueueMemberParams;
 }
 
-export interface QueueMemberByFilaRequest extends Request {
-  params: FilaParams;
-}
+

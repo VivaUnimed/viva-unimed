@@ -21,12 +21,12 @@ export class AppointmentConfirmed
   >
   implements AppointmentConfirmedAttributes {
 
-  public id_agendamento!:string ;
-  public id_paciente!: string;
-  public id_vaga!: string;
-  public id_doctor!: string;
-  public data_confirmacao!: Date;
-  public tipo_vaga!: string;
+  public id_agendamento: string;
+  public id_paciente: string;
+  public id_vaga: string;
+  public id_doctor: string;
+  public data_confirmacao: Date;
+  public tipo_vaga: string;
 }
 
 export function initAppointmentConfirmed(sequelize: Sequelize): void {

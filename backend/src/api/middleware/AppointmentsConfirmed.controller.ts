@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { AppointmentConfirmedService } from '../services/AppointmentConfirmedService';
+import { AppointmentConfirmedService } from '../services/AppointmentConfirmedservice';
 
 const appointmentService = new AppointmentConfirmedService();
 
