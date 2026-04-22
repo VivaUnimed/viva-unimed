@@ -40,7 +40,7 @@ export const signup = async (userCredentials, dispatch) => {
   }
 };
 
-export const login = async (userCredentials, rememberMe, dispatch) => {
+export const login = async (userCredentials, rememberMe=true, dispatch) => {
   dispatch({ type: authTypes.LOGIN_REQUEST });
 
   try {

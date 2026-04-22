@@ -1,11 +1,46 @@
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
 import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
 import './styles.css';
 import { FaLock, FaPlusSquare } from 'react-icons/fa';
+import { useAuth } from '../../context/authContext/authContext';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 
 export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login, authState } = useAuth();
+
+  const location = useLocation();
+
+  // Atualiza os estados conforme o usuário for digitando
+  const handleEmailChange = (e) => setEmail(e.target.value);
+  const handlePasswordChange = (e) => setPassword(e.target.value);
+
+  // Verifica se a sessão foi expirada e mostra um alerta
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('expired')) {
+      toast.warn('Sua sessão expirou!');
+
+      // Limpa a URL para não mostrar o toast de novo se ele der F5
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, [location]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+
+    const userCredentials = {
+      email,
+      password,
+    };
+
+    login(userCredentials);
+  };
+
   return (
     <div className="login-paciente-page">
       <div className="login-paciente-card">
@@ -21,7 +56,7 @@ export default function Login() {
         </div>
 
         <div className="login-paciente-content">
-          <form className="login-paciente-form">
+          <form className="login-paciente-form" onSubmit={handleLogin}>
             <div className="login-paciente-title-group">
               <h1>
                 Agenda
@@ -34,9 +69,11 @@ export default function Login() {
             <InputField
               id="documento"
               name="documento"
-              label="CPF OU E-MAIL"
-              type="text"
-              placeholder="000.000.000-00"
+              label="E-MAIL"
+              type="email"
+              placeholder="maria.silva@exemplo.com"
+              value={email}
+              onChange={handleEmailChange}
             />
 
             <PasswordField
@@ -45,9 +82,11 @@ export default function Login() {
               label="SENHA"
               placeholder="••••••••"
               showForgotPassword={true}
+              value={password}
+              onChange={handlePasswordChange}
             />
 
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" >
               Entrar
             </Button>
 
@@ -59,7 +98,7 @@ export default function Login() {
           </form>
 
           <div className="login-paciente-security">
-            <FaLock />
+            <FaLock />  
             <span>ACESSO SEGURO CRIPTOGRAFADO</span>
           </div>
         </div>
