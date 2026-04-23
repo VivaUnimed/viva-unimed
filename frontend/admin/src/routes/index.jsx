@@ -3,6 +3,7 @@ import Login from '../pages/Login';
 import RedirectIfAuthenticated from '../components/RedirectIfAuthenticated';
 import PrivateRoutes from '../components/PrivateRoutes';
 import PrivateLayout from '../components/layouts/PrivateLayout';
+import AdminDashboard from '../pages/AdminDashboard';
 
 export const RoutesApp = () => {
   return (
@@ -15,7 +16,12 @@ export const RoutesApp = () => {
       {/* --- Rotas Privadas --- */}
       <Route element={<PrivateRoutes />}>
         <Route element={<PrivateLayout />}>
-          <Route path="/" element={<div></div>} />
+          <Route path="/" element={<AdminDashboard/>} />
+          <Route path="/professionals" element={<div/>} />
+          <Route path="/schedule" element={<div/>} />
+          <Route path="/vacancies" element={<div/>} />
+          <Route path="/patients" element={<div/>} />
+          <Route path="/settings" element={<div/>} />
         </Route>
       </Route>
 
