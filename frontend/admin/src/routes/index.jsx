@@ -4,6 +4,7 @@ import RedirectIfAuthenticated from '../components/RedirectIfAuthenticated';
 import PrivateRoutes from '../components/PrivateRoutes';
 import PrivateLayout from '../components/layouts/PrivateLayout';
 import AdminDashboard from '../pages/AdminDashboard';
+import Professionals from '../pages/Professionals';
 
 export const RoutesApp = () => {
   return (
@@ -17,7 +18,7 @@ export const RoutesApp = () => {
       <Route element={<PrivateRoutes />}>
         <Route element={<PrivateLayout />}>
           <Route path="/" element={<AdminDashboard/>} />
-          <Route path="/professionals" element={<div/>} />
+          <Route path="/professionals" element={<Professionals />} />
           <Route path="/schedule" element={<div/>} />
           <Route path="/vacancies" element={<div/>} />
           <Route path="/patients" element={<div/>} />
