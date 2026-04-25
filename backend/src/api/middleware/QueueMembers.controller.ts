@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { QueueMemberService } from '../services/QueueMemberService';
+import { QueueMemberService } from '../service/QueueMember.service';
 
 const queueMemberService = new QueueMemberService();
 

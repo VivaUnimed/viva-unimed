@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { QueueWaitingService } from '../services/QueueWaitingService';
+import { QueueWaitingService } from '../service/QueueWaiting.service';
 
 const queueWaitingService = new QueueWaitingService();
 
