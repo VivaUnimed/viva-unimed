@@ -1,4 +1,4 @@
-import { Administrator } from '../models/Administrator';
+import { Administrator } from '../db/models/administrator.model';
 
 export class AdministratorService {
 

@@ -1,4 +1,4 @@
-import { QueueWaiting } from '../models/QueueWaiting';
+import { QueueWaiting } from '../db/models/QueueWaiting.model';
 
 interface CreateQueueWaitingDTO {
   specialty_searched: string;

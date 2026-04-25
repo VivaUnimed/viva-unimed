@@ -1,4 +1,4 @@
-import { QueueMember } from '../models/QueueMember';
+import { QueueMember } from '../db/models/QueueMembers.model';
 
 interface CreateQueueMemberDTO {
   fila_id: string;

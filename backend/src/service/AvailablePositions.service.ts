@@ -1,4 +1,4 @@
-import { AvailablePosition } from '../models/AvailablePosition';
+import { AvailablePosition }  from '../db/models/AvailablePositions.model';
 
 interface CreateAvailablePositionDTO {
   id_doctor: string;

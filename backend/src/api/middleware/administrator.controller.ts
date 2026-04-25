@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import { AdministratorService } from '../services/AdministratorService';
+
+
+import { AdministratorService } from '../service/administrator.service';
 
 const administratorService = new AdministratorService();
 
