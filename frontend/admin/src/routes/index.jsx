@@ -5,6 +5,7 @@ import PrivateRoutes from '../components/PrivateRoutes';
 import PrivateLayout from '../components/layouts/PrivateLayout';
 import AdminDashboard from '../pages/AdminDashboard';
 import Professionals from '../pages/Professionals';
+import Vacancies from '../pages/Vacancies';
 
 export const RoutesApp = () => {
   return (
@@ -20,7 +21,7 @@ export const RoutesApp = () => {
           <Route path="/" element={<AdminDashboard/>} />
           <Route path="/professionals" element={<Professionals />} />
           <Route path="/schedule" element={<div/>} />
-          <Route path="/vacancies" element={<div/>} />
+          <Route path="/vacancies" element={<Vacancies/>} />
           <Route path="/patients" element={<div/>} />
           <Route path="/settings" element={<div/>} />
         </Route>
