@@ -1,126 +1,73 @@
-import { Request, Response } from 'express';
-import { QueueWaitingService } from '../service/QueueWaiting.service';
+import { Request, Response } from "express";
+import QueueWaitingService from "../services/QueueWaiting.service";
 
-const queueWaitingService = new QueueWaitingService();
-
-export class QueueWaitingController {
-
+class QueueWaitingController {
   async create(req: Request, res: Response): Promise<Response> {
     try {
-      const { specialty_searched, id_doctor, status } = req.body;
-
-      const queue = await queueWaitingService.create({
-        specialty_searched,
-        id_doctor,
-        status,
-      });
-
-      return res.status(201).json(queue);
+      const data = req.body;
+      const result = await QueueWaitingService.create(data);
+      return res.status(201).json(result);
     } catch (error) {
-      return res.status(500).json({ message: 'Erro ao criar fila de espera' });
+      return res.status(500).json({ message: "Erro ao criar registro", error });
     }
   }
 
   async findAll(req: Request, res: Response): Promise<Response> {
     try {
-      const queues = await queueWaitingService.findAll();
-      return res.status(200).json(queues);
+      const result = await QueueWaitingService.findAll();
+      return res.status(200).json(result);
     } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar filas' });
+      return res.status(500).json({ message: "Erro ao buscar registros", error });
     }
   }
 
   async findById(req: Request, res: Response): Promise<Response> {
     try {
-      const { id_queue } = req.params;
+      const { id } = req.params;
+      const result = await QueueWaitingService.findById(id);
 
-      const queue = await queueWaitingService.findById(id_queue);
-
-      if (!queue) {
-        return res.status(404).json({ message: 'Fila não encontrada' });
+      if (!result) {
+        return res.status(404).json({ message: "Registro não encontrado" });
       }
 
-      return res.status(200).json(queue);
+      return res.status(200).json(result);
     } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar fila' });
-    }
-  }
-
-  async findByDoctor(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id_doctor } = req.params;
-
-      const queues = await queueWaitingService.findByDoctor(id_doctor);
-
-      return res.status(200).json(queues);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar filas do médico' });
-    }
-  }
-
-  async findBySpecialty(req: Request, res: Response): Promise<Response> {
-    try {
-      const { specialty_searched } = req.params;
-
-      const queues = await queueWaitingService.findBySpecialty(specialty_searched);
-
-      return res.status(200).json(queues);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar filas por especialidade' });
+      return res.status(500).json({ message: "Erro ao buscar registro", error });
     }
   }
 
   async update(req: Request, res: Response): Promise<Response> {
     try {
-      const { id_queue } = req.params;
-      const { specialty_searched, id_doctor, status } = req.body;
+      const { id } = req.params;
+      const data = req.body;
 
-      const queue = await queueWaitingService.update(id_queue, {
-        specialty_searched,
-        id_doctor,
-        status,
-      });
+      const result = await QueueWaitingService.update(id, data);
 
-      if (!queue) {
-        return res.status(404).json({ message: 'Fila não encontrada' });
+      if (!result) {
+        return res.status(404).json({ message: "Registro não encontrado" });
       }
 
-      return res.status(200).json(queue);
+      return res.status(200).json(result);
     } catch (error) {
-      return res.status(500).json({ message: 'Erro ao atualizar fila' });
-    }
-  }
-
-  async updateStatus(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id_queue } = req.params;
-      const { status } = req.body;
-
-      const queue = await queueWaitingService.updateStatus(id_queue, status);
-
-      if (!queue) {
-        return res.status(404).json({ message: 'Fila não encontrada' });
-      }
-
-      return res.status(200).json(queue);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao atualizar status' });
+      return res.status(500).json({ message: "Erro ao atualizar registro", error });
     }
   }
 
   async delete(req: Request, res: Response): Promise<Response> {
     try {
-      const { id_queue } = req.params;
+      const { id } = req.params;
 
-      const deleted = await queueWaitingService.delete(id_queue);
+      const deleted = await QueueWaitingService.delete(id);
 
       if (!deleted) {
-        return res.status(404).json({ message: 'Fila não encontrada' });
+        return res.status(404).json({ message: "Registro não encontrado" });
       }
 
-      return res.status(200).json({ message: 'Fila removida com sucesso' });
+      return res.status(204).send();
     } catch (error) {
-      return res.status(500).json({ message: 'Erro ao remover fila' });
+      return res.status(500).json({ message: "Erro ao deletar registro", error });
     }
   }
 }
+
+export default new QueueWaitingController();

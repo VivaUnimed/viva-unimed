@@ -1,6 +1,6 @@
 import QueueMemberModel, {IQueueMemberCreate,} from "..db/models/QueueMember.model";
 
-import { QueueWaitingModel } from "..db/models/QueueWaiting.model";
+import  QueueWaitingModel from "..db/models/QueueWaiting.model";
 import PatientModel from "..db/models/patient.model";
 
 class QueueMemberService {

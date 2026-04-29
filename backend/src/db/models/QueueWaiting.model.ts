@@ -1,63 +1,71 @@
-import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  PrimaryKey,
+} from "sequelize-typescript";
 
-interface QueueWaitingAttributes {
-  id_queue: string;
-  specialty_searched: string;
-  id_doctor: string;
+import DoctorAvailabilityModel from "./DoctorAvailability.model";
+import AvailablePositionsModel from "./AvailablePositions.model";
+
+export interface IQueueWaiting {
+  id: string;
+  doctor_availability_id: string;
+  available_positions_id: string;
+  status: "ativo" | "inativo" | "aguardando" | "atendido";
   createdAt: Date;
-  status: boolean;
 }
 
-type QueueWaitingCreationAttributes = Optional<
-  QueueWaitingAttributes,
-  'id_queue' | 'createdAt' | 'status'
->;
+export interface IQueueWaitingCreate
+  extends Omit<IQueueWaiting, "id"> {}
 
-export class QueueWaiting
-  extends Model<
-    QueueWaitingAttributes,
-    QueueWaitingCreationAttributes
-  >
-  implements QueueWaitingAttributes {
+@Table({
+  tableName: "queue_waiting",
+  timestamps: false,
+})
+export default class QueueWaitingModel extends Model<
+  IQueueWaiting,
+  IQueueWaitingCreate
+> {
+  @PrimaryKey
+  @Column({
+    type: DataType.UUID,
+    defaultValue: DataType.UUIDV4,
+  })
+  declare id: string;
 
-  public id_queue!: string;
-  public specialty_searched!: string;
-  public id_doctor!: string;
-  public createdAt!: Date;
-  public status!: boolean;
-}
+  @ForeignKey(() => AvailablePositionsModel)
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
+  declare available_positions_id: string;
 
-export function initQueueWaiting(sequelize: Sequelize): void {
-  QueueWaiting.init(
-    {
-      id_queue: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-      },
-      specialty_searched: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      id_doctor: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      createdAt: {
-        type: DataTypes.DATE, // vira timestamptz no PostgreSQL
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      status: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: true,
-      },
-    },
-    {
-      sequelize,
-      tableName: 'queues_waiting',
-      timestamps: false, // você já definiu createdAt manualmente
-    }
-  );
+  @ForeignKey(() => DoctorAvailabilityModel)
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
+  declare doctor_availability_id: string;
+
+  @Column({
+    type: DataType.ENUM("ativo", "inativo", "aguardando", "atendido"),
+    allowNull: false,
+  })
+  declare status: "ativo" | "inativo" | "aguardando" | "atendido";
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  declare createdAt: Date;
+
+  @BelongsTo(() => AvailablePositionsModel)
+  declare availablePosition: AvailablePositionsModel;
+
+  @BelongsTo(() => DoctorAvailabilityModel)
+  declare doctorAvailability: DoctorAvailabilityModel;
 }

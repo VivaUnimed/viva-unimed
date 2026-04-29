@@ -1,78 +1,48 @@
-import { QueueWaiting } from '../db/models/QueueWaiting.model';
+import QueueWaitingModel, {
+  IQueueWaiting,
+  IQueueWaitingCreate,
+} from "..db/models/QueueWaiting.model";
 
-interface CreateQueueWaitingDTO {
-  specialty_searched: string;
-  id_doctor: string;
-  status?: boolean;
-}
+import DoctorAvailabilityModel from "..db/models/DoctorAvailability.model";
+import AvailablePositionsModel from "..sb/models/AvailablePositions.model";
 
-export class QueueWaitingService {
+class QueueWaitingService {
+  async create(data: IQueueWaitingCreate): Promise<QueueWaitingModel> {
+    return QueueWaitingModel.create(data);
+  }
 
-  async create(data: CreateQueueWaitingDTO): Promise<QueueWaiting> {
-    return await QueueWaiting.create({
-      ...data,
-      createdAt: new Date(),
+  async findAll(): Promise<QueueWaitingModel[]> {
+    return QueueWaitingModel.findAll({
+      include: [DoctorAvailabilityModel, AvailablePositionsModel],
     });
   }
 
-  async findAll(): Promise<QueueWaiting[]> {
-    return await QueueWaiting.findAll();
-  }
-
-  async findById(id_queue: string): Promise<QueueWaiting | null> {
-    return await QueueWaiting.findByPk(id_queue);
-  }
-
-  async findByDoctor(id_doctor: string): Promise<QueueWaiting[]> {
-    return await QueueWaiting.findAll({
-      where: { id_doctor },
-    });
-  }
-
-  async findBySpecialty(specialty_searched: string): Promise<QueueWaiting[]> {
-    return await QueueWaiting.findAll({
-      where: { specialty_searched },
+  async findById(id: string): Promise<QueueWaitingModel | null> {
+    return QueueWaitingModel.findByPk(id, {
+      include: [DoctorAvailabilityModel, AvailablePositionsModel],
     });
   }
 
   async update(
-    id_queue: string,
-    data: Partial<CreateQueueWaitingDTO>
-  ): Promise<QueueWaiting | null> {
+    id: string,
+    data: Partial<IQueueWaiting>
+  ): Promise<QueueWaitingModel | null> {
+    const record = await QueueWaitingModel.findByPk(id);
 
-    const queue = await QueueWaiting.findByPk(id_queue);
+    if (!record) return null;
 
-    if (!queue) {
-      return null;
-    }
-
-    await queue.update(data);
-    return queue;
+    await record.update(data);
+    return record;
   }
 
-  async updateStatus(
-    id_queue: string,
-    status: boolean
-  ): Promise<QueueWaiting | null> {
+  async delete(id: string): Promise<boolean> {
+    const record = await QueueWaitingModel.findByPk(id);
 
-    const queue = await QueueWaiting.findByPk(id_queue);
+    if (!record) return false;
 
-    if (!queue) {
-      return null;
-    }
-
-    await queue.update({ status });
-    return queue;
-  }
-
-  async delete(id_queue: string): Promise<boolean> {
-    const queue = await QueueWaiting.findByPk(id_queue);
-
-    if (!queue) {
-      return false;
-    }
-
-    await queue.destroy();
+    await record.destroy();
     return true;
   }
 }
+
+export default new QueueWaitingService();
