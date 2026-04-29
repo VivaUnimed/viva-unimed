@@ -1,10 +1,10 @@
 
 import DoctorAvailabilityModel, {
   IDoctorAvailabilityCreate,
-} from "../models/DoctorAvailability";
+} from "../models/Doctor.Availability";
 
 import DoctorModel from "../models/db.doctor.model";
-import QueueWaitingModel from "../models/db.QueueWaiting";
+import QueueWaitingModel from "../models/db.Queu.eWaiting";
 
 class DoctorAvailabilityService {
   async create(data: IDoctorAvailabilityCreate) {

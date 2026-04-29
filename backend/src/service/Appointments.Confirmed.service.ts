@@ -1,4 +1,4 @@
-import { AppointmentConfirmed } from '../db/models/AppointmentsConfirmed.model';
+import { AppointmentConfirmed } from '../db/models/Appointments.Confirmed.model';
 
 interface CreateAppointmentDTO {
   id_paciente: string;

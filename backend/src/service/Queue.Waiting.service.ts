@@ -1,10 +1,10 @@
 import QueueWaitingModel, {
   IQueueWaiting,
   IQueueWaitingCreate,
-} from "..db/models/QueueWaiting.model";
+} from "..db/models/Queue.Waiting.model";
 
-import DoctorAvailabilityModel from "..db/models/DoctorAvailability.model";
-import AvailablePositionsModel from "..sb/models/AvailablePositions.model";
+import DoctorAvailabilityModel from "..db/models/Doctor.Availability.model";
+import AvailablePositionsModel from "..sb/models/Available.Positions.model";
 
 class QueueWaitingService {
   async create(data: IQueueWaitingCreate): Promise<QueueWaitingModel> {

@@ -9,7 +9,7 @@ import {
 } from "sequelize-typescript";
 
 import DoctorAvailabilityModel from "./DoctorAvailability.model";
-import AvailablePositionsModel from "./AvailablePositions.model";
+import AvailablePositionsModel from "./Available.Positions.model";
 
 export interface IQueueWaiting {
   id: string;

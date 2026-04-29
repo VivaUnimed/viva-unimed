@@ -9,7 +9,7 @@ import {
 } from "sequelize-typescript";
 
 import PatientModel from "./patient.model";
-import QueueWaitingModel from "./QueueWaiting.model";
+import QueueWaitingModel from "./Queue.Waiting.model";
 
 export interface IQueueMember {
   id: string;
