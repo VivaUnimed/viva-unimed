@@ -1,57 +1,52 @@
-import { QueueMember } from '../db/models/QueueMembers.model';
+import QueueMemberModel, {IQueueMemberCreate,} from "..db/models/QueueMember.model";
 
-interface CreateQueueMemberDTO {
-  fila_id: string;
-  patient_id: string;
-  status: 'ativo' | 'inativo' | 'aguardando' | 'atendido';
-}
+import { QueueWaitingModel } from "..db/models/QueueWaiting.model";
+import PatientModel from "..db/models/patient.model";
 
-export class QueueMemberService {
+class QueueMemberService {
+  async create(data: IQueueMemberCreate) {
+    return await QueueMemberModel.create(data);
+  }
 
-  async create(data: CreateQueueMemberDTO): Promise<QueueMember> {
-    return await QueueMember.create({
-      ...data,
-      createdAt: new Date(),
+  async findAll() {
+    return await QueueMemberModel.findAll({
+      include: [
+        { model: QueueWaitingModel },
+        { model: PatientModel },
+      ],
     });
   }
 
-  async findAll(): Promise<QueueMember[]> {
-    return await QueueMember.findAll();
-  }
-
-  async findById(id: string): Promise<QueueMember | null> {
-    return await QueueMember.findByPk(id);
-  }
-
-  async findByFila(fila_id: string): Promise<QueueMember[]> {
-    return await QueueMember.findAll({
-      where: { fila_id },
+  async findById(id: string) {
+    return await QueueMemberModel.findByPk(id, {
+      include: [
+        { model: QueueWaitingModel },
+        { model: PatientModel },
+      ],
     });
   }
 
-  async updateStatus(
-    id: string,
-    status: 'ativo' | 'inativo' | 'aguardando' | 'atendido'
-  ): Promise<QueueMember | null> {
-
-    const member = await QueueMember.findByPk(id);
+  async update(id: string, data: Partial<IQueueMemberCreate>) {
+    const member = await QueueMemberModel.findByPk(id);
 
     if (!member) {
-      return null;
+      throw new Error("Membro da fila não encontrado");
     }
 
-    await member.update({ status });
+    await member.update(data);
     return member;
   }
 
-  async delete(id: string): Promise<boolean> {
-    const member = await QueueMember.findByPk(id);
+  async delete(id: string) {
+    const member = await QueueMemberModel.findByPk(id);
 
     if (!member) {
-      return false;
+      throw new Error("Membro da fila não encontrado");
     }
 
     await member.destroy();
-    return true;
+    return { message: "Removido com sucesso" };
   }
 }
+
+export default new QueueMemberService();

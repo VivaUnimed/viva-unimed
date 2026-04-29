@@ -1,60 +1,71 @@
-import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  PrimaryKey,
+} from "sequelize-typescript";
 
-interface QueueMemberAttributes {
-  id_membro_fila: string;
-  fila_id: string;
-  patient_id: string;
-  status: 'ativo' | 'inativo' | 'aguardando' | 'atendido';
+import PatientModel from "./patient.model";
+import QueueWaitingModel from "./QueueWaiting.model";
+
+export interface IQueueMember {
+  id: string;
+  queueId: string;
+  patientId: string;
+  status: "ativo" | "inativo" | "aguardando" | "atendido";
   createdAt: Date;
 }
 
-type QueueMemberCreationAttributes = Optional<
-  QueueMemberAttributes,
-  'id_membro_fila' | 'createdAt'
->;
+export interface IQueueMemberCreate
+  extends Omit<IQueueMember, "id"> {}
 
-export class QueueMember
-  extends Model<QueueMemberAttributes, QueueMemberCreationAttributes>
-  implements QueueMemberAttributes {
+@Table({
+  tableName: "queue_members",
+  timestamps: false,
+})
+export default class QueueMemberModel extends Model<
+  IQueueMember,
+  IQueueMemberCreate
+> {
+  @PrimaryKey
+  @Column({
+    type: DataType.UUID,
+    defaultValue: DataType.UUIDV4,
+  })
+  declare id: string;
 
-  public id_membro_fila!: string;
-  public fila_id!: string;
-  public patient_id!: string;
-  public status!: 'ativo' | 'inativo' | 'aguardando' | 'atendido';
-  public createdAt!: Date;
+  @ForeignKey(() => QueueWaitingModel)
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
+  declare queueId: string;
+
+  @ForeignKey(() => PatientModel)
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
+  declare patientId: string;
+
+  @Column({
+    type: DataType.ENUM("ativo", "inativo", "aguardando", "atendido"),
+    allowNull: false,
+  })
+  declare status: "ativo" | "inativo" | "aguardando" | "atendido";
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  declare createdAt: Date;
+
+  @BelongsTo(() => QueueWaitingModel)
+  declare queue: QueueWaitingModel;
+
+  @BelongsTo(() => PatientModel)
+  declare patient: PatientModel;
 }
-
-export function initQueueMember(sequelize: Sequelize): void {
-  QueueMember.init(
-    {
-      id_membro_fila: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-      },
-      fila_id: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      patient_id: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      status: {
-        type: DataTypes.ENUM('ativo', 'inativo', 'aguardando', 'atendido'),
-        allowNull: false,
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-    },
-    {
-      sequelize,
-      tableName: 'Queue_members',
-      timestamps: false, // você já definiu createdAt manualmente
-    }
-  );
-}
-

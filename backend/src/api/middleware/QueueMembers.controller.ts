@@ -1,94 +1,63 @@
-import { Request, Response } from 'express';
-import { QueueMemberService } from '../service/QueueMember.service';
+import { Request, Response } from "express";
+import QueueMemberService from "../service/QueueMembers.service";
 
-const queueMemberService = new QueueMemberService();
-
-export class QueueMemberController {
-
-  async create(req: Request, res: Response): Promise<Response> {
+class QueueMemberController {
+  async create(req: Request, res: Response) {
     try {
-      const { fila_id, patient_id, status } = req.body;
-
-      const member = await queueMemberService.create({
-        fila_id,
-        patient_id,
-        status,
-      });
-
-      return res.status(201).json(member);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao criar membro da fila' });
+      const data = req.body;
+      const result = await QueueMemberService.create(data);
+      return res.status(201).json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
     }
   }
 
-  async findAll(req: Request, res: Response): Promise<Response> {
+  async findAll(req: Request, res: Response) {
     try {
-      const members = await queueMemberService.findAll();
-
-      return res.status(200).json(members);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar membros' });
+      const result = await QueueMemberService.findAll();
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
     }
   }
 
-  async findById(req: Request, res: Response): Promise<Response> {
+  async findById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const result = await QueueMemberService.findById(id);
+
+      if (!result) {
+        return res.status(404).json({ message: "Membro não encontrado" });
+      }
+
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+
+      const result = await QueueMemberService.update(id, data);
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
 
-      const member = await queueMemberService.findById(id);
-
-      if (!member) {
-        return res.status(404).json({ message: 'Membro não encontrado' });
-      }
-
-      return res.status(200).json(member);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar membro' });
-    }
-  }
-
-  async findByFila(req: Request, res: Response): Promise<Response> {
-    try {
-      const { fila_id } = req.params;
-
-      const members = await queueMemberService.findByFila(fila_id);
-
-      return res.status(200).json(members);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao buscar membros da fila' });
-    }
-  }
-
-  async updateStatus(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      const member = await queueMemberService.updateStatus(id, status);
-
-      if (!member) {
-        return res.status(404).json({ message: 'Membro não encontrado' });
-      }
-
-      return res.status(200).json(member);
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao atualizar status' });
-    }
-  }
-
-  async delete(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params;
-
-      const deleted = await queueMemberService.delete(id);
-
-      if (!deleted) {
-        return res.status(404).json({ message: 'Membro não encontrado' });
-      }
-
-      return res.status(200).json({ message: 'Membro removido com sucesso' });
-    } catch (error) {
-      return res.status(500).json({ message: 'Erro ao remover membro' });
+      const result = await QueueMemberService.delete(id);
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
     }
   }
 }
+
+export default new QueueMemberController();

@@ -1,48 +1,19 @@
-import { Request } from 'express';
-import { ParamsDictionary } from 'express-serve-static-core';
-
-export interface QueueMemberParams extends ParamsDictionary {
-  id_queue: string;
-}
-
-export type StatusQueueMember =
-  | 'ativo'
-  | 'inativo'
-  | 'aguardando'
-  | 'atendido';
-
-export interface CreateQueueMemberDTO {
-  fila_id: string;
-  patient_id: string;
-  status: StatusQueueMember;
-}
-
-export interface UpdateStatusDTO {
-  status: StatusQueueMember;
-}
-
-export interface QueueMemberParams {
+export interface IQueueMember {
   id: string;
+  queueId: string;
+  patientId: string;
+  status: "ativo" | "inativo" | "aguardando" | "atendido";
+  createdAt: Date;
 }
 
-export interface FilaParams {
-  id: string;
+export interface IQueueMemberCreate {
+  queueId: string;
+  patientId: string;
+  status: "ativo" | "inativo" | "aguardando" | "atendido";
 }
 
-export interface FilaExtraParams {
-  nome: string;
+export interface IQueueMemberUpdate {
+  queueId?: string;
+  patientId?: string;
+  status?: "ativo" | "inativo" | "aguardando" | "atendido";
 }
-export interface CreateQueueMemberRequest extends Request {
-  body: CreateQueueMemberDTO;
-}
-
-export interface UpdateStatusRequest extends Request {
-  params: QueueMemberParams;
-  body: UpdateStatusDTO;
-}
-
-export interface QueueMemberByIdRequest extends Request {
-  params: QueueMemberParams;
-}
-
-
