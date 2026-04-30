@@ -7,6 +7,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 import Professionals from '../pages/Professionals';
 import Vacancies from '../pages/Vacancies';
 import Patients from '../pages/Patients';
+import WeeklySchedule from '../pages/WeeklySchedule';
 
 export const RoutesApp = () => {
   return (
@@ -21,7 +22,7 @@ export const RoutesApp = () => {
         <Route element={<PrivateLayout />}>
           <Route path="/" element={<AdminDashboard/>} />
           <Route path="/professionals" element={<Professionals />} />
-          <Route path="/schedule" element={<div/>} />
+          <Route path="/weeklySchedule" element={<WeeklySchedule/>} />
           <Route path="/vacancies" element={<Vacancies/>} />
           <Route path="/patients" element={<Patients/>} />
           <Route path="/settings" element={<div/>} />

@@ -32,7 +32,7 @@ export default function Sidebar() {
             <span>Profissionais</span>
           </NavLink>
 
-          <NavLink to="/schedule" className="sidebar__link">
+          <NavLink to="/weeklySchedule" className="sidebar__link">
             <LuCalendarDays className="sidebar__icon" />
             <span>Agenda</span>
           </NavLink>
