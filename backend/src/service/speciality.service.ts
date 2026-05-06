@@ -3,7 +3,16 @@ import SpecialityModel from "../db/models/speciality.model"
 import { Conflict, NotFound } from "../error";
 import { Op } from "sequelize";
 
+/**
+ * Serviço responsável pelas operações de especialidades.
+ * Contém as regras de negócio e validações para criação,
+ * edição, consulta e exclusão de especialidades.
+ */
 export class SpecialityService {
+  /**
+   * Cria uma nova especialidade.
+   * Verifica conflitos de nome antes da criação.
+   */
   async create(data: ISpecialityCreate): Promise<ISpeciality> {
     const exists = await SpecialityModel.findOne({ where: { name: data.name }});
     if(exists){
@@ -13,6 +22,10 @@ export class SpecialityService {
     return model.get({ plain: true });
   }
 
+  /**
+   * Atualiza uma especialidade existente.
+   * Verifica se o novo nome não conflita com outra especialidade.
+   */
   async update(id:number, data: ISpecialityCreate): Promise<ISpeciality> {
     const exists = await SpecialityModel.findOne({ where: {
       name: data.name,
@@ -29,6 +42,10 @@ export class SpecialityService {
     return model.get({ plain: true });
   }
 
+  /**
+   * Busca uma especialidade pelo ID.
+   * Lança NotFound caso não exista.
+   */
   async getById(id: number): Promise<ISpeciality> {
     const model = await SpecialityModel.findByPk(id);
     if(!model) {
@@ -37,11 +54,18 @@ export class SpecialityService {
     return model.get({ plain: true });
   }
 
+  /**
+   * Lista todas as especialidades cadastradas.
+   */
   async list(): Promise<ISpeciality[]> {
     const list = await SpecialityModel.findAll();
     return list.map((model) => model.get({ plain: true }))
   }
 
+  /**
+   * Remove uma especialidade existente.
+   * Lança NotFound caso o ID não exista.
+   */
   async delete(id: number): Promise<void> {
     const model = await SpecialityModel.findByPk(id);
     if(!model) {

@@ -7,11 +7,7 @@ import RoleModel from "../db/models/role.model";
 import { getPermissionsFromRoles } from "../entities";
 
 export class UserService {
-  constructor() {
-
-  }
-
-  /** Cria um usuário, salva sua senha (hasheada) e atribui cargos iniciais */
+    /** Cria um usuário, salva sua senha (hasheada) e atribui cargos iniciais */
   async create(user: IUserCreate): Promise<IUser> {
     const res = await UserModel.create({
       name: user.name,
