@@ -1,4 +1,4 @@
-import { Column, DataType, ForeignKey, Table, BelongsTo, Model, HasMany, BelongsToMany } from "sequelize-typescript";
+import { Column, DataType, ForeignKey, Table, BelongsTo, Model, BelongsToMany } from "sequelize-typescript";
 import UserModel from "./user.model";
 import SpecialityModel from "./speciality.model";
 import { IDoctor, IDoctorCreate } from "shared";

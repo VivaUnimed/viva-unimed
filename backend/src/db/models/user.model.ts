@@ -3,11 +3,13 @@ import { IUser } from "shared";
 import PasswordModel from "./password.model";
 import RoleModel from "./role.model";
 import DoctorModel from "./doctor.model";
+import PatientModel from "./patient.model";
 
 
 interface IUserModel extends IUser {
   password?: PasswordModel;
   doctor?: DoctorModel;
+  patient?: PatientModel;
 }
 
 @Table({
@@ -24,10 +26,13 @@ export default  class UserModel extends Model<IUserModel> {
   @Column({ type: DataType.STRING(255), allowNull: false,  })
   declare name: string;
 
+  @Column({ type: DataType.STRING(14), allowNull: true, unique: true })
+  declare cpf: string;
+
   @Column({ type: DataType.STRING(255), allowNull: false, unique: true })
   declare email: string;
 
-  @Column({ type: DataType.STRING(255) })
+  @Column({ type: DataType.STRING(20) })
   declare phone: number;
 
   @HasOne(() => PasswordModel)
@@ -36,7 +41,9 @@ export default  class UserModel extends Model<IUserModel> {
   @HasMany(() => RoleModel)
   declare roles?: RoleModel[];
 
-
   @HasOne(() => DoctorModel)
   declare doctor: DoctorModel;
+
+  @HasOne(() => PatientModel)
+  declare patient?: PatientModel;
 }

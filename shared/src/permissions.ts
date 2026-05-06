@@ -13,7 +13,11 @@ export const PERMISSIONS = [
   "doctor.create",
   "doctor.read",
   "doctor.edit",
-  "doctor.delete"
+  "doctor.delete",
+  "patient.create",
+  "patient.read",
+  "patient.edit",
+  "patient.delete"
 ] as const;
 
 
