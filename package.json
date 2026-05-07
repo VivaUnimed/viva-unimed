@@ -14,8 +14,9 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "backend": "npm -w backend start",
+    "backend": "npm run build:shared && npm -w backend start",
     "admin": "npm -w frontend/admin run dev",
+    "build:shared": "npm -w shared run build",
     "client": "npm -w frontend/client run dev"
   },
   "dependencies": {

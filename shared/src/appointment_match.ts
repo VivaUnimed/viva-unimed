@@ -3,11 +3,12 @@ import { IAppointment } from "./appointment";
 import { IAppointmentRequest } from "./appointment_request";
 
 export type AppointmentMatchStatus =
-  "queued"
-  "waiting_response"
-  "accepted"
-  "rejected"
-  "success";
+  | "queued"
+  | "waiting_response"
+  | "accepted"
+  | "rejected"
+  | "expired"
+  | "success";
 
 export interface IAppointmentMatchCreate {
   appointmentId: number;

@@ -3,9 +3,9 @@ import { ISpeciality } from "./speciality";
 import { IPatient } from "./patient";
 
 export type AppointmentRequestStatus =
-  "waiting"
-  "approved"
-  "cancelled"
+  | "waiting"
+  | "approved"
+  | "cancelled";
 
 export interface IAppointmentRequestCreate {
   patientId: number;
@@ -22,4 +22,12 @@ export interface IAppointmentRequest extends IAppointmentRequestCreate {
   doctor?: IDoctor;
   createAt: Date;
   updatedAt: Date;
+}
+
+
+export interface IAppointmentRequestListParams {
+  patientId?: number;
+  specialityId?: number;
+  doctorId?: number;
+  status?: AppointmentRequestStatus;
 }

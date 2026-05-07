@@ -3,21 +3,21 @@ import type { ISpeciality } from "./speciality";
 import type { IUser } from "./user";
 
 export type AppointmentStatus =
-  "open"
-  "approved"
-  "cancelled"
-  "no_show";
+  | "open"
+  | "approved"
+  | "cancelled"
+  | "no_show";
 
 export interface IAppointmentCreate {
   date: Date;
   doctorId: number;
   specialityId: number;
   createdBy: number;
+  status: AppointmentStatus;
 }
 
 export interface IAppointment extends IAppointmentCreate {
   id: number;
-  status: AppointmentStatus;
   doctor?: IDoctor;
   speciality?: ISpeciality;
   user?: IUser;

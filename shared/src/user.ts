@@ -4,6 +4,8 @@ import { Permission, Role } from "./permissions";
 export interface IUserCreate {
   name: string;
   email: string;
+  cpf?: string;
+  // rne?: string; # ou CRNM
   phone?: number;
   password?: string;
   roles?: Role[];

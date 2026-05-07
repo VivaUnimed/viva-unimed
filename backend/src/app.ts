@@ -10,11 +10,13 @@ import { Database } from "./db";
 import service from "./service";
 import { JwtMiddleware } from "./api/middleware/jwt.middleware";
 import cookieParser from "cookie-parser";
+import { AppointmentMatchJob } from './jobs';
 
 export class App {
   private app!: express.Application;
   private server!: Server;
   private database!: Database;
+  private appointmentMatchJob: AppointmentMatchJob;
 
   /** Inicializa as instâncias básicas, configura o segredo do JWT e registra o roteamento */
   constructor(private config: Config) {
@@ -29,11 +31,30 @@ export class App {
     try {
       await this.database.start();
       await this.startServer();
+      await this.startJobs();
+      await this.assertAdmin();
     } catch (error) {
       console.log("Failed to start application", error);
       await this.stop();
     }
   }
+
+  async assertAdmin() {
+    if(this.config.DEFAULT_ADMIN_EMAIL && this.config.DEFAULT_ADMIN_PASSWORD) {
+      await service.user.assertAdminUser(
+        this.config.DEFAULT_ADMIN_EMAIL,
+        this.config.DEFAULT_ADMIN_PASSWORD,
+      )
+    }
+  }
+
+  async startJobs() {
+    this.appointmentMatchJob = new AppointmentMatchJob({
+      cron: this.config.APPOINTMENT_JOB_CRON,
+    });
+    this.appointmentMatchJob.start();
+  }
+
   /** Inicia a escuta de requisições na porta configurada e trata erros de boot do servidor */
   async startServer() {
     return new Promise<void>((resolve, reject) => {

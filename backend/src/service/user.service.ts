@@ -89,4 +89,20 @@ export class UserService {
     await res.destroy();
     return true;
   }
+
+  async assertAdminUser(email: string, password: string) {
+    const admin = await UserModel.findOne({
+      where: {
+        email: email,
+      }
+    })
+    if(admin) return;
+    console.log(`CREATING ADMIN USER WITH ${email}`);
+    await this.create({
+      email,
+      password,
+      name: 'admin',
+      roles: ['Admin'],
+    });
+  }
 }
