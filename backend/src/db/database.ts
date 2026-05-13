@@ -1,21 +1,22 @@
 import { Sequelize } from 'sequelize-typescript';
 import { Config } from '../config';
 import UserModel from './models/user.model';
+import { TransactionOptions } from 'sequelize';
 
 export class Database {
   private sequelize!: Sequelize;
-  constructor(private config: Config) {
+  constructor() {
 
   }
 
-  async start() {
+  async start(config: Config) {
     this.sequelize = new Sequelize({
-      database: this.config.DB_DATABASE,
+      database: config.DB_DATABASE,
       dialect: 'postgres',
-      username: this.config.DB_USERNAME,
-      password: this.config.DB_PASSWORD,
-      host: this.config.DB_ADDRESS,
-      port: this.config.DB_PORT,
+      username: config.DB_USERNAME,
+      password: config.DB_PASSWORD,
+      host: config.DB_ADDRESS,
+      port: config.DB_PORT,
       models: [__dirname + '/models'],
       logging: false,
       pool: {
@@ -25,6 +26,10 @@ export class Database {
     await this.testConnection();
     await this.migrate();
     await UserModel.findAll();
+  }
+
+  transaction(options?: TransactionOptions) {
+    return this.sequelize.transaction(options);
   }
 
   private async migrate() {

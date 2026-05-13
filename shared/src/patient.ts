@@ -1,3 +1,5 @@
+import { IUser } from "./user";
+
 export interface IPatientCreate {
   birth: Date;
   userId: number;
@@ -5,4 +7,5 @@ export interface IPatientCreate {
 
 export interface IPatient extends IPatientCreate {
   id: number;
+  user?: IUser;
 }

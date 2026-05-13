@@ -38,6 +38,7 @@ export function ErrorMiddleware(error: any, req: Request, res: Response, next: N
   if(error instanceof Conflict){
     return res.status(409).json({
       message: "Conflict",
+      details: error.message,
     });
   }
 

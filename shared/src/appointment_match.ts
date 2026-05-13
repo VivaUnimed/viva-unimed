@@ -19,8 +19,8 @@ export interface IAppointmentMatchCreate {
 
 export interface IAppointmentMatch extends IAppointmentMatchCreate {
   id: number;
-  appointment: IAppointment;
-  request: IAppointmentRequest;
+  appointment?: IAppointment;
+  request?: IAppointmentRequest;
   createAt: Date;
   updatedAt: Date;
   respondedAt?: Date;

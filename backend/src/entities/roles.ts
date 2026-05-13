@@ -1,11 +1,7 @@
-import { Permission, Role } from "shared";
+import { Permission, PERMISSIONS, Role } from "shared";
 
-export const ROLES: Record<Role, Permission[]> = {
-  Admin: [
-    "user.create", "user.read", "user.edit", "user.edit.role",
-    "schedule.aprove", "schedule.request",
-    "speciality.read", "speciality.create", "speciality.edit", "speciality.delete",
-  ],
+export const ROLES: Record<Role, readonly Permission[]> = {
+  Admin: PERMISSIONS,
   Tecnico: [
     "schedule.aprove",
     "user.read",

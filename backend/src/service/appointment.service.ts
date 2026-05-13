@@ -69,6 +69,24 @@ export class AppointmentService {
     return list.map(v => v.get({ plain: true }));
   }
 
+  /** Atualiza um agendamento existente */
+  async update(id: number, data: Partial<IAppointmentCreate>): Promise<IAppointment> {
+    const model = await AppointmentModel.findByPk(id);
+    if (!model) {
+      throw new NotFound();
+    }
+    await model.update(data);
+    return model.get({ plain: true });
+  }
+
+  async reserved(appointmentId: number): Promise<void> {
+    const appointment = await this.getById(appointmentId);
+    if (!appointment) {
+      throw new NotFound();
+    }
+    await this.update(appointmentId, { status: 'booked' });
+  }
+
   /** Remove um agendamento */
   async delete(id: number): Promise<void> {
     // O Que fazer se ao deletar uma vaga? matches? e se já está confirmada?

@@ -4,7 +4,7 @@ import type { IUser } from "./user";
 
 export type AppointmentStatus =
   | "open"
-  | "approved"
+  | "booked"
   | "cancelled"
   | "no_show";
 

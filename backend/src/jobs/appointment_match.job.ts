@@ -1,6 +1,5 @@
 import { IAppointment } from "shared";
 import service from "../service"
-import { setTimeout } from "node:timers/promises";
 import { CronJob } from 'cron';
 
 interface AppointmentMatchJobOptions {
@@ -9,7 +8,8 @@ interface AppointmentMatchJobOptions {
 
 export class AppointmentMatchJob {
   private job: CronJob;
-  constructor(private options: AppointmentMatchJobOptions) {
+
+  constructor(options: AppointmentMatchJobOptions) {
     this.job = CronJob.from({
       cronTime: options.cron,
       onTick: () => this.execute(),
@@ -22,7 +22,8 @@ export class AppointmentMatchJob {
   }
 
   private async execute() {
-    console.log("STARTING APPOINTMENT JOB ⏳");
+    console.log("RUNNING APPOINTMENT JOB ⏳");
+    await service.request.setExpiredStatus();
     const open = await service.appointment.listOpen();
     for(const apt of open) {
       // TODO: try / catch
@@ -39,7 +40,7 @@ export class AppointmentMatchJob {
     if(!request) return;
 
     const expires = new Date();
-    expires.setMinutes(expires.getMinutes() + 30);
+    expires.setMinutes(expires.getMinutes() + 1);
 
     const match = await service.appointment.addMatch({
       appointmentId: apt.id,

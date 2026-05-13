@@ -6,30 +6,30 @@ import { Router } from "express";
 import { RegisterRoutes } from "./api/generated/routes/routes";
 import swagger from "./api/generated/spec/swagger.json";
 import swaggerUi from "swagger-ui-express";
-import { Database } from "./db";
+import { db } from "./db";
 import service from "./service";
 import { JwtMiddleware } from "./api/middleware/jwt.middleware";
 import cookieParser from "cookie-parser";
 import { AppointmentMatchJob } from './jobs';
+import { AppointmentNotificationJob } from "./jobs/appointment_notification.job";
 
 export class App {
   private app!: express.Application;
   private server!: Server;
-  private database!: Database;
   private appointmentMatchJob: AppointmentMatchJob;
+  private appointmentNotificationJob: AppointmentNotificationJob;
 
   /** Inicializa as instâncias básicas, configura o segredo do JWT e registra o roteamento */
   constructor(private config: Config) {
     this.app = express();
     this.server = createServer(this.app);
-    this.database = new Database(this.config);
     service.auth.setSecret(this.config.JWT_SECRET);
     this.attachRoutes();
   }
   /** Orquestra a inicialização da conexão com o banco e o levantamento do servidor HTTP */
   async start() {
     try {
-      await this.database.start();
+      await db.start(this.config);
       await this.startServer();
       await this.startJobs();
       await this.assertAdmin();
@@ -53,6 +53,11 @@ export class App {
       cron: this.config.APPOINTMENT_JOB_CRON,
     });
     this.appointmentMatchJob.start();
+
+    this.appointmentNotificationJob = new AppointmentNotificationJob({
+      cron: '0/1 * * * *',
+    })
+    this.appointmentNotificationJob.start();
   }
 
   /** Inicia a escuta de requisições na porta configurada e trata erros de boot do servidor */
