@@ -40,12 +40,12 @@ export class AppointmentNotificationJob {
 
           await service.request.updateMatchStatus(match.id, "waiting_response")
 
-        } catch (innerError){
-          console.error(`Falha ao processar match ${match.id}:`, innerError);
+        } catch (e){
+          console.error(`Falha ao processar match ${match.id}:`, e);
         }
       }
-    } catch (error){
-      console.error("Erro no job de notificação de agendamento: ", error);
+    } catch (e){
+      console.error("Erro no job de notificação de agendamento: ", e);
     }
   }
 }
