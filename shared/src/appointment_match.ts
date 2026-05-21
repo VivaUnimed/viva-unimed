@@ -8,7 +8,8 @@ export type AppointmentMatchStatus =
   | "accepted"
   | "rejected"
   | "expired"
-  | "success";
+  | "success"
+  | "canceled";
 
 export interface IAppointmentMatchCreate {
   appointmentId: number;
