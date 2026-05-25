@@ -19,6 +19,16 @@
     "client": "npm -w frontend/client run dev"
   },
   "dependencies": {
-    "react-router": "^7.14.0"
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "react-router": "^7.14.0",
+    "twilio": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }
