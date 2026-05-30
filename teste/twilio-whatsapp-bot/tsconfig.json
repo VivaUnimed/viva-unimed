@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    // Ambiente Node.js moderno
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Compatibilidade
+    "esModuleInterop": true,
+
+    // Qualidade
+    "strict": true,
+    "skipLibCheck": true,
+
+    // Tipagens
+    "types": ["node"],
+
+    // Arquivos gerados
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Segurança
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Configuração moderna
+    "verbatimModuleSyntax": false,
+    "isolatedModules": true,
+    "moduleDetection": "force"
+  },
+
+  "include": ["src"]
+}
