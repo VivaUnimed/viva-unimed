@@ -13,6 +13,8 @@ export interface IAppointmentRequestCreate {
   doctorId?: number;
   status: AppointmentRequestStatus;
   date: Date;
+  attempts?: number;
+  cooldownUntil?: Date;
 }
 
 export interface IAppointmentRequest extends IAppointmentRequestCreate {
@@ -20,6 +22,8 @@ export interface IAppointmentRequest extends IAppointmentRequestCreate {
   patient: IPatient;
   specialitie: ISpeciality;
   doctor?: IDoctor;
+  attempts: number;
+  cooldownUntil?: Date;
   createAt: Date;
   updatedAt: Date;
 }

@@ -65,13 +65,18 @@ export class AppointmentMatchJob {
 
     // Cria um Match para cada pessoa selecionada
     for (const req of requests) {
-      const match = await service.appointment.addMatch({
-      appointmentId: apt.id,
-      requestId: req.id,
-      status: "queued",
-      expiresAt: expires,
-    });
+      try {
+        const match = await service.appointment.addMatch({
+          appointmentId: apt.id,
+          requestId: req.id,
+          status: "queued",
+          expiresAt: expires,
+        });
 
-    console.log(`MATCH ADICIONADO APPOINTMENT=${apt.id} REQUEST=${req.id} MATCH=${match.id} EXPIRES=${expires.toISOString()}`);  }
+        console.log(`MATCH ADICIONADO APPOINTMENT=${apt.id} REQUEST=${req.id} MATCH=${match.id} EXPIRES=${expires.toISOString()}`);
+      } catch (e) {
+        console.error(`Falha ao criar match para appointment ${apt.id} e request ${req.id}:`, e);
+      }
+    }
   }
 }

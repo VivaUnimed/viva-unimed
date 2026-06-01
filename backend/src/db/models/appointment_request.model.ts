@@ -32,4 +32,10 @@ export default class AppointmentRequestModel extends Model<IAppointmentRequest, 
 
   @BelongsTo(() => DoctorModel)
   declare doctor?: DoctorModel;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare attempts: number;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare cooldownUntil?: Date;
 }

@@ -6,7 +6,8 @@ export type AppointmentStatus =
   | "open"
   | "booked"
   | "cancelled"
-  | "no_show";
+  | "no_show"
+  | "expired";
 
 export interface IAppointmentCreate {
   date: Date;
