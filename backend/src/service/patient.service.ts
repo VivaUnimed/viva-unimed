@@ -1,6 +1,9 @@
-import { IPatient, IPatientCreate } from "shared";
+import { IPatient, IPatientCreate, IPatientListParams } from "shared";
 import PatientModel from "../db/models/patient.model";
 import { NotFound } from "../error";
+import UserModel from "../db/models/user.model";
+import { paginate } from "./helpers";
+import { Op } from "sequelize";
 
 export class PatientService {
   /** Cria um novo registro de paciente associado a um usuário */
@@ -33,14 +36,34 @@ export class PatientService {
 
   /** Busca paciente pelo usuário associado */
   async getByUserId(userId: number): Promise<IPatient | null> {
-    const model = await PatientModel.findOne({ where: { userId } });
+    const model = await PatientModel.findOne({
+      where: { userId },
+      include: [UserModel],
+    });
+
     if (!model) return null;
     return model.get({ plain: true });
   }
 
   /** Lista todos os pacientes */
-  async list(): Promise<IPatient[]> {
-    const list = await PatientModel.findAll();
+  async list(params?: IPatientListParams): Promise<IPatient[]> {
+
+    const list = await PatientModel.findAll({
+      include: [{
+        model: UserModel,
+        where: params.search
+          ? {
+            [Op.or] : {
+              name: { [Op.iLike]: `%${params.search}%` },
+              cpf: { [Op.iLike]: `%${params.search}%` },
+              email: { [Op.iLike]: `%${params.search}%` },
+            }
+          }
+          : undefined,
+      }],
+      ...paginate(params),
+      order: [['userId', 'DESC']],
+    });
     return list.map((model) => model.get({ plain: true }));
   }
 
