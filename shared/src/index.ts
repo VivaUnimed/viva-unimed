@@ -8,3 +8,4 @@ export * from './patient';
 export * from './appointment_request';
 export * from './appointment';
 export * from './appointment_match';
+export * from './paginate';
