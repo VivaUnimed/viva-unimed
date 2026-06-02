@@ -2,6 +2,7 @@ import { IDoctor, IDoctorCreate } from "shared";
 import DoctorModel from "../db/models/doctor.model";
 import { Conflict, NotFound } from "../error";
 import { Op } from "sequelize";
+import UserModel from "../db/models/user.model";
 
 /**
  * Serviço responsável pelas operações de médico.
@@ -64,7 +65,9 @@ export class DoctorService {
    * Lança NotFound caso o registro não seja encontrado.
    */
   async getById(id: number): Promise<IDoctor> {
-    const model = await DoctorModel.findByPk(id);
+    const model = await DoctorModel.findByPk(id, {
+      include: [UserModel],
+    });
     if (!model) {
       throw new NotFound();
     }
@@ -75,7 +78,9 @@ export class DoctorService {
    * Lista todos os médicos.
    */
   async list(): Promise<IDoctor[]> {
-    const list = await DoctorModel.findAll();
+    const list = await DoctorModel.findAll({
+      include: [UserModel],
+    });
     return list.map((model) => model.get({ plain: true }));
   }
 
