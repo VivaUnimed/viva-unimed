@@ -5,7 +5,6 @@ export interface IUserCreate {
   name: string;
   email: string;
   cpf?: string;
-  // rne?: string; # ou CRNM
   phone?: number;
   password?: string;
   roles?: Role[];
@@ -20,6 +19,7 @@ export interface IUser {
   id: number;
   name: string;
   email: string;
+  cpf?: string;
   phone?: number;
   roles?: Role[];
   permissions?: Permission[];

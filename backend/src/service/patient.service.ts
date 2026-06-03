@@ -12,7 +12,7 @@ export class PatientService {
       ...data,
       userId,
     });
-    return model.get({ plain: true });
+    return this.getById(model.id);
   }
 
   /** Atualiza dados do paciente */
@@ -22,32 +22,20 @@ export class PatientService {
       throw new NotFound();
     }
     await model.update(data);
-    return model.get({ plain: true });
+    return this.getById(id);
   }
 
   /** Busca paciente por ID */
   async getById(id: number): Promise<IPatient> {
-    const model = await PatientModel.findByPk(id);
+    const model = await PatientModel.findByPk(id, { include: [UserModel] });
     if (!model) {
       throw new NotFound();
     }
-    return model.get({ plain: true });
-  }
-
-  /** Busca paciente pelo usuário associado */
-  async getByUserId(userId: number): Promise<IPatient | null> {
-    const model = await PatientModel.findOne({
-      where: { userId },
-      include: [UserModel],
-    });
-
-    if (!model) return null;
-    return model.get({ plain: true });
+    return PatientService.makePatient(model);
   }
 
   /** Lista todos os pacientes */
   async list(params?: IPatientListParams): Promise<IPatient[]> {
-
     const list = await PatientModel.findAll({
       include: [{
         model: UserModel,
@@ -64,7 +52,7 @@ export class PatientService {
       ...paginate(params),
       order: [['userId', 'DESC']],
     });
-    return list.map((model) => model.get({ plain: true }));
+    return list.map(PatientService.makePatient);
   }
 
   /** Remove um paciente */
@@ -74,5 +62,16 @@ export class PatientService {
       throw new NotFound();
     }
     await model.destroy();
+  }
+
+  static makePatient(model: PatientModel): IPatient {
+    return {
+      id: model.userId,
+      birth: model.birth,
+      email: model.user.email,
+      name: model.user.name,
+      phone: model.user.phone,
+      cpf: model.user.cpf,
+    };
   }
 }

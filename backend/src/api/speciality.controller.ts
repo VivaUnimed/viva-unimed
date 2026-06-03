@@ -1,6 +1,6 @@
-import type { ISpeciality, ISpecialityCreate } from "shared";
+import type { ISpeciality, ISpecialityCreate, ISpecialityListParams } from "shared";
 import service from "../service";
-import { Body, Controller, Delete, Get, Path, Post, Put, Route, Tags } from "tsoa";
+import { Body, Controller, Delete, Get, Path, Post, Put, Queries, Route, Tags } from "tsoa";
 import { Guard, Security } from "./guards";
 
 /**
@@ -42,8 +42,8 @@ export class SpecialityController extends Controller {
    */
   @Get()
   @Security(Guard.JWT, ['speciality.read'])
-  list(): Promise<ISpeciality[]> {
-    return service.speciality.list();
+  list(@Queries() params?: ISpecialityListParams ): Promise<ISpeciality[]> {
+    return service.speciality.list(params);
   }
 
   /**

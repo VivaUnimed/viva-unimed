@@ -35,7 +35,7 @@ export class AppointmentNotificationJob {
           provider.notification.sendMatchNotification( {
             appointment: match.appointment,
             speciality: match.appointment.speciality,
-            user: match.request.patient.user,
+            user: match.request.patient,
           });
 
           await service.request.updateMatchStatus(match.id, "waiting_response")

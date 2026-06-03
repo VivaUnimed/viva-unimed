@@ -1,7 +1,8 @@
-import { ISpeciality, ISpecialityCreate } from "shared";
+import { ISpeciality, ISpecialityCreate, ISpecialityListParams } from "shared";
 import SpecialityModel from "../db/models/speciality.model"
 import { Conflict, NotFound } from "../error";
 import { Op } from "sequelize";
+import { paginate } from "./helpers";
 
 /**
  * Serviço responsável pelas operações de especialidades.
@@ -57,11 +58,18 @@ export class SpecialityService {
   /**
    * Lista todas as especialidades cadastradas.
    */
-  async list(): Promise<ISpeciality[]> {
-    const list = await SpecialityModel.findAll();
-    return list.map((model) => model.get({ plain: true }))
-  }
+  async list(params?: ISpecialityListParams): Promise<ISpeciality[]> {
+    const list = await SpecialityModel.findAll({
+      where: params?.search ? {
+        name: { [Op.iLike]: `%${params.search}%` }
+      } : undefined,
 
+      ...paginate(params),
+      order: [['id', 'DESC']],
+    });
+
+    return list.map((model) => model.get({ plain: true }));
+  }
   /**
    * Remove uma especialidade existente.
    * Lança NotFound caso o ID não exista.

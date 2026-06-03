@@ -6,8 +6,11 @@ export interface IPatientCreate {
   userId: number;
 }
 
-export interface IPatient extends IPatientCreate {
-  id: number;
+export interface IPatient extends IUser {
+  birth: Date;
+}
+
+export interface IPatientInternal extends IPatientCreate {
   user?: IUser;
 }
 

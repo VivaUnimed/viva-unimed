@@ -1,6 +1,6 @@
-import type { IDoctor, IDoctorCreate } from "shared";
+import type { IDoctor, IDoctorCreate, IDoctorListParams } from "shared";
 import service from "../service";
-import { Body, Controller, Delete, Get, Path, Post, Put, Route, Tags } from "tsoa";
+import { Body, Controller, Delete, Get, Path, Post, Put, Queries, Route, Tags } from "tsoa";
 import { Guard, Security } from "./guards";
 
 /**
@@ -14,7 +14,7 @@ export class DoctorController extends Controller {
    * Cria um novo médico.
    */
   @Post()
-  // @Security(Guard.JWT, ['doctor.create'])
+  @Security(Guard.JWT, ['doctor.create'])
   create(@Body() data: IDoctorCreate): Promise<IDoctor> {
     return service.doctor.create(data);
   }
@@ -26,6 +26,24 @@ export class DoctorController extends Controller {
   @Security(Guard.JWT, ['doctor.edit'])
   update(@Path() id: number, @Body() data: IDoctorCreate): Promise<IDoctor> {
     return service.doctor.update(id, data);
+  }
+
+  /**
+   * Adiciona uma especialidate a um medico.
+   */
+  @Post("/{id}/speciality")
+  @Security(Guard.JWT, ['doctor.create'])
+  async addSpeciality(@Path() id: number, @Body() data: { specialityId: number }): Promise<void> {
+    await service.doctor.addSpeciality(id, data.specialityId);
+  }
+
+  /**
+   * Remove uma especialidate de um medico.
+   */
+  @Delete("/{id}/speciality")
+  @Security(Guard.JWT, ['doctor.create'])
+  async removeSpeciality(@Path() id: number, @Body() data: { specialityId: number }): Promise<void> {
+    await service.doctor.removeSpeciality(id, data.specialityId);
   }
 
   /**
@@ -42,8 +60,8 @@ export class DoctorController extends Controller {
    */
   @Get()
   @Security(Guard.JWT, ['doctor.read'])
-  list(): Promise<IDoctor[]> {
-    return service.doctor.list();
+  list(@Queries() searchTerm?: IDoctorListParams): Promise<IDoctor[]> {
+    return service.doctor.list(searchTerm);
   }
 
   /**
