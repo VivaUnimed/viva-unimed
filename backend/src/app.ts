@@ -20,20 +20,24 @@ export class App {
   constructor(private config: Config) {
     this.app = express();
     this.server = createServer(this.app);
-    this.database = new Database(this.config);
+    // Ajuste: Removido o this.config de dentro dos parênteses do construtor
+    this.database = new Database();
     service.auth.setSecret(this.config.JWT_SECRET);
     this.attachRoutes();
   }
+  
   /** Orquestra a inicialização da conexão com o banco e o levantamento do servidor HTTP */
   async start() {
     try {
-      await this.database.start();
+      // Ajuste: Adicionado o this.config dentro dos parênteses do start
+      await this.database.start(this.config);
       await this.startServer();
     } catch (error) {
       console.log("Failed to start application", error);
       await this.stop();
     }
   }
+  
   /** Inicia a escuta de requisições na porta configurada e trata erros de boot do servidor */
   async startServer() {
     return new Promise<void>((resolve, reject) => {
@@ -52,6 +56,7 @@ export class App {
       }
     });
   }
+  
   /** Configura middlewares (Swagger, JSON, Cookies, Auth), rotas do TSOA e tratamento de erros */
   async attachRoutes() {
 
@@ -85,6 +90,7 @@ export class App {
     // Middleware final para captura e formatação centralizada de erros
     this.app.use(ErrorMiddleware)
   }
+  
   /** Finaliza o servidor HTTP */
   async stop() {
     console.log("Stopping server...");
