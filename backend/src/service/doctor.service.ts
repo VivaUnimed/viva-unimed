@@ -1,12 +1,11 @@
 import { IDoctor, IDoctorCreate, IDoctorInternal, IDoctorListParams, IUser } from "shared";
 import DoctorModel from "../db/models/doctor.model";
-import { Conflict, NotFound } from "../error";
+import { BadRequest, Conflict, NotFound } from "../error";
 import { Op, WhereOptions } from "sequelize";
 import UserModel from "../db/models/user.model";
 import SpecialityModel from "../db/models/speciality.model";
 import { paginate } from "./helpers";
 import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
-
 /**
  * Serviço responsável pelas operações de médico.
  * Contém validações de unicidade e tratamento de erros
@@ -18,6 +17,9 @@ export class DoctorService {
    * Verifica se já existe outro médico com o mesmo CRM.
    */
   async create(data: IDoctorCreate): Promise<IDoctor> {
+    if(data.crm?.length > 4) {
+      throw new BadRequest("crm inválido");
+    }
     // Garante que não existam médicos com o mesmo CRM.
     const exists = await DoctorModel.findOne({
       where: {
@@ -28,14 +30,12 @@ export class DoctorService {
       }
     });
 
-    console.log(exists?.get({ plain: true }))
-
     if (exists) {
-      throw new Conflict();
+      throw new Conflict("O médico já está cadastrado no sistema.");
     }
 
     const model = await DoctorModel.create(data);
-    return this.getById(model.userId);
+    return await this.getById(model.userId);
   }
 
   /**
@@ -43,7 +43,9 @@ export class DoctorService {
    * Garante que o CRM não conflite com outro registro.
    */
   async update(id: number, data: IDoctorCreate): Promise<IDoctor> {
-    // Valida conflito ignorando o próprio registro sendo atualizado.
+    if(data.crm?.length > 4) {
+      throw new BadRequest("crm inválido");
+    }
     const exists = await DoctorModel.findOne({
       where: {
         [Op.or]: [
@@ -54,7 +56,7 @@ export class DoctorService {
     });
 
     if (exists) {
-      throw new Conflict();
+      throw new Conflict("existe um outro médico com o mesmo crm");
     }
 
     const model = await DoctorModel.findByPk(id);
@@ -63,7 +65,7 @@ export class DoctorService {
     }
 
     await model.update(data);
-    return this.getById(model.userId);
+    return await this.getById(model.userId);
   }
 
   /**
