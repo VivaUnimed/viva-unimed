@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ValidateError } from "tsoa";
 import { ValidationError } from "joi";
-import { NotFound, Unauthorized, Forbidden, Conflict } from "../../error";
+import { NotFound, Unauthorized, Forbidden, Conflict, ApiError } from "../../error";
 
 export function ErrorMiddleware(error: any, req: Request, res: Response, next: NextFunction) {
   if(error instanceof ValidateError) {
@@ -11,6 +11,7 @@ export function ErrorMiddleware(error: any, req: Request, res: Response, next: N
       details: error.fields,
     });
   }
+
   if(error instanceof ValidationError) {
     return res.status(422).json({
       message: "Validation Failed",
@@ -19,25 +20,16 @@ export function ErrorMiddleware(error: any, req: Request, res: Response, next: N
     });
   }
 
-  if(error instanceof NotFound) {
-    return res.status(404).json({
-      message: "Not Found",
-    });
-  }
-  if(error instanceof Unauthorized) {
-    return res.status(401).json({
-      message: "Unauthorized",
-    });
-  }
   if(error instanceof Forbidden) {
-    return res.status(403).json({
+    return res.status(error.status).json({
       message: "Forbidden",
       requires: error.requires,
     });
   }
-  if(error instanceof Conflict){
-    return res.status(409).json({
-      message: "Conflict",
+
+  if(error instanceof ApiError) {
+    return res.status(error.status).json({
+      message: error.constructor.name,
       details: error.message,
     });
   }
