@@ -1,6 +1,6 @@
 import service from "../service";
-import { Body, Controller, Delete, Get, Path, Post, Put, Route, Tags } from "tsoa";
-import type { IAppointmentRequest, IAppointmentRequestCreate } from "shared";
+import { Body, Controller, Delete, Get, Path, Post, Put, Queries, Route, Tags } from "tsoa";
+import type { IAppointmentRequest, IAppointmentRequestCreate, IAppointmentRequestListParams } from "shared";
 
 @Route("/api/appointment-request")
 @Tags("AppointmentRequest")
@@ -25,8 +25,8 @@ export class AppointmentRequestController extends Controller {
 
   /** Lista todas as solicitações de consulta */
   @Get()
-  list(): Promise<IAppointmentRequest[]> {
-    return service.request.list();
+  list(@Queries() params?: IAppointmentRequestListParams): Promise<IAppointmentRequest[]> {
+    return service.request.list(params);
   }
 
   /** Remove uma solicitação de consulta por ID */

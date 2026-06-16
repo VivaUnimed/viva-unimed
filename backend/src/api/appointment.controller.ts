@@ -1,6 +1,7 @@
 import service from "../service";
-import { Body, Controller, Delete, Get, Path, Post, Put, Request, Route, Tags } from "tsoa";
+import { Body, Controller, Delete, Get, Path, Post, Put, Request, Route, Security, Tags } from "tsoa";
 import type { IAppointment, IAppointmentCreate } from "shared";
+import { Guard } from "./guards";
 
 /**
  * Controlador de agendamentos.
@@ -13,6 +14,7 @@ export class AppointmentController extends Controller {
    * Cria uma nova vaga de consulta.
    */
   @Post()
+  @Security(Guard.JWT, ['appointment.create'])
   create(
     @Request() req: Express.Request,
     @Body() data: Omit<IAppointmentCreate, 'status'|'createdBy'>

@@ -1,6 +1,7 @@
 import { IDoctor } from "./doctor";
 import { ISpeciality } from "./speciality";
 import { IPatient } from "./patient";
+import { IPaginate } from "./paginate";
 
 export type AppointmentRequestStatus =
   | "waiting"
@@ -29,7 +30,7 @@ export interface IAppointmentRequest extends IAppointmentRequestCreate {
 }
 
 
-export interface IAppointmentRequestListParams {
+export interface IAppointmentRequestListParams extends IPaginate {
   patientId?: number;
   specialityId?: number;
   doctorId?: number;

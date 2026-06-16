@@ -4,6 +4,7 @@ import { Conflict, NotFound } from "../error";
 import { Op, WhereOptions } from "sequelize";
 import AppointmentModel from "../db/models/appointment.model";
 import AppointmentMatchModel from "../db/models/appointment_match.model";
+import { paginate } from "./helpers";
 import SpecialityModel from "../db/models/speciality.model";
 import PatientModel from "../db/models/patient.model";
 import UserModel from "../db/models/user.model";
@@ -66,8 +67,10 @@ export class AppointmentRequestService {
 
   /**
    * Lista todos os pedidos de consulta cadastrados.
+   * Aplica filtros dinâmicos, paginação, ordenação cronológica e inclui dados relacionais.
    */
-  async list({ patientId, specialityId, status, doctorId }: IAppointmentRequestListParams= {}): Promise<IAppointmentRequest[]> {
+  async list(params: IAppointmentRequestListParams = {}): Promise<IAppointmentRequest[]> {
+    const { patientId, specialityId, status, doctorId } = params;
     const where: WhereOptions<IAppointmentRequest> = { };
 
     if(patientId) where.patientId = patientId;
@@ -77,6 +80,8 @@ export class AppointmentRequestService {
 
     const list = await AppointmentRequestModel.findAll({
       where,
+      ...paginate(params),
+      order: [['createdAt', 'DESC']]
     });
     return list.map((model) => model.get({ plain: true }))
   }
