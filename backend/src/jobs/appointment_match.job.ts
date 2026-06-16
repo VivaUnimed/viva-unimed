@@ -26,13 +26,9 @@ export class AppointmentMatchJob {
     console.log(`\n\x1b[36m[Job - Match] 🔄 Iniciando cruzamento de vagas abertas com a fila de espera...\x1b[0m`);
 
     try {
-      // Invalida matches que o paciente demorou para responder
       await service.request.setExpiredStatus();
-
-      // Invalida vagas abertas que já passaram do horário
       await service.appointment.setExpiredPastAppointment();
 
-      // Busca apenas as vagas que restaram abertas (e no futuro)
       const open = await service.appointment.listOpen();
 
       for(const apt of open) {
