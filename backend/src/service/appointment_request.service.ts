@@ -22,15 +22,31 @@ export class AppointmentRequestService {
    * Retorna o registro criado em formato plain object.
    */
   async create(data: IAppointmentRequestCreate): Promise<IAppointmentRequest> {
+    if (data.doctorId) {
+      const doctorSpecialityBind = await DoctorSpecialityModel.findOne({
+        where: {
+          userId: data.doctorId,
+          specialityId: data.specialityId
+        }
+      });
+
+      if (!doctorSpecialityBind) {
+        throw new Conflict("O médico selecionado não realiza atendimentos para a especialidade informada.");
+      }
+    }
+
+    // trava de duplicidade
     const found = await AppointmentRequestModel.findOne({
       where: {
         patientId: data.patientId,
+        specialityId: data.specialityId,
         status: 'waiting' satisfies AppointmentRequestStatus,
       }
     })
     if(found) {
-      throw new Conflict();
+      throw new Conflict("O paciente já possui uma solicitação ativa na fila de espera para esta especialidade.");
     }
+
     const model = await AppointmentRequestModel.create({
       ...data,
       attempts: 0,
