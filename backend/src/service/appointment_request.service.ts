@@ -10,6 +10,7 @@ import PatientModel from "../db/models/patient.model";
 import UserModel from "../db/models/user.model";
 import { db } from "../db";
 import { appConfig } from "../config";
+import { HOUR, MINUTE } from "../constants";
 
 /**
  * Serviço responsável pelas operações de pedido de consulta.
@@ -166,7 +167,22 @@ export class AppointmentRequestService {
     return request.map(r => r.get({ plain: true }));
   }
 
-  async listMatchesToNotify(){
+  async getQueueSizeForAppointment(appointmentId: number): Promise<number> {
+    const appointment = await AppointmentModel.findByPk(appointmentId);
+    if (!appointment) return 0;
+
+    const count = await AppointmentRequestModel.count({
+      where: {
+        status: "waiting",
+        specialityId: appointment.specialityId,
+        doctorId: {
+          [Op.or]: [appointment.doctorId, null],
+        },
+      }
+    });
+
+    return count;
+  }
     const res = await AppointmentMatchModel.findAll({
       where: {
         status: "queued" satisfies AppointmentMatchStatus,
@@ -288,14 +304,8 @@ export class AppointmentRequestService {
     const timeSinceAccepted = now - acceptedAt;
     const timeUntilAppointment = appointmentDate - now;
 
-    const fifteenMinutesInMs = 15 * 60 * 1000;
-    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
-
-    console.log({
-      agora: new Date(now).toISOString(),
-      dataDaConsulta: new Date(appointmentDate).toISOString(),
-      diferencaMilisegundos: timeUntilAppointment
-    });
+    const maxAllowedToCancel = 15 * MINUTE;
+    const maxAllowedTimeToCancelSchedule = 24 * HOUR;
 
     // 3. Aplicação das Regras de Negócio
 
@@ -305,14 +315,14 @@ export class AppointmentRequestService {
     }
 
     // Regra B: Faltam menos de 24h para a consulta E já passou o prazo de 15 min para desfazer o clique errado?
-    const isTooCloseToAppointment = timeUntilAppointment < twentyFourHoursInMs;
-    const isPastUndoWindow = timeSinceAccepted > fifteenMinutesInMs;
+    const isTooCloseToAppointment = timeUntilAppointment < maxAllowedTimeToCancelSchedule;
+    const isPastUndoWindow = timeSinceAccepted > maxAllowedToCancel;
 
     if (isTooCloseToAppointment && isPastUndoWindow) {
       throw new Conflict('Cannot undo: less than 24 hours to the appointment and the 15-minute grace period has expired.');
     }
 
-    // 4. Se passou nas validações, executamos a transação
+    // 4. Se passou nas validações, executa a transação
     const transaction = await db.transaction();
     try {
       // Invalida o match atual

@@ -23,38 +23,44 @@ export class AppointmentMatchJob {
   }
 
   private async execute() {
-    console.log("RUNNING APPOINTMENT JOB ⏳");
+    console.log(`\n\x1b[36m[Job - Match] 🔄 Iniciando cruzamento de vagas abertas com a fila de espera...\x1b[0m`);
 
     try {
-      //Invalida matches que o paciente demorou para responder
+      // Invalida matches que o paciente demorou para responder
       await service.request.setExpiredStatus();
 
-      //Invalida vagas abertas que já passaram do horário
+      // Invalida vagas abertas que já passaram do horário
       await service.appointment.setExpiredPastAppointment();
 
-      //Busca apenas as vagas que restaram abertas (e no futuro)
+      // Busca apenas as vagas que restaram abertas (e no futuro)
       const open = await service.appointment.listOpen();
 
       for(const apt of open) {
         try {
           await this.processAppointment(apt);
         } catch (e) {
-          // Captura erros individuais para não parar o processamento das outras vagas
-          console.error(`Erro ao processar appointment ID ${apt.id}:`, e);
+          console.error(`\x1b[31m[Erro] Falha ao processar a vaga #${apt.id}:\x1b[0m`, e);
         }
       }
     } catch (e) {
-      console.error("Erro fatal na execução do job:", e);
+      console.error(`\x1b[31m[Erro Crítico] Falha fatal na execução do Job de Match:\x1b[0m`, e);
     }
 
-    console.log("APPOINTMENT JOB DONE ✅");
+    // indica sucesso na finalização
+    console.log(`\x1b[32m[Job - Match] ✅ Varredura concluída com sucesso.\x1b[0m\n`);
   }
 
   private async processAppointment(apt: IAppointment) {
     const pendingMatch = await service.appointment.hasPendingMatch(apt.id);
     if (pendingMatch) return; // Se já tem notificação rodando pra essa vaga, ignora
 
-    const strategy = getMatchStrategy(apt.date)
+    // 1. Descobre o tamanho real da fila de interessados nesta vaga
+    const queueSize = await service.request.getQueueSizeForAppointment(apt.id);
+
+    if (queueSize === 0) return; // Ninguém na fila, não precisa gastar processamento
+
+    // 2. Calcula a estratégia passando a quantidade de pacientes
+    const strategy = getMatchStrategy(apt.date, queueSize);
 
     // Busca 1 ou 5 pessoas dependendo da estratégia
     const requests = await service.request.getNextBatchByAppointmentId(apt.id, strategy.batchSize);
@@ -62,6 +68,8 @@ export class AppointmentMatchJob {
 
     const expires = new Date();
     expires.setMinutes(expires.getMinutes() + strategy.expiresInMinutes);
+
+    const formattedExpiration = expires.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
     // Cria um Match para cada pessoa selecionada
     for (const req of requests) {
@@ -73,9 +81,10 @@ export class AppointmentMatchJob {
           expiresAt: expires,
         });
 
-        console.log(`MATCH ADICIONADO APPOINTMENT=${apt.id} REQUEST=${req.id} MATCH=${match.id} EXPIRES=${expires.toISOString()}`);
+        console.log(`\x1b[90m  ↳ [Sistema] Match #${match.id} criado: Vaga #${apt.id} ➔ Pedido #${req.id} (Expira às ${formattedExpiration} - Estratégia: ${strategy.mode} / Fila: ${queueSize})\x1b[0m`);
+
       } catch (e) {
-        console.error(`Falha ao criar match para appointment ${apt.id} e request ${req.id}:`, e);
+        console.error(`\x1b[31m[Erro] Falha ao criar match (Vaga #${apt.id} ➔ Pedido #${req.id}):\x1b[0m`, e);
       }
     }
   }

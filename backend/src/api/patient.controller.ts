@@ -14,7 +14,7 @@ export class PatientController extends Controller {
    * Cria um novo paciente.
    */
   @Post()
-  // @Security(Guard.JWT, ['patient.create'])
+  @Security(Guard.JWT, ['patient.create'])
   create(@Body() data: IPatientCreate): Promise<IPatient> {
     return service.patient.create(data.userId, data);
   }
