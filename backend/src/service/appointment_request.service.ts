@@ -6,10 +6,9 @@ import AppointmentModel from "../db/models/appointment.model";
 import AppointmentMatchModel from "../db/models/appointment_match.model";
 import { paginate } from "./helpers";
 import SpecialityModel from "../db/models/speciality.model";
-import PatientModel from "../db/models/patient.model";
-import UserModel from "../db/models/user.model";
 import { db } from "../db";
 import { appConfig } from "../config";
+import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
 import { HOUR, MINUTE } from "../constants";
 
 /**
@@ -183,21 +182,24 @@ export class AppointmentRequestService {
 
     return count;
   }
+
+  async listMatchesToNotify() {
     const res = await AppointmentMatchModel.findAll({
       where: {
         status: "queued" satisfies AppointmentMatchStatus,
       },
       include: [
-        { model: AppointmentModel, include: [SpecialityModel]},
         {
-          model: AppointmentRequestModel,
+          model: AppointmentModel,
           include: [
-            { model: PatientModel, include: [UserModel] },
+            SpecialityModel,
           ]
         },
+        {
+          model: AppointmentRequestModel,
+        }
       ]
     });
-
     return res.map(model => model.get({ plain: true }));
   }
 

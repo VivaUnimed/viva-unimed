@@ -21,7 +21,7 @@ export class AppointmentNotificationJob {
   }
 
   private async execute(){
-    console.log("RUNNING NOTIFICATION JOB ⏳");
+    console.log(`\n\x1b[34m[Job] ⏳ Iniciando varredura de notificações...\x1b[0m`);
     try {
       const matches = await service.request.listMatchesToNotify();
       if (!matches.length) {
@@ -30,12 +30,16 @@ export class AppointmentNotificationJob {
       }
       for (const match of matches) {
       // TODO: enviar notificação real (push)
+
         try {
-          console.log(`Processando notificação para match ${match.id}`);
-          provider.notification.sendMatchNotification( {
+          const patient = await service.patient.getById(match.request.patientId);
+          const doctor = await service.doctor.getById(match.appointment.doctorId);
+          console.log(`\nProcessando notificação para match ${match.id}`);
+          provider.notification.sendMatchNotification({
             appointment: match.appointment,
             speciality: match.appointment.speciality,
-            user: match.request.patient,
+            patient,
+            doctor,
           });
 
           await service.request.updateMatchStatus(match.id, "waiting_response")
