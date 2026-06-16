@@ -41,11 +41,13 @@ export class AppointmentService {
       throw new Error("specialityId é obrigatório quando um doctorId é informado.");
     }
 
+    // CORREÇÃO APLICADA AQUI: Usando 'userId' (nome da coluna no banco)
+    // e passando o valor da variável 'doctorId'. Remoção do 'as any'.
     const hasSpeciality = await DoctorSpecialityModel.findOne({
       where: {
-        doctorId,
-        specialityId
-      } as any //TODO: REMOVER ANY
+        userId: doctorId,
+        specialityId: specialityId
+      }
     });
 
     if (!hasSpeciality) {

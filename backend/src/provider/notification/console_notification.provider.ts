@@ -1,9 +1,10 @@
-import { IAppointment, ISpeciality, IUser } from "shared";
+import { IAppointment, IDoctor, ISpeciality, IUser, IPatient } from "shared";
 
 interface IMatchNotification {
-  user: IUser;
   speciality: ISpeciality;
   appointment: IAppointment;
+  patient: IPatient;
+  doctor: IDoctor;
 }
 
 // Nova interface para o cancelamento
@@ -30,12 +31,34 @@ export class ConsoleNotificationProvider {
   /** Dispara notificação de vaga disponível (Chamado pelo Job) */
   sendMatchNotification(notification: IMatchNotification) {
     const formattedDate = this.formatAppointmentDate(notification.appointment.date);
+    const userName = notification.patient?.name || 'Paciente';
+    const doctorName = notification.doctor?.name ? `Dr(a). ${notification.doctor.name}` : 'nossa equipe';
+
+    //TODO: temporário - remover depois.
+    const colorCyan = "\x1b[36m";
+    const colorGreen = "\x1b[32m";
+    const colorYellow = "\x1b[33m";
+    const colorReset = "\x1b[0m";
 
     const message = [
-      `Olá, ${notification.user.name}! 👋 `,
-      `Notamos seu interesse em ${notification.speciality.name} e temos uma boa notícia: uma vaga acabou de ficar disponível!`,
-      `📅 Data e hora: ${formattedDate}`,
-      `Se este horário funciona para você, reserve agora pelo botão abaixo.`
+      `\n${colorCyan}╭──────────────────────────────────────────────────────────────${colorReset}`,
+      `${colorCyan}│${colorReset} 📱 ${colorGreen}NOVA NOTIFICAÇÃO ENVIADA${colorReset}`,
+      `${colorCyan}├──────────────────────────────────────────────────────────────${colorReset}`,
+      `${colorCyan}│${colorReset} ${colorYellow}Destinatário:${colorReset} ${userName}`,
+      `${colorCyan}│${colorReset}`,
+      `${colorCyan}│${colorReset} Olá, ${userName}! 👋`,
+      `${colorCyan}│${colorReset} Notamos seu interesse em ${notification.speciality.name} e temos uma`,
+      `${colorCyan}│${colorReset} boa notícia: uma vaga acabou de ficar disponível!`,
+      `${colorCyan}│${colorReset}`,
+      `${colorCyan}│${colorReset} 📅 Data e hora: ${formattedDate}`,
+      `${colorCyan}│${colorReset} 🩺 Profissional: ${doctorName}`,
+      `${colorCyan}│${colorReset}`,
+      `${colorCyan}│${colorReset} Se este horário funciona para você, reserve agora!`,
+      `${colorCyan}╰──────────────────────────────────────────────────────────────${colorReset}\n`,
+    ].join('\n');
+
+    console.log(message);
+  }
     ].join('\n');
 
     console.log(message);
