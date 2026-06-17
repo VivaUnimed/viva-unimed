@@ -59,10 +59,6 @@ export class ConsoleNotificationProvider {
 
     console.log(message);
   }
-    ].join('\n');
-
-    console.log(message);
-  }
 
   /** Dispara notificação de consulta cancelada (Chamado pelo Event Listener) */
   sendCancellationNotification(notification: ICancellationNotification) {
