@@ -7,7 +7,7 @@ import AppointmentMatchModel from "../db/models/appointment_match.model";
 import { paginate } from "./helpers";
 import SpecialityModel from "../db/models/speciality.model";
 import { db } from "../db";
-import { appConfig } from "../config";
+import { IConfig } from "../config";
 import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
 import { HOUR, MINUTE } from "../constants";
 
@@ -17,6 +17,8 @@ import { HOUR, MINUTE } from "../constants";
  * de `appointment_request` no banco de dados.
  */
 export class AppointmentRequestService {
+  constructor(private config: IConfig) {}
+
   /**
    * Cria um novo pedido de consulta.
    * Retorna o registro criado em formato plain object.
@@ -103,20 +105,45 @@ export class AppointmentRequestService {
   }
 
   /**
-   * Remove um pedido de consulta pelo ID.
-   * Lança NotFound se o registro não existir.
+   * Remove o paciente da fila de espera (queue.leave).
    */
   async delete(id: number): Promise<void> {
-    // TODO: e se já foi confirmada? reabrir vaga?
-    const model = await AppointmentRequestModel.findByPk(id);
-    if(!model) {
+    const request = await AppointmentRequestModel.findByPk(id);
+    if(!request) {
       throw new NotFound();
     }
-    await model.destroy();
+
+    // se a solicitação já virou uma consulta confirmada, usar a rota de cancelamento de consulta.
+    if (request.status === 'approved') {
+      throw new Conflict("Esta solicitação já gerou uma consulta confirmada. Use a opção de cancelar a consulta.");
+    }
+
+    const transaction = await db.transaction();
+    try {
+      // se há alguma vaga (match) pendente oferecida a este paciente agora
+      const pendingMatch = await AppointmentMatchModel.findOne({
+        where: {
+          requestId: id,
+          status: { [Op.in]: ['queued', 'waiting_response'] satisfies AppointmentMatchStatus[] }
+        },
+        transaction
+      });
+
+      // se o paciente estava com uma vaga e saiu da fila, rejeitar o match para a fila passar a vaga para o próximo
+      if (pendingMatch) {
+        await pendingMatch.update({ status: 'rejected' }, { transaction });
+      }
+
+      await request.update({ status: 'cancelled' }, { transaction });
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
-  //async getNextByAppointmentId(appointmentId: number): Promise<IAppointmentRequest | undefined>
-  // * Busca os próximos N pacientes elegíveis da fila de espera para uma vaga.,
-  // * Ignora pacientes que já receberam notificação (match) para esta mesma consulta.
+
+
   async getNextBatchByAppointmentId(appointmentId: number, limit: number): Promise<IAppointmentRequest[]> {
     const appointment = await AppointmentModel.findByPk(appointmentId);
     if(!appointment || appointment.status !== "open") {
@@ -137,7 +164,7 @@ export class AppointmentRequestService {
       attributes: ['requestId'],
     });
 
-    const maxAttempts = appConfig.APPOINTMENT_REQUEST_MAX_ATTEMPTS;
+    const maxAttempts = this.config.APPOINTMENT_REQUEST_MAX_ATTEMPTS;
     const now = new Date();
 
     const request = await AppointmentRequestModel.findAll({
@@ -219,7 +246,7 @@ export class AppointmentRequestService {
       const request = found.request;
       if (request) {
         const newAttempts = (request.attempts ?? 0) + 1;
-        const backoffMinutes = appConfig.APPOINTMENT_REQUEST_BACKOFF_MINUTES * Math.pow(appConfig.APPOINTMENT_REQUEST_BACKOFF_MULTIPLIER, newAttempts - 1);
+        const backoffMinutes = this.config.APPOINTMENT_REQUEST_BACKOFF_MINUTES * Math.pow(this.config.APPOINTMENT_REQUEST_BACKOFF_MULTIPLIER, newAttempts - 1);
         const cooldownUntil = new Date(Date.now() + backoffMinutes * 60 * 1000);
         await AppointmentRequestModel.update({
           attempts: newAttempts,

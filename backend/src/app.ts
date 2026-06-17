@@ -30,6 +30,7 @@ export class App {
   async start() {
     try {
       await db.start(this.config);
+      service.init(this.config);
       await this.startServer();
       await this.startJobs();
       await this.assertAdmin();

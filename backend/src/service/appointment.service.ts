@@ -7,9 +7,10 @@ import AppointmentMatchModel from "../db/models/appointment_match.model";
 import { Op, Transaction } from "sequelize";
 import { db } from "../db";
 import provider from "../provider";
-import { appConfig } from "../config";
+import { IConfig } from "../config";
 
 export class AppointmentService {
+  constructor(private config: IConfig) {}
 
   // Máquina de estados: define os fluxos permitidos de status
   private readonly ALLOWED_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
@@ -68,10 +69,10 @@ export class AppointmentService {
       throw new BadRequest("Não é possível agendar uma vaga com data e hora passadas.");
     }
 
-    const minimumAllowedDate = new Date(now.getTime() + appConfig.APPOINTMENT_MIN_LEAD_MINUTES * 60000);
+    const minimumAllowedDate = new Date(now.getTime() + this.config.APPOINTMENT_MIN_LEAD_MINUTES * 60000);
     if (appointmentDate < minimumAllowedDate) {
       throw new BadRequest(
-        `A vaga deve ser criada com uma antecedência mínima de ${appConfig.APPOINTMENT_MIN_LEAD_MINUTES} minutes.`
+        `A vaga deve ser criada com uma antecedência mínima de ${this.config.APPOINTMENT_MIN_LEAD_MINUTES} minutes.`
       );
     }
   }
@@ -88,7 +89,7 @@ export class AppointmentService {
     }
 
     const targetDate = new Date(dateInput);
-    const slotMs = appConfig.APPOINTMENT_SLOT_MINUTES * 60 * 1000;
+    const slotMs = this.config.APPOINTMENT_SLOT_MINUTES * 60 * 1000;
     const dateStart = new Date(targetDate.getTime() - slotMs);
     const dateEnd = new Date(targetDate.getTime() + slotMs);
 
@@ -198,7 +199,7 @@ export class AppointmentService {
     if (request.cooldownUntil && request.cooldownUntil > new Date()) {
       throw new Conflict(`request ${data.requestId} is in cooldown until ${request.cooldownUntil.toISOString()}`);
     }
-    if (request.attempts >= appConfig.APPOINTMENT_REQUEST_MAX_ATTEMPTS) {
+    if (request.attempts >= this.config.APPOINTMENT_REQUEST_MAX_ATTEMPTS) {
       throw new Conflict(`request ${data.requestId} has reached the maximum number of notification attempts`);
     }
 
