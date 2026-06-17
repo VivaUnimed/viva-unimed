@@ -123,7 +123,7 @@ export class AppointmentRequestService {
       throw new Error("appointment is not open");
     }
 
-    const alreadySent = await AppointmentMatchModel.findAll({
+        const alreadySent = await AppointmentMatchModel.findAll({
       where: { appointmentId },
       attributes: ['requestId'],
     });
@@ -185,7 +185,7 @@ export class AppointmentRequestService {
 
   async listMatchesToNotify() {
     const res = await AppointmentMatchModel.findAll({
-      where: {
+     where: {
         status: "queued" satisfies AppointmentMatchStatus,
       },
       include: [
@@ -352,14 +352,19 @@ export class AppointmentRequestService {
     }
   }
 
+  /**
+   * Chamado quando o paciente clica em "Recusar" na notificação da vaga.
+   * Marca o match como rejeitado e aplica a penalidade de tempo (cooldown)
+   * para que ele vá para o final da fila.
+   */
   async rejectMatch(matchId: number): Promise<void> {
     const match = await this.getMatch(matchId);
-    if(match.status === 'accepted') throw new Conflict('match status is accepted');
-    if(match.status === 'success') throw new Conflict('match status is success');
 
-    await AppointmentMatchModel.update({ status: 'rejected' }, {
-      where: { id: match.id },
-    });
+    if(match.status !== 'waiting_response' && match.status !== 'queued') {
+      throw new Conflict(`A vaga não pode ser recusada no status atual (${match.status}).`);
+    }
+    // chama o método que já contém a regra de negócio do backoff (cooldown) para rejeições!
+    await this.updateMatchStatus(matchId, 'rejected');
   }
 
   async setExpiredStatus() {
