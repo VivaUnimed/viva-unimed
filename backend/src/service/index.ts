@@ -18,7 +18,7 @@ class AppServices {
 
   init(config: IConfig) {
     this.user = new UserService();
-    this.auth = new AuthService();
+    this.auth = new AuthService(config);
     this.speciality = new SpecialityService();
     this.doctor = new DoctorService();
     this.patient = new PatientService();

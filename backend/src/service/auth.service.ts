@@ -4,6 +4,7 @@ import PasswordModel from "../db/models/password.model";
 import { Unauthorized } from "../error";
 import { comparePassword } from "../helpers/password";
 import jwt from "jsonwebtoken";
+import { IConfig } from "../config";
 
 /**
  * Serviço responsável pela autenticação de usuários.
@@ -13,13 +14,8 @@ import jwt from "jsonwebtoken";
 export class AuthService {
   private tokenSecret?: string;
 
-  constructor() {}
-
-  /**
-   * Define a chave secreta usada para assinar e validar JWTs.
-   */
-  setSecret(secret: string) {
-    this.tokenSecret = secret;
+  constructor(private config: IConfig) {
+    this.tokenSecret = config.JWT_SECRET;
   }
 
   /**

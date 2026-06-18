@@ -23,7 +23,6 @@ export class App {
   constructor(private config: Config) {
     this.app = express();
     this.server = createServer(this.app);
-    service.auth.setSecret(this.config.JWT_SECRET);
     this.attachRoutes();
   }
   /** Orquestra a inicialização da conexão com o banco e o levantamento do servidor HTTP */
