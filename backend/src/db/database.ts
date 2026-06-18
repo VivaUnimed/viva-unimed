@@ -22,6 +22,12 @@ export class Database {
       pool: {
         max: 30,
       },
+      dialectOptions: {
+        ssl: {
+          require: config.DB_ENABLE_SSL,
+          rejectUnauthorized: false,
+        }
+      },
     });
     await this.testConnection();
     await this.migrate();

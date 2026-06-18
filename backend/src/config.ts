@@ -8,6 +8,7 @@ export interface IConfig {
   DB_PASSWORD: string;
   DB_USERNAME: string;
   DB_DATABASE: string;
+  DB_ENABLE_SSL: boolean;
   JWT_SECRET: string;
   /** https://crontab.guru/#0/5_8-20_*_*_1-5 */
   APPOINTMENT_JOB_CRON: string;
@@ -70,6 +71,7 @@ export class Config implements IConfig{
     DB_USERNAME: joi.string().required(),
     DB_PASSWORD: joi.string().required(),
     DB_DATABASE: joi.string().required(),
+    DB_ENABLE_SSL: joi.boolean().optional().default(false),
     JWT_SECRET: joi.string().default("ALTERAR_ESSA_CHAVE_POR_ALGO_SEGURO_EM_PRODUCAO"),
     APPOINTMENT_JOB_CRON: joi.string().default('0/5 8-20 * * 1-5'),
     DEFAULT_ADMIN_EMAIL: joi.string().allow(''),
