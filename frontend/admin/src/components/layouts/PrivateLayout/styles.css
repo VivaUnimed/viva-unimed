@@ -1,0 +1,18 @@
+.private-layout {
+  display: flex;
+  min-height: 100vh;
+  height: 100vh;
+  background-color: #f6f7f9;
+}
+
+.private-layout__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.private-layout__content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
