@@ -3,6 +3,8 @@ import { config } from "dotenv";
 
 export interface IConfig {
   SERVER_PORT: number;
+  /** lista de dominios separados por virgula */
+  CORS_ORIGINS: string;
   DB_ADDRESS: string;
   DB_PORT: number;
   DB_PASSWORD: string;
@@ -66,6 +68,10 @@ export class Config implements IConfig{
    */
   static Schema = joi.object<IConfig>({
     SERVER_PORT: joi.number().default(3000),
+    CORS_ORIGINS: joi.custom((v) => {
+      if(!v || typeof v !== 'string') return [];
+      return v.split(',').map(v => v.trim());
+    }),
     DB_ADDRESS: joi.string().required(),
     DB_PORT: joi.number().default(5432),
     DB_USERNAME: joi.string().required(),

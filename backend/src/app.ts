@@ -12,6 +12,8 @@ import { JwtMiddleware } from "./api/middleware/jwt.middleware";
 import cookieParser from "cookie-parser";
 import { AppointmentMatchJob } from './jobs';
 import { AppointmentNotificationJob } from "./jobs/appointment_notification.job";
+import helmet from "helmet";
+import cors from "cors";
 
 export class App {
   private app!: express.Application;
@@ -22,6 +24,15 @@ export class App {
   /** Inicializa as instâncias básicas, configura o segredo do JWT e registra o roteamento */
   constructor(private config: Config) {
     this.app = express();
+    this.app.use(helmet());
+    console.log(config);
+    this.app.use(cors({
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+      origin: config.CORS_ORIGINS,
+    }));
+
     this.server = createServer(this.app);
     this.attachRoutes();
   }
