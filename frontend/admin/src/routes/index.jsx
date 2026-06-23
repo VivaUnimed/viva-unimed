@@ -5,9 +5,19 @@ import PrivateRoutes from '../components/PrivateRoutes';
 import PrivateLayout from '../components/layouts/PrivateLayout';
 import AdminDashboard from '../pages/AdminDashboard';
 import Professionals from '../pages/Professionals';
+import Specialties from '../pages/Specialties';
 import Vacancies from '../pages/Vacancies';
 import Patients from '../pages/Patients';
 import WeeklySchedule from '../pages/WeeklySchedule';
+import CreateProfessional from '../pages/CreateProfessional';
+import EditProfessional from '../pages/EditProfessional';
+import NoShowRegistration from '../pages/NoShowRegistration';
+import CreatePatient from '../pages/CreatePatient';
+import PatientDetails from '../pages/PatientDetails';
+import EditPatient from '../pages/EditPatient';
+import ProfessionalDetails from '../pages/ProfessionalDetails';
+import VacancyDetails from '../pages/VacancyDetails';
+import Settings from '../pages/Settings';
 
 export const RoutesApp = () => {
   return (
@@ -22,10 +32,19 @@ export const RoutesApp = () => {
         <Route element={<PrivateLayout />}>
           <Route path="/" element={<AdminDashboard/>} />
           <Route path="/professionals" element={<Professionals />} />
+          <Route path="/professionals/new" element={<CreateProfessional />} />
+          <Route path="/professionals/:professionalId" element={<ProfessionalDetails />} />
+          <Route path="/professionals/:professionalId/edit" element={<EditProfessional />} />
+          <Route path="/specialties" element={<Specialties />} />
           <Route path="/weeklySchedule" element={<WeeklySchedule/>} />
           <Route path="/vacancies" element={<Vacancies/>} />
+          <Route path="/vacancies/:vacancyId" element={<VacancyDetails />} />
+          <Route path="/vacancies/new" element={<NoShowRegistration/>} />
           <Route path="/patients" element={<Patients/>} />
-          <Route path="/settings" element={<div/>} />
+          <Route path="/patients/new" element={<CreatePatient />} />
+          <Route path="/patients/:patientId/edit" element={<EditPatient />} />
+          <Route path="/patients/:patientId" element={<PatientDetails />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
 

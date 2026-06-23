@@ -11,7 +11,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 32px;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
 .idle-slots-header h1 {
@@ -29,252 +30,239 @@
   color: #5f6368;
 }
 
-.system-status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-}
-
-.system-status > span {
-  font-size: 10px;
-  line-height: 12px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  color: #4b5563;
-}
-
-.system-status strong {
-  height: 24px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background-color: #8ff0bd;
-  color: #006b46;
-  font-size: 11px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.system-status__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: #008256;
-}
-
-.idle-slots-main-grid {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
-}
-
-.idle-slots-left {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.instant-register-card {
-  height: 360px;
-  padding: 28px 28px;
-  border-radius: 12px;
+.new-vacancy-button {
+  height: 42px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 10px;
   background-color: #007a49;
   color: #ffffff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 14px 30px rgba(0, 90, 55, 0.22);
-}
-
-.instant-register-card::after {
-  content: '';
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background-color: rgba(0, 111, 69, 0.45);
-  position: absolute;
-  right: -78px;
-  bottom: -78px;
-}
-
-.instant-register-card__circle {
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  position: absolute;
-  top: -24px;
-  left: -18px;
-}
-
-.instant-register-card__icon {
-  margin-bottom: 16px;
-  position: relative;
-  z-index: 2;
-}
-
-.instant-register-card__icon svg {
-  stroke: #b7f1d2;
-  
-}
-
-.instant-register-card h2 {
-  margin: 0;
-  font-size: 25px;
-  line-height: 30px;
-  font-weight: 800;
-  position: relative;
-  z-index: 2;
-  color: #b7f1d2;
-}
-
-.instant-register-card p {
-  width: 220px;
-  margin: 12px 0 18px;
   font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  color: #a7e5c6;
-  position: relative;
-  z-index: 2;
-}
-
-.instant-register-card__actions {
+  font-weight: 900;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
-  z-index: 2;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 127, 79, 0.2);
+  white-space: nowrap;
 }
 
-.instant-register-card__actions button {
-  width: 100%;
-  height: 38px;
-  padding: 0 14px;
-  border: none;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
+.new-vacancy-button svg {
+  stroke: #ffffff;
+}
+
+.vacancy-feedback-banner {
+  min-height: 44px;
+  margin-bottom: 18px;
+  padding: 0 16px;
+  border: 1px solid #d9efe4;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eefaf5 0%, #f7fcfa 100%);
+  color: #0f6b47;
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(15, 107, 71, 0.06);
 }
 
-.instant-register-card__actions button svg {
-  stroke: white;
+.vacancy-feedback-banner svg {
+  stroke: #007a49;
+  flex-shrink: 0;
 }
 
-.queue-efficiency-card {
-  height: 178px;
-  padding: 28px 28px;
-  border: 1px solid #e7e2df;
-  border-radius: 12px;
+.vacancy-feedback-banner span {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+}
+
+/* Cards de resumo */
+
+.vacancy-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.vacancy-summary-card {
+  min-height: 92px;
+  padding: 18px;
+  border: 1px solid #ece7e3;
+  border-radius: 16px;
   background-color: #ffffff;
-  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.04);
-}
-
-.queue-efficiency-card > span {
-  display: block;
-  margin-bottom: 12px;
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 900;
-  letter-spacing: 1.4px;
-  color: #4b5563;
-}
-
-.queue-efficiency-card__value {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.queue-efficiency-card__value strong {
-  font-size: 38px;
-  line-height: 42px;
-  font-weight: 900;
-  color: #202124;
-}
-
-.queue-efficiency-card__value small {
-  margin-bottom: 6px;
-  color: #008256;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.queue-efficiency-card p {
-  width: 210px;
-  margin: 4px 0 18px;
-  font-size: 12px;
-  line-height: 16px;
-  color: #5f6368;
-}
-
-.queue-efficiency-card__progress {
-  width: 100%;
-  height: 7px;
-  border-radius: 999px;
-  background-color: #ebe9e7;
-  overflow: hidden;
-}
-
-.queue-efficiency-card__progress div {
-  width: 75%;
-  height: 100%;
-  border-radius: 999px;
-  background-color: #008256;
-}
-
-.waiting-patients-card {
-  padding: 24px 22px;
-  border-radius: 12px;
-  background-color: #ffffff;
-  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.04);
-}
-
-.waiting-patients-card h3 {
-  margin: 0 0 20px;
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 900;
-  letter-spacing: 1.4px;
-  color: #4b5563;
-}
-
-.waiting-patients-card__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 15px;
+  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.04);
 }
 
-.waiting-patients-card__item:last-child {
-  margin-bottom: 0;
+.vacancy-summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 800;
+  color: #5f6368;
 }
 
-.waiting-patients-card__item span {
-  font-size: 13px;
-  font-weight: 700;
+.vacancy-summary-card strong {
+  font-size: 25px;
+  line-height: 30px;
+  font-weight: 900;
   color: #202124;
 }
 
-.waiting-patients-card__item strong {
-  min-width: 28px;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: 5px;
-  background-color: #8ff0bd;
-  color: #008256;
-  font-size: 11px;
-  font-weight: 900;
+.vacancy-summary-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: #e6f7ef;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.vacancy-summary-card__icon svg {
+  stroke: #007a49;
+}
+
+.vacancy-summary-card--error .vacancy-summary-card__icon {
+  background-color: #ffe0e0;
+}
+
+.vacancy-summary-card--error .vacancy-summary-card__icon svg {
+  stroke: #e11d48;
+}
+
+.vacancy-summary-card--expired .vacancy-summary-card__icon,
+.vacancy-summary-card--cancelled .vacancy-summary-card__icon {
+  background-color: #f0eeec;
+}
+
+.vacancy-summary-card--expired .vacancy-summary-card__icon svg,
+.vacancy-summary-card--cancelled .vacancy-summary-card__icon svg {
+  stroke: #5f6368;
+}
+
+/* Filtros */
+
+.vacancy-filters {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vacancy-filters__search {
+  width: 360px;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #ece7e3;
+  border-radius: 10px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vacancy-filters__search svg {
+  stroke: #9ca3af;
+  flex-shrink: 0;
+}
+
+.vacancy-filters__search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: #202124;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vacancy-filters__search input::placeholder {
+  color: #9ca3af;
+}
+
+.vacancy-filter-button {
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #ece7e3;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vacancy-filter-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vacancy-filter-button svg {
+  stroke: #007a49;
+}
+
+.vacancy-filter-select {
+  min-width: 198px;
+  height: 42px;
+  border: 1px solid #ece7e3;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #4b5563;
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.vacancy-filter-select svg {
+  stroke: #007a49;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.vacancy-filter-select svg:first-child {
+  left: 14px;
+}
+
+.vacancy-filter-select svg:last-child {
+  right: 14px;
+  stroke: #9ca3af;
+}
+
+.vacancy-filter-select select {
+  width: 100%;
+  height: 100%;
+  padding: 0 38px 0 40px;
+  border: none;
+  outline: none;
+  border-radius: 10px;
+  background-color: transparent;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  appearance: none;
+}
+
+.vacancy-filter-select select::-ms-expand {
+  display: none;
+}
+
+/* Estrutura principal */
+
+.idle-slots-main-grid {
+  width: 100%;
 }
 
 .idle-slots-right {
@@ -284,8 +272,10 @@
   gap: 24px;
 }
 
+/* Card da tabela */
+
 .generated-slots-card {
-  height: 514px;
+  height: fit-content;
   border: 1px solid #ece7e3;
   border-radius: 22px;
   background-color: #ffffff;
@@ -300,11 +290,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.generated-slots-card__header svg {
-  stroke: #007a49;
-
+  gap: 18px;
 }
 
 .generated-slots-card__header > div {
@@ -312,6 +298,10 @@
   align-items: center;
   gap: 10px;
   color: #007a49;
+}
+
+.generated-slots-card__header svg {
+  stroke: #007a49;
 }
 
 .generated-slots-card__header h2 {
@@ -332,7 +322,10 @@
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  white-space: nowrap;
 }
+
+/* Tabela */
 
 .generated-slots-table-wrapper {
   width: 100%;
@@ -341,9 +334,9 @@
 
 .generated-slots-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 1280px;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .generated-slots-table thead {
@@ -352,33 +345,59 @@
 }
 
 .generated-slots-table th {
-  padding: 0 24px;
+  padding: 0 18px;
   text-align: left;
   font-size: 10px;
   line-height: 14px;
   font-weight: 900;
   letter-spacing: 0.8px;
   color: #5c5f62;
+  white-space: nowrap;
+}
+
+.generated-slots-table td {
+  padding: 0 18px;
+  vertical-align: middle;
 }
 
 .generated-slots-table th:nth-child(1),
 .generated-slots-table td:nth-child(1) {
-  width: 19%;
+  width: 110px;
 }
 
 .generated-slots-table th:nth-child(2),
 .generated-slots-table td:nth-child(2) {
-  width: 29%;
+  width: 150px;
 }
 
 .generated-slots-table th:nth-child(3),
 .generated-slots-table td:nth-child(3) {
-  width: 29%;
+  width: 190px;
 }
 
 .generated-slots-table th:nth-child(4),
 .generated-slots-table td:nth-child(4) {
-  width: 23%;
+  width: 120px;
+}
+
+.generated-slots-table th:nth-child(5),
+.generated-slots-table td:nth-child(5) {
+  width: 160px;
+}
+
+.generated-slots-table th:nth-child(6),
+.generated-slots-table td:nth-child(6) {
+  width: 170px;
+}
+
+.generated-slots-table th:nth-child(7),
+.generated-slots-table td:nth-child(7) {
+  width: 150px;
+}
+
+.generated-slots-table th:nth-child(8),
+.generated-slots-table td:nth-child(8) {
+  width: 210px;
 }
 
 .generated-slots-table tbody tr {
@@ -390,9 +409,8 @@
   border-bottom: none;
 }
 
-.generated-slots-table td {
-  padding: 0 24px;
-  vertical-align: middle;
+.generated-slots-empty-row {
+  height: auto;
 }
 
 .generated-slots-table td strong {
@@ -418,6 +436,8 @@
   color: #4b5563;
 }
 
+/* Status */
+
 .slot-status {
   width: fit-content;
   min-height: 34px;
@@ -429,6 +449,7 @@
   display: flex !important;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .slot-status--success {
@@ -442,181 +463,279 @@
 }
 
 .slot-status--waiting {
-  width: 112px;
   background-color: #ddd9d7;
   color: #4b4b4b !important;
-  text-align: center;
 }
 
 .slot-status--error {
-  width: 122px;
   background-color: #ffe0e0;
   color: #e11d48 !important;
-  text-align: center;
 }
 
-.slot-action {
-  min-width: 82px;
-  height: 34px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 6px;
-  background-color: #e8e6e4;
-  color: #4b5563;
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
+.slot-status--open {
+  background-color: #e8f5ff;
+  color: #0369a1 !important;
 }
 
-.slot-action svg {
+.slot-status--waiting-acceptance {
+  background-color: #fff3cd;
+  color: #9a6700 !important;
+}
+
+.slot-status--in-progress {
+  background-color: #e8f5ff;
+  color: #0369a1 !important;
+}
+
+.slot-status--confirmed {
+  background-color: #c7f8dd;
+  color: #007a49 !important;
+}
+
+.slot-status--expired {
+  background-color: #f0eeec;
+  color: #4b5563 !important;
+}
+
+.slot-status--cancelled {
+  background-color: #f0eeec;
+  color: #4b5563 !important;
+}
+
+/* Fila */
+
+.queue-patients {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.queue-patients svg {
   stroke: #007a49;
-
+  flex-shrink: 0;
 }
 
-.slot-action--primary {
-  width: 126px;
-  height: 46px;
-  border-radius: 8px;
-  background-color: #007a49;
-  color: #ffffff;
-  line-height: 14px;
-}
-
-.slot-action--disabled {
-  color: #b7b7b7;
-  cursor: not-allowed;
-}
-
-.slot-action--retry {
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 50%;
-  background-color: transparent;
-  color: #007a49;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.automation-card {
-  min-height: 262px;
-  padding: 0 32px;
-  border-radius: 22px;
-  background-color: #ffffff;
-  border-left: 8px solid #008256;
-  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.04);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
-}
-
-.automation-card__left {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
-.automation-card__icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 14px;
-  background-color: #91f0bd;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.automation-card__icon svg {
-  stroke: #007a49;
-
-}
-
-.automation-card h2 {
-  margin: 0 0 12px;
-  font-size: 20px;
-  line-height: 26px;
-  font-weight: 800;
+.queue-patients strong {
+  display: inline !important;
+  font-size: 13px !important;
+  line-height: 16px !important;
   color: #202124;
 }
 
-.automation-card p {
-  width: 280px;
-  margin: 0;
-  font-size: 14px;
-  line-height: 22px;
+.queue-patients span {
+  display: inline !important;
+  margin-top: 0 !important;
+  font-size: 11px !important;
   color: #5f6368;
 }
 
-.automation-card__right {
+/* Expiração e paciente */
+
+.slot-expiration {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background-color: #faf8f7;
+  color: #4b5563 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+}
+
+.confirmed-patient {
+  color: #007a49 !important;
+  font-size: 13px !important;
+}
+
+.empty-patient {
+  color: #9ca3af !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+}
+
+.generated-slots-empty {
+  padding: 48px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.automation-card__right button {
-  width: 320px;
-  height: 52px;
-  border: none;
+.generated-slots-empty strong {
+  font-size: 18px !important;
+  line-height: 22px !important;
+}
+
+.generated-slots-empty span {
+  margin-top: 8px !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  color: #5f6368 !important;
+}
+
+/* Botões de ação */
+
+.slot-action {
+  min-width: 150px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
   border-radius: 8px;
-  background-color: #007a49;
-  color: #ffffff;
-  font-size: 13px;
+  background-color: #f5f3f1;
+  color: #4b5563;
+  font-size: 11px;
   font-weight: 900;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  box-shadow: 0 8px 18px rgba(0, 127, 79, 0.25);
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.automation-card__right button svg {
-  stroke: white;
+.slot-action:disabled {
+  opacity: 1;
 }
 
-.automation-card__right span {
-  margin-top: 10px;
-  font-size: 9px;
-  line-height: 12px;
-  font-weight: 900;
-  color: #4b5563;
+.slot-action--primary {
+  background-color: #007a49;
+  border-color: #007a49;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(0, 122, 73, 0.12);
 }
+
+.slot-action--secondary {
+  background-color: #ffffff;
+  border-color: #d8ebe1;
+  color: #007a49;
+}
+
+.slot-action--disabled {
+  background-color: #ece7e3;
+  border-color: #ece7e3;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Mantém oculto o antigo botão flutuante */
 
 .floating-action-button {
-  width: 54px;
-  height: 54px;
-  border: none;
-  border-radius: 50%;
-  background-color: #00965e;
-  color: #ffffff;
+  display: none;
+}
+
+.vacancy-modal-overlay {
   position: fixed;
-  right: 36px;
-  bottom: 34px;
+  inset: 0;
+  z-index: 20;
+  padding: 20px;
+  background-color: rgba(18, 24, 32, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 14px 30px rgba(0, 127, 79, 0.28);
+}
+
+.vacancy-modal {
+  width: min(100%, 520px);
+  border-radius: 24px;
+  background-color: #ffffff;
+  border: 1px solid #ece7e3;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16);
+  padding: 24px;
+}
+
+.vacancy-modal__eyebrow {
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background-color: #e8f6ef;
+  color: #0f6b47;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+}
+
+.vacancy-modal h2 {
+  margin: 14px 0 0;
+  font-size: 24px;
+  line-height: 30px;
+  color: #202124;
+}
+
+.vacancy-modal__content {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.vacancy-modal__field {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background-color: #fbf9f7;
+  border: 1px solid #f0ebe6;
+}
+
+.vacancy-modal__field span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.vacancy-modal__field strong {
+  display: block;
+  font-size: 16px;
+  line-height: 22px;
+  color: #202124;
+}
+
+.vacancy-modal__field p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: #5f6368;
+}
+
+.vacancy-modal__button {
+  min-height: 42px;
+  margin-top: 20px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 10px;
+  background-color: #008256;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 
-.floating-action-button svg {
-  stroke: white;
-}
+/* Responsivo */
 
-@media (max-width: 1180px) {
-  .idle-slots-main-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 1280px) {
+  .vacancy-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .idle-slots-left {
-    display: grid;
-    grid-template-columns: 280px 1fr;
+  .vacancy-filters {
+    flex-wrap: wrap;
   }
 
-  .instant-register-card {
-    grid-row: span 2;
+  .vacancy-filters__search {
+    width: 100%;
+  }
+
+  .vacancy-filter-select,
+  .vacancy-filter-button {
+    flex: 1 1 220px;
   }
 }
 
@@ -630,48 +749,46 @@
     gap: 18px;
   }
 
-  .system-status {
-    align-items: flex-start;
+  .new-vacancy-button {
+    width: 100%;
+    justify-content: center;
   }
 
-  .idle-slots-left {
+  .vacancy-summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .instant-register-card {
-    height: auto;
+  .vacancy-filter-select,
+  .vacancy-filter-button {
+    flex: 1;
+    min-width: 100%;
+  }
+
+  .vacancy-filter-select {
+    min-width: 100%;
   }
 
   .generated-slots-card {
     height: auto;
   }
 
-  .automation-card {
-    padding: 32px 24px;
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
-
-  .automation-card__left {
+  .generated-slots-card__header {
+    height: auto;
+    padding: 20px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 22px;
   }
 
-  .automation-card p {
-    width: 100%;
+  .generated-slots-card__header button {
+    font-size: 12px;
   }
 
-  .automation-card__right {
-    align-items: flex-start;
+  .vacancy-modal {
+    padding: 20px 18px;
   }
 
-  .automation-card__right button {
-    width: 100%;
-  }
-
-  .floating-action-button {
-    right: 24px;
-    bottom: 24px;
+  .vacancy-modal h2 {
+    font-size: 22px;
+    line-height: 28px;
   }
 }

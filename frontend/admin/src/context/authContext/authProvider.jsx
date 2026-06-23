@@ -7,18 +7,14 @@ import { useNavigate } from 'react-router-dom';
 
 // Função de inicialização: roda apenas uma vez quando o componente monta
 const init = (initialState) => {
-  const token =
-    localStorage.getItem('token') || sessionStorage.getItem('token');
-
   const storedUser =
     localStorage.getItem('user') || sessionStorage.getItem('user');
   
   const user = storedUser ? JSON.parse(storedUser) : null;
 
-  if (token && user) {
+  if (user) {
     return {
       ...initialState,
-      token,
       user,
       isAuthenticated: true,
     };
@@ -42,7 +38,9 @@ export default function AuthProvider({ children }) {
     try {
       await authApi.signup(userCredentials, authDispatch);
       navigate('/login');
-    } catch {}
+    } catch (error) {
+      return error;
+    }
   };
 
   const requestPasswordReset = async (email) => {
@@ -53,6 +51,11 @@ export default function AuthProvider({ children }) {
     return await authApi.confirmPasswordReset(resetData, authDispatch);
   };
 
+  const logout = async () => {
+    await authApi.logout(authDispatch);
+    navigate('/login', { replace: true });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -60,6 +63,7 @@ export default function AuthProvider({ children }) {
         authDispatch,
         login,
         signup,
+        logout,
         requestPasswordReset,
         confirmPasswordReset,
       }}

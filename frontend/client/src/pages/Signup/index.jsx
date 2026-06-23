@@ -1,11 +1,12 @@
-import { NavLink } from 'react-router';
+import { NavLink } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
+import AppLogo from '../../components/layouts/AppLogo';
 import { useAuth } from '../../context/authContext/authContext';
 import './styles.css';
-import { FaPlusSquare } from 'react-icons/fa';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 export default function Signup() {
   const [fullName, setFullName] = useState('');
@@ -30,7 +31,7 @@ export default function Signup() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      alert('As senhas não coincidem');
+      toast.error('As senhas nao coincidem');
       return;
     }
 
@@ -50,14 +51,7 @@ export default function Signup() {
     <div className="signup-paciente-page">
       <div className="signup-paciente-card">
         <div className="signup-paciente-header">
-          <div className="signup-paciente-logo-icon">
-            <FaPlusSquare />
-          </div>
-
-          <div className="signup-paciente-brand">
-            <h2>UNIMED</h2>
-            <span>LITORAL SUL</span>
-          </div>
+          <AppLogo size="small" />
         </div>
 
         <div className="signup-paciente-content">
@@ -144,8 +138,8 @@ export default function Signup() {
               onChange={handleConfirmPasswordChange}
             />
 
-            <Button type="submit" variant="primary">
-              Finalizar Cadastro
+            <Button type="submit" variant="primary" disabled={authState.isLoading}>
+              {authState.isLoading ? 'Cadastrando...' : 'Finalizar Cadastro'}
             </Button>
 
             <NavLink to="/login">

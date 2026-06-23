@@ -1,9 +1,10 @@
-import { NavLink, useLocation } from 'react-router';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import InputField from '../../components/ui/InputField';
 import PasswordField from '../../components/ui/PasswordField';
+import AppLogo from '../../components/layouts/AppLogo';
 import './styles.css';
-import { FaLock, FaPlusSquare } from 'react-icons/fa';
+import { FaLock } from 'react-icons/fa';
 import { useAuth } from '../../context/authContext/authContext';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -11,9 +12,10 @@ import { toast } from 'react-toastify';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, authState } = useAuth();
+  const { login, demoLogin, authState } = useAuth();
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Atualiza os estados conforme o usuário for digitando
   const handleEmailChange = (e) => setEmail(e.target.value);
@@ -30,29 +32,28 @@ export default function Login() {
     }
   }, [location]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (!email.trim() && !password.trim()) {
+      demoLogin();
+      navigate('/');
+      return;
+    }
 
     const userCredentials = {
       email,
       password,
     };
 
-    login(userCredentials);
+    await login(userCredentials);
   };
 
   return (
     <div className="login-paciente-page">
       <div className="login-paciente-card">
         <div className="login-paciente-header">
-          <div className="login-paciente-logo-icon">
-            <FaPlusSquare />
-          </div>
-
-          <div className="login-paciente-brand">
-            <h2>UNIMED</h2>
-            <span>LITORAL SUL</span>
-          </div>
+          <AppLogo size="small" />
         </div>
 
         <div className="login-paciente-content">
@@ -82,12 +83,13 @@ export default function Login() {
               label="SENHA"
               placeholder="••••••••"
               showForgotPassword={true}
+              onForgotPassword={() => navigate('/reset-password')}
               value={password}
               onChange={handlePasswordChange}
             />
 
-            <Button type="submit" variant="primary" >
-              Entrar
+            <Button type="submit" variant="primary" disabled={authState.isAuthenticating}>
+              {authState.isAuthenticating ? 'Entrando...' : 'Entrar'}
             </Button>
 
             <NavLink to="/signup">

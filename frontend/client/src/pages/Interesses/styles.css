@@ -1,0 +1,313 @@
+.interesses-page {
+  min-height: 100vh;
+  background: #eceff1;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-family: sans-serif;
+}
+
+.interesses-card {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100vh;
+
+  background: #eceff1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.interesses-header {
+  padding: 20px 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.interesses-brand {
+  display: flex;
+  align-items: center;
+}
+
+.interesses-search-btn {
+  position: absolute;
+  right: 16px;
+
+  border: none;
+  background: transparent;
+
+  color: #7b8190;
+
+  cursor: pointer;
+}
+
+.interesses-content {
+  flex: 1;
+
+  padding: 18px 14px 24px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.interesses-title-group {
+  margin-bottom: 32px;
+}
+
+.interesses-title-group h1 {
+  font-size: 48px;
+  line-height: 1.05;
+
+  color: #1f2937;
+
+  margin-bottom: 16px;
+}
+
+.interesses-title-group p {
+  font-size: 16px;
+  line-height: 1.8;
+
+  color: #555;
+}
+
+.interesses-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+
+  margin-bottom: 24px;
+}
+
+.interesse-card {
+  min-height: 136px;
+
+  border: none;
+  border-radius: 16px;
+
+  background: #f7f7f7;
+
+  padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  cursor: pointer;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.interesse-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.interesse-card.active {
+  background: #0a8f4c;
+  color: white;
+  box-shadow: 0 14px 28px rgba(10, 143, 76, 0.24);
+}
+
+.interesse-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.interesse-top-row svg {
+  color: white;
+}
+
+.interesse-top-row .interesse-add-icon {
+  color: #9ca3af;
+}
+
+.interesse-icon {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interesse-icon.light {
+  background: #eceff1;
+  color: #5f6368;
+}
+
+.interesse-icon.green {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+.interesse-content-box h3 {
+  font-size: 20px;
+  line-height: 1.1;
+
+  margin-bottom: 6px;
+
+  color: #1f2937;
+}
+
+.interesse-card.active .interesse-content-box h3 {
+  color: white;
+}
+
+.interesse-content-box span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+
+  color: #7b8190;
+}
+
+.interesse-card.active .interesse-content-box span {
+  color: rgba(255,255,255,0.85);
+}
+
+.view-all {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.view-all-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  margin-bottom: 14px;
+
+  color: #7b8190;
+}
+
+.interesses-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 12px;
+  margin-bottom: 26px;
+}
+
+.interesses-tags button {
+  min-height: 38px;
+
+  border: none;
+  border-radius: 999px;
+
+  background: #bce8c8;
+  color: #35694d;
+
+  padding: 0 16px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.interesses-tags button:hover {
+  transform: translateY(-1px);
+}
+
+.interesses-tags button.active {
+  background: #0a8f4c;
+  color: white;
+}
+
+.interesses-tags button:nth-child(4) {
+  background: #d9dde2;
+  color: #555;
+}
+
+.interesses-tags button:nth-child(4).active {
+  background: #0a8f4c;
+  color: white;
+}
+
+.interesses-main-btn {
+  margin-top: auto;
+
+  height: 58px;
+
+  border: none;
+  border-radius: 16px;
+
+  background: #0a8f4c;
+  color: white;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.interesses-main-btn:hover {
+  filter: brightness(0.97);
+}
+
+.interesses-main-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.interesses-bottom-nav {
+  height: 82px;
+
+  background: #f7f7f7;
+
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.bottom-nav-item {
+  border: none;
+  background: transparent;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.bottom-nav-item.active {
+  background: #bce8c8;
+
+  padding: 10px 16px;
+
+  border-radius: 12px;
+
+  color: #0a8f4c;
+}
+
+.bottom-nav-item.active svg {
+  color: #0a8f4c;
+}

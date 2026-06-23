@@ -1,0 +1,268 @@
+.perfil-page {
+  min-height: 100vh;
+  background: #eceff1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: sans-serif;
+}
+
+.perfil-card {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100vh;
+  background: #eceff1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.perfil-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: flex-start;
+
+  padding: 22px 18px;
+}
+
+.perfil-back-btn {
+  border: none;
+  background: transparent;
+
+  color: #0a8f4c;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+.perfil-header .app-logo-small {
+  margin: 0 auto;
+  transform: translateX(-18px);
+}
+
+.perfil-content {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.perfil-photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-top: 18px;
+  margin-bottom: 26px;
+}
+
+.perfil-photo-wrapper {
+  position: relative;
+}
+
+.perfil-photo {
+  width: 118px;
+  height: 118px;
+
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    #d1d5db,
+    #f3f4f6
+  );
+}
+
+.perfil-camera-btn {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #0a8f4c;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+.perfil-change-photo-btn {
+  margin-top: 12px;
+
+  border: none;
+  background: transparent;
+
+  color: #0a8f4c;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.perfil-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perfil-input-group label {
+  padding: 0 2px;
+
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+
+  color: #5f6368;
+}
+
+.perfil-input-group input {
+  height: 68px;
+
+  border: none;
+  border-radius: 0;
+
+  background: #f1f3f5;
+
+  padding: 0 14px;
+
+  font-size: 18px;
+  color: #2d2d2d;
+
+  outline: none;
+}
+
+.perfil-date-input {
+  position: relative;
+}
+
+.perfil-date-input svg {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: #70757d;
+}
+
+.perfil-save-btn {
+  height: 58px;
+
+  margin: 28px 26px 0;
+
+  border: none;
+  border-radius: 16px;
+
+  background: #0a8f4c;
+  color: white;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.perfil-save-btn:hover {
+  filter: brightness(0.97);
+}
+
+.perfil-logout-btn {
+  height: 52px;
+
+  margin: 0 26px 24px;
+
+  border: none;
+  border-radius: 16px;
+
+  background: #f7d6d9;
+  color: #a12f3d;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.perfil-logout-btn:hover {
+  filter: brightness(0.98);
+}
+
+.perfil-logout-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.perfil-bottom-nav {
+  height: 82px;
+
+  margin-top: auto;
+
+  background: #f7f7f7;
+
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.bottom-nav-item {
+  border: none;
+  background: transparent;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.bottom-nav-item.active {
+  background: #bce8c8;
+
+  padding: 10px 16px;
+
+  border-radius: 12px;
+
+  color: #0a8f4c;
+}
+
+.bottom-nav-item.active svg {
+  color: #0a8f4c;
+}

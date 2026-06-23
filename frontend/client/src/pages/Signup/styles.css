@@ -15,39 +15,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 28px 24px 16px;
 }
 
-.signup-paciente-logo-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: #008f4c;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  margin-bottom: 10px;
-}
-
-.signup-paciente-brand {
-  text-align: center;
-  line-height: 1.1;
-}
-
-.signup-paciente-brand h2 {
-  font-size: 30px;
-  font-weight: 800;
-  color: #008f4c;
-  letter-spacing: 0.02em;
-}
-
-.signup-paciente-brand span {
-  display: block;
-  font-size: 10px;
-  color: #2d6a4f;
-  letter-spacing: 0.16em;
+.signup-paciente-header .app-logo-small {
+  margin: 0 auto;
 }
 
 .signup-paciente-content {

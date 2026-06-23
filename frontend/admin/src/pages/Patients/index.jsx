@@ -1,117 +1,221 @@
+import { useState } from 'react';
 import {
-  LuSlidersHorizontal,
+  LuBadgeAlert,
+  LuBadgeCheck,
+  LuChevronDown,
   LuDownload,
-  LuCircleAlert,
-  LuChartBar,
-  LuMessagesSquare,
   LuPlus,
-  LuCircleCheck,
+  LuRefreshCw,
+  LuSearch,
+  LuSlidersHorizontal,
 } from 'react-icons/lu';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { usePatients } from '../../context/patientContext/patientContext';
+import { normalizeText } from '../../data/patients';
 import './styles.css';
 
-const patients = [
-  {
-    id: 1,
-    name: 'Beatriz Helena Ferreira',
-    cpf: '123.***.***-01',
-    lastVisitDate: '12 Mai, 2024',
-    lastVisitType: 'Clínica Geral',
-    status: 'Ativo',
-    nextScheduleDate: '18 Jun, 2024',
-    nextScheduleType: 'Dermatologia',
-    avatar:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
-  },
-  {
-    id: 2,
-    name: 'Ricardo Mendes Albuquerque',
-    cpf: '892.***.***-45',
-    lastVisitDate: '05 Jun, 2024',
-    lastVisitType: 'Cardiologia',
-    status: 'Em fila',
-    nextScheduleDate: 'Sem agendamento',
-    nextScheduleType: '',
-    avatar:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face',
-  },
-  {
-    id: 3,
-    name: 'Joaquim de Souza Neto',
-    cpf: '541.***.***-22',
-    lastVisitDate: '10 Jan, 2024',
-    lastVisitType: 'Ortopedia',
-    status: 'Inativo',
-    nextScheduleDate: 'Sem agendamento',
-    nextScheduleType: '',
-    avatar:
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face',
-  },
-  {
-    id: 4,
-    name: 'Mariana Luzia Santos',
-    cpf: '211.***.***-98',
-    lastVisitDate: '01 Jun, 2024',
-    lastVisitType: 'Nutrologia',
-    status: 'Ativo',
-    nextScheduleDate: '25 Jun, 2024',
-    nextScheduleType: 'Retorno Exames',
-    avatar:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face',
-  },
+const contactOptions = [
+  { value: 'valid', label: 'Telefone válido' },
+  { value: 'invalid', label: 'Telefone inválido' },
 ];
 
+function toSlug(value) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+}
+
 export default function Patients() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { patientState } = usePatients();
+  const patients = patientState.patients;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [specialtyFilter, setSpecialtyFilter] = useState('');
+  const [contactFilter, setContactFilter] = useState('');
+  const feedbackMessage = location.state?.successMessage ?? '';
+
+  const normalizedSearchTerm = normalizeText(searchTerm.trim());
+  const statusOptions = [...new Set(patients.map((patient) => patient.status))];
+  const specialtyOptions = [
+    ...new Set(patients.flatMap((patient) => patient.interests)),
+  ].sort((firstValue, secondValue) => firstValue.localeCompare(secondValue, 'pt-BR'));
+  const hasActiveFilters = Boolean(
+    normalizedSearchTerm || statusFilter || specialtyFilter || contactFilter,
+  );
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('');
+    setSpecialtyFilter('');
+    setContactFilter('');
+  };
+
+  const filteredPatients = patients.filter((patient) => {
+    const matchesSearch =
+      !normalizedSearchTerm ||
+      [patient.name, patient.phone, patient.email, patient.cpf, ...patient.interests].some(
+        (value) => normalizeText(value).includes(normalizedSearchTerm),
+      );
+
+    const matchesStatus = !statusFilter || patient.status === statusFilter;
+    const matchesSpecialty =
+      !specialtyFilter || patient.interests.includes(specialtyFilter);
+    const matchesContact =
+      !contactFilter ||
+      (contactFilter === 'valid' ? patient.phoneValid : !patient.phoneValid);
+
+    return matchesSearch && matchesStatus && matchesSpecialty && matchesContact;
+  });
+
+  const totalPatientsLabel = patients.length.toLocaleString('pt-BR');
+  const summaryCards = [
+    {
+      id: 1,
+      title: 'TOTAL DE PACIENTES',
+      value: totalPatientsLabel,
+      helper: 'Cadastros ativos na listagem',
+      modifier: 'default',
+    },
+    {
+      id: 2,
+      title: 'EM FILA INTELIGENTE',
+      value: patients.filter((patient) => patient.status === 'Em fila').length.toString(),
+      helper: 'Pacientes aguardando disparo',
+      modifier: 'neutral',
+    },
+    {
+      id: 3,
+      title: 'COM CONFIRMAÇÃO',
+      value: patients
+        .filter((patient) => patient.lastConfirmationDate)
+        .length.toString(),
+      helper: 'Pacientes com retorno registrado',
+      modifier: 'highlight',
+    },
+  ];
+
   return (
     <main className="patients-page">
       <section className="patients-header">
         <div>
           <h1>Gestão de Pacientes</h1>
-          <p>Visualize a lista completa e histórico de usuários confirmados no sistema.</p>
+          <p>Consulte, cadastre e acompanhe pacientes inscritos na fila inteligente.</p>
         </div>
 
         <div className="patients-header__actions">
-          <button type="button">
-            <LuSlidersHorizontal size={14} />
-            Filtros Avançados
+          <button
+            type="button"
+            className="patients-header__button patients-header__button--secondary"
+          >
+            <LuDownload size={18} />
+            Importar pacientes
           </button>
 
-          <button type="button">
-            <LuDownload size={14} />
-            Exportar Relatório
-          </button>
+          <NavLink
+            to="/patients/new"
+            className="patients-header__button patients-header__button--primary patients-header__link"
+          >
+            <LuPlus size={18} />
+            Novo paciente
+          </NavLink>
         </div>
       </section>
 
+      {feedbackMessage ? (
+        <div className="patients-feedback-banner" role="status">
+          <LuBadgeCheck size={18} />
+          <span>{feedbackMessage}</span>
+        </div>
+      ) : null}
+
       <section className="patients-stats">
-        <div className="patient-stat-card">
-          <span>TOTAL ATIVOS</span>
-          <strong>1.284</strong>
-          <p>↗ +12% este mês</p>
+        {summaryCards.map((card) => (
+          <article
+            key={card.id}
+            className={`patient-stat-card patient-stat-card--${card.modifier}`}
+          >
+            <span>{card.title}</span>
+            <strong>{card.value}</strong>
+            <p>{card.helper}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="patients-filters">
+        <div className="patients-filters__search">
+          <LuSearch size={18} />
+          <input
+            type="text"
+            placeholder="Buscar por nome, telefone, e-mail, CPF ou interesse..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
         </div>
 
-        <div className="patient-stat-card">
-          <span>EM FILA DE ESPERA</span>
-          <strong>42</strong>
-          <p>
-            <LuCircleAlert size={12} />
-            Tempo médio: 14 min
-          </p>
-        </div>
+        <label className="patients-filter-button">
+          <LuSlidersHorizontal size={16} />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            aria-label="Filtrar por status"
+          >
+            <option value="">Status</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+          <LuChevronDown size={16} className="patients-filter-button__chevron" />
+        </label>
 
-        <div className="patient-stat-card">
-          <span>ATENDIMENTOS HOJE</span>
-          <strong>156</strong>
-          <p className='patient-stat-card-check'>
-            <LuCircleCheck />
-            94% concluídos
-          </p>
-        </div>
+        <label className="patients-filter-button">
+          <LuSlidersHorizontal size={16} />
+          <select
+            value={specialtyFilter}
+            onChange={(event) => setSpecialtyFilter(event.target.value)}
+            aria-label="Filtrar por especialidade"
+          >
+            <option value="">Especialidade</option>
+            {specialtyOptions.map((specialty) => (
+              <option key={specialty} value={specialty}>
+                {specialty}
+              </option>
+            ))}
+          </select>
+          <LuChevronDown size={16} className="patients-filter-button__chevron" />
+        </label>
 
-        <div className="patient-stat-card patient-stat-card--highlight">
-          <span>NOVOS ESTE MÊS</span>
-          <strong>89</strong>
-          <p>Crescimento constante</p>
-        </div>
+        <label className="patients-filter-button">
+          <LuSlidersHorizontal size={16} />
+          <select
+            value={contactFilter}
+            onChange={(event) => setContactFilter(event.target.value)}
+            aria-label="Filtrar por contato"
+          >
+            <option value="">Contato</option>
+            {contactOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <LuChevronDown size={16} className="patients-filter-button__chevron" />
+        </label>
+
+        <button
+          type="button"
+          className="patients-filter-clear-button"
+          onClick={handleClearFilters}
+          disabled={!hasActiveFilters}
+        >
+          <LuRefreshCw size={16} />
+          Limpar filtros
+        </button>
       </section>
 
       <section className="patients-table-card">
@@ -119,125 +223,159 @@ export default function Patients() {
           <table className="patients-table">
             <thead>
               <tr>
-                <th>NOME DO PACIENTE</th>
-                <th>ÚLTIMO ATENDIMENTO</th>
+                <th>PACIENTE</th>
+                <th>CONTATO</th>
+                <th>INTERESSES</th>
                 <th>STATUS</th>
-                <th>PRÓXIMO AGENDAMENTO</th>
+                <th>ÚLTIMA NOTIFICAÇÃO</th>
+                <th>ÚLTIMA CONFIRMAÇÃO</th>
                 <th>AÇÕES</th>
               </tr>
             </thead>
 
             <tbody>
-              {patients.map((patient) => (
-                <tr key={patient.id}>
-                  <td>
-                    <div className="patient-info">
-                      <img src={patient.avatar} alt={patient.name} />
+              {filteredPatients.length > 0 ? (
+                filteredPatients.map((patient) => {
+                  const visibleInterests = patient.interests.slice(0, 2);
+                  const hiddenInterests = patient.interests.length - visibleInterests.length;
 
-                      <div>
-                        <strong>{patient.name}</strong>
-                        <span>CPF: {patient.cpf}</span>
-                      </div>
-                    </div>
-                  </td>
+                  return (
+                    <tr key={patient.id}>
+                      <td>
+                        <div className="patient-info">
+                          <img src={patient.avatar} alt={patient.name} />
 
-                  <td>
-                    <strong className="table-main-text">{patient.lastVisitDate}</strong>
-                    <span className="table-secondary-text">{patient.lastVisitType}</span>
-                  </td>
+                          <div>
+                            <strong>{patient.name}</strong>
+                            <span>CPF: {patient.cpf}</span>
+                          </div>
+                        </div>
+                      </td>
 
-                  <td>
-                    <span
-                      className={`patient-status patient-status--${patient.status
-                        .toLowerCase()
-                        .replace(' ', '-')}`}
-                    >
-                      {patient.status}
-                    </span>
-                  </td>
+                      <td>
+                        <div className="patient-contact">
+                          <div className="patient-contact__phone">
+                            <strong className="table-main-text">{patient.phone}</strong>
+                            <span
+                              className={`patient-contact-status patient-contact-status--${patient.phoneValid ? 'valid' : 'invalid'}`}
+                              title={patient.phoneValid ? 'Telefone válido' : 'Telefone inválido'}
+                              aria-label={patient.phoneValid ? 'Telefone válido' : 'Telefone inválido'}
+                            >
+                              {patient.phoneValid ? (
+                                <LuBadgeCheck size={16} />
+                              ) : (
+                                <LuBadgeAlert size={16} />
+                              )}
+                            </span>
+                          </div>
+                          <span className="table-secondary-text">{patient.email}</span>
+                        </div>
+                      </td>
 
-                  <td>
-                    <strong
-                      className={
-                        patient.nextScheduleDate === 'Sem agendamento'
-                          ? 'table-main-text'
-                          : 'table-main-text table-main-text--green'
-                      }
-                    >
-                      {patient.nextScheduleDate}
-                    </strong>
+                      <td>
+                        <div className="patient-interests">
+                          {visibleInterests.map((interest) => (
+                            <span key={interest} className="patient-interest-badge">
+                              {interest}
+                            </span>
+                          ))}
 
-                    {patient.nextScheduleType && (
-                      <span className="table-secondary-text">
-                        {patient.nextScheduleType}
-                      </span>
-                    )}
-                  </td>
+                          {hiddenInterests > 0 ? (
+                            <span className="patient-interest-badge">+{hiddenInterests}</span>
+                          ) : null}
+                        </div>
+                      </td>
 
-                  <td>
-                    <button type="button" className="patient-history-button">
-                      Histórico
-                      <br />
-                      Completo
-                    </button>
+                      <td>
+                        <span className={`patient-status patient-status--${toSlug(patient.status)}`}>
+                          {patient.status}
+                        </span>
+                      </td>
+
+                      <td>
+                        <strong className="table-main-text">{patient.lastNotificationDate}</strong>
+                        <span
+                          className={`notification-status notification-status--${toSlug(patient.lastNotificationStatus)}`}
+                        >
+                          {patient.lastNotificationStatus}
+                        </span>
+                      </td>
+
+                      <td>
+                        {patient.lastConfirmationDate ? (
+                          <>
+                            <strong className="table-main-text table-main-text--green">
+                              {patient.lastConfirmationDate}
+                            </strong>
+                            <span className="table-secondary-text">
+                              {patient.lastConfirmationSpecialty}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <strong className="table-main-text">Nenhuma confirmação</strong>
+                            <span className="table-secondary-text">Sem retorno registrado</span>
+                          </>
+                        )}
+                      </td>
+
+                      <td>
+                        <div className="patient-actions">
+                          <button
+                            type="button"
+                            className="patient-action-button patient-action-button--primary"
+                            onClick={() => navigate(`/patients/${patient.id}`)}
+                          >
+                            Detalhes
+                          </button>
+                          <button
+                            type="button"
+                            className="patient-action-button"
+                            onClick={() => navigate(`/patients/${patient.id}/edit`)}
+                          >
+                            Editar
+                          </button>
+                          
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="patients-table__empty">
+                    Nenhum paciente encontrado com os filtros atuais.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="patients-table-card__footer">
-          <span>Exibindo 4 de 1.284 pacientes</span>
+          <span>
+            Exibindo {filteredPatients.length} de {totalPatientsLabel} pacientes
+          </span>
 
           <div className="patients-pagination">
-            <button type="button">‹</button>
+            <button type="button" disabled>
+              ‹
+            </button>
             <button type="button" className="patients-pagination__active">
               1
             </button>
-            <button type="button">2</button>
-            <button type="button">3</button>
-            <button type="button">›</button>
+            <button type="button" disabled>
+              2
+            </button>
+            <button type="button" disabled>
+              3
+            </button>
+            <button type="button" disabled>
+              ›
+            </button>
           </div>
         </div>
       </section>
-
-      <section className="patients-bottom-grid">
-        <div className="retention-card">
-          <div className="retention-card__icon">
-            <LuChartBar size={34} />
-          </div>
-
-          <div>
-            <h2>Análise de Retenção</h2>
-
-            <p>
-              Nosso sistema de IA identificou um aumento de 15% na taxa de retorno
-              para consultas preventivas. Continue utilizando as notificações automáticas
-              para manter seus pacientes engajados.
-            </p>
-
-            <button type="button">Ver Dashboard de Performance →</button>
-          </div>
-        </div>
-
-        <div className="clinical-support-card">
-          <LuMessagesSquare size={28} />
-
-          <h2>Suporte Clínico</h2>
-
-          <p>
-            Precisa de ajuda com a integração de prontuários antigos? Nossa equipe está
-            pronta.
-          </p>
-
-          <button type="button">Falar com Consultor</button>
-        </div>
-      </section>
-
-      <button type="button" className="patients-floating-button">
-        <LuPlus size={26} />
-      </button>
     </main>
   );
 }

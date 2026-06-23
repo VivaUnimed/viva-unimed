@@ -1,12 +1,7 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const handleResponse = async (response) => {
 
   // 1. Verifica se o token expirou ou é inválido
   if (response.status === 401) {
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
-
     // Redireciona para o login
     // Adicionado um parâmetro 'expired=true' para avisar o usuário depois
     if (window.location.pathname !== '/login') {
@@ -30,25 +25,19 @@ const handleResponse = async (response) => {
 
 // Helper para centralizar os headers
 const getHeaders = () => {
-  const token =
-    localStorage.getItem('token') || sessionStorage.getItem('token');
-
   const headers = {
     'Content-Type': 'application/json',
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   return headers;
 };
 
 export const postRequest = async (endpoint, data) => {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'same-origin',
       body: JSON.stringify(data),
     });
 
@@ -60,9 +49,10 @@ export const postRequest = async (endpoint, data) => {
 
 export const putRequest = async (endpoint, data) => {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(endpoint, {
       method: 'PUT',
       headers: getHeaders(),
+      credentials: 'same-origin',
       body: JSON.stringify(data),
     });
 
@@ -74,9 +64,10 @@ export const putRequest = async (endpoint, data) => {
 
 export const getRequest = async (endpoint) => {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(endpoint, {
       method: 'GET',
       headers: getHeaders(),
+      credentials: 'same-origin',
     });
 
     return await handleResponse(response);
@@ -87,9 +78,10 @@ export const getRequest = async (endpoint) => {
 
 export const deleteRequest = async (endpoint) => {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(endpoint, {
       method: 'DELETE',
       headers: getHeaders(),
+      credentials: 'same-origin',
     });
 
     return await handleResponse(response);

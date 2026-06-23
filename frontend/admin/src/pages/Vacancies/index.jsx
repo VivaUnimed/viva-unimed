@@ -1,270 +1,501 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import {
-  LuTriangleAlert,
   LuCalendarCheck,
+  LuChevronDown,
   LuSearch,
-  LuScanLine,
   LuHistory,
-  LuZap,
   LuRefreshCw,
   LuPlus,
-  LuMoveRight,
+  LuClock3,
+  LuUsers,
+  LuCircleCheck,
+  LuCircleX,
+  LuSend,
+  LuFilter,
 } from 'react-icons/lu';
+
+import {
+  getSlotAction,
+  loadVacancies,
+  persistVacancies,
+} from '../../data/vacancies';
+
 import './styles.css';
 
-const generatedSlots = [
+const summaryCards = [
   {
     id: 1,
-    time: '14:30',
-    date: 'Hoje, 24 Out',
-    specialty: 'Cardiologia',
-    professional: 'Dr. Ricardo Almeida',
-    status: 'success',
-    statusText: 'Sucesso (12 enviados)',
-    action: 'Gerenciar',
+    label: 'Abertas',
+    icon: LuCalendarCheck,
+    modifier: 'open',
+    matches: (slot) => slot.vacancyStatus === 'open',
   },
   {
     id: 2,
-    time: '15:15',
-    date: 'Hoje, 24 Out',
-    specialty: 'Ortopedia',
-    professional: 'Dra. Heloísa Santos',
-    status: 'sending',
-    statusText: 'Enviando...',
-    action: 'Aguarde',
+    label: 'Aguardando aceite',
+    icon: LuClock3,
+    modifier: 'waiting',
+    matches: (slot) => slot.vacancyStatus === 'waiting-acceptance',
   },
   {
     id: 3,
-    time: '16:45',
-    date: 'Hoje, 24 Out',
-    specialty: 'Pediatria',
-    professional: 'Dr. Fábio Mello',
-    status: 'waiting',
-    statusText: 'Aguardando Disparo',
-    action: 'Disparar Notificações',
+    label: 'Confirmadas',
+    icon: LuCircleCheck,
+    modifier: 'confirmed',
+    matches: (slot) => slot.vacancyStatus === 'confirmed',
   },
   {
     id: 4,
-    time: '09:00',
-    date: 'Amanhã, 25 Out',
-    specialty: 'Dermatologia',
-    professional: 'Dra. Cláudia Lima',
-    status: 'error',
-    statusText: 'Erro no Disparo (Fila Vazia)',
-    action: 'retry',
+    label: 'Expiradas',
+    icon: LuHistory,
+    modifier: 'expired',
+    matches: (slot) => slot.vacancyStatus === 'expired',
+  },
+  {
+    id: 5,
+    label: 'Canceladas',
+    icon: LuCircleX,
+    modifier: 'cancelled',
+    matches: (slot) => slot.vacancyStatus === 'cancelled',
+  },
+  {
+    id: 6,
+    label: 'Falhas no disparo',
+    icon: LuSend,
+    modifier: 'error',
+    matches: (slot) => slot.dispatchStatus === 'error',
   },
 ];
 
-const waitingPatients = [
-  {
-    id: 1,
-    specialty: 'Cardiologia',
-    total: '18',
-  },
-  {
-    id: 2,
-    specialty: 'Ortopedia',
-    total: '24',
-  },
-  {
-    id: 3,
-    specialty: 'Ginecologia',
-    total: '07',
-  },
+const vacancyStatusOptions = [
+  { value: '', label: 'Todos os status da vaga' },
+  { value: 'open', label: 'Aberta' },
+  { value: 'waiting-acceptance', label: 'Aguardando aceite' },
+  { value: 'confirmed', label: 'Confirmada' },
+  { value: 'expired', label: 'Expirada' },
+  { value: 'cancelled', label: 'Cancelada' },
 ];
+
+const dispatchStatusOptions = [
+  { value: '', label: 'Todos os status do disparo' },
+  { value: 'success', label: 'Enviado com sucesso' },
+  { value: 'error', label: 'Falha no disparo' },
+];
+
+function formatSummaryValue(value) {
+  return String(value).padStart(2, '0');
+}
+
+function createRetryHistoryEntry(slot) {
+  return {
+    id: `${slot.id}-retry-${Date.now()}`,
+    title: 'Disparo reenviado com sucesso',
+    description: 'Nova tentativa simulada a partir da tela de vagas.',
+    timestamp: 'Agora',
+  };
+}
 
 export default function Vacancies() {
+  const navigate = useNavigate();
+  const [slots, setSlots] = useState(loadVacancies);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [vacancyStatusFilter, setVacancyStatusFilter] = useState('');
+  const [dispatchStatusFilter, setDispatchStatusFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [queueModalSlot, setQueueModalSlot] = useState(null);
+
+  useEffect(() => {
+    if (!feedbackMessage) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFeedbackMessage('');
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [feedbackMessage]);
+
+  const dateOptions = [...new Set(slots.map((slot) => slot.date))];
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const hasActiveFilters = Boolean(
+    normalizedSearchTerm
+    || vacancyStatusFilter
+    || dispatchStatusFilter
+    || dateFilter
+  );
+
+  const filteredSlots = slots.filter((slot) => {
+    const matchesSearch = !normalizedSearchTerm
+      || slot.specialty.toLowerCase().includes(normalizedSearchTerm)
+      || slot.professional.toLowerCase().includes(normalizedSearchTerm)
+      || slot.confirmedPatient?.toLowerCase().includes(normalizedSearchTerm);
+
+    const matchesVacancyStatus = !vacancyStatusFilter
+      || slot.vacancyStatus === vacancyStatusFilter;
+
+    const matchesDispatchStatus = !dispatchStatusFilter
+      || slot.dispatchStatus === dispatchStatusFilter;
+
+    const matchesDate = !dateFilter || slot.date === dateFilter;
+
+    return (
+      matchesSearch
+      && matchesVacancyStatus
+      && matchesDispatchStatus
+      && matchesDate
+    );
+  });
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setVacancyStatusFilter('');
+    setDispatchStatusFilter('');
+    setDateFilter('');
+  };
+
+  const updateSlots = (updater) => {
+    setSlots((currentSlots) => {
+      const nextSlots = typeof updater === 'function'
+        ? updater(currentSlots)
+        : updater;
+
+      persistVacancies(nextSlots);
+      return nextSlots;
+    });
+  };
+
+  const handleRetryDispatch = (slot) => {
+    updateSlots((currentSlots) =>
+      currentSlots.map((currentSlot) => {
+        if (currentSlot.id !== slot.id) {
+          return currentSlot;
+        }
+
+        return {
+          ...currentSlot,
+          dispatchStatus: 'success',
+          dispatchStatusText: 'Enviado com sucesso',
+          vacancyStatus: 'waiting-acceptance',
+          vacancyStatusText: 'Aguardando aceite',
+          expiration: 'Expira em 15 min',
+          finalDescription: '',
+          history: [...currentSlot.history, createRetryHistoryEntry(currentSlot)],
+        };
+      }),
+    );
+
+    setFeedbackMessage('Disparo reenviado com sucesso.');
+  };
+
+  const handleSlotAction = (slot) => {
+    const action = getSlotAction(slot);
+
+    switch (action.label) {
+      case 'Gerenciar':
+      case 'Ver confirmação':
+      case 'Detalhes':
+        navigate(`/vacancies/${slot.id}`);
+        break;
+      case 'Tentar novamente':
+        handleRetryDispatch(slot);
+        break;
+      case 'Ver fila':
+        setQueueModalSlot(slot);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <main className="idle-slots-page">
       <section className="idle-slots-header">
         <div>
-          <h1>Vagas Ociosas</h1>
-          <p>Gestão inteligente de desistências e otimização de agenda.</p>
+          <h1>Vagas</h1>
+          <p>
+            Gestão de vagas remanescentes, disparos e confirmações de pacientes.
+          </p>
         </div>
 
-        <div className="system-status">
-          <span>STATUS DO SISTEMA</span>
-          <strong>
-            <span className="system-status__dot" />
-            Monitoramento Ativo
-          </strong>
+        <button
+          type="button"
+          className="new-vacancy-button"
+          onClick={() => navigate('/vacancies/new', {
+            state: {
+              returnTo: '/vacancies',
+              returnLabel: 'vagas',
+            },
+          })}
+        >
+          <LuPlus size={18} />
+          Nova vaga
+        </button>
+      </section>
+
+      {feedbackMessage ? (
+        <div className="vacancy-feedback-banner" role="status">
+          <LuCircleCheck size={18} />
+          <span>{feedbackMessage}</span>
         </div>
+      ) : null}
+
+      <section className="vacancy-summary-grid">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
+          const value = slots.filter(card.matches).length;
+
+          return (
+            <article
+              key={card.id}
+              className={`vacancy-summary-card vacancy-summary-card--${card.modifier}`}
+            >
+              <div>
+                <span>{card.label}</span>
+                <strong>{formatSummaryValue(value)}</strong>
+              </div>
+
+              <div className="vacancy-summary-card__icon">
+                <Icon size={20} />
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="vacancy-filters">
+        <div className="vacancy-filters__search">
+          <LuSearch size={18} />
+          <input
+            type="text"
+            placeholder="Buscar por especialidade ou profissional..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </div>
+
+        <label className="vacancy-filter-select">
+          <LuFilter size={16} />
+          <select
+            value={vacancyStatusFilter}
+            onChange={(event) => setVacancyStatusFilter(event.target.value)}
+            aria-label="Filtrar por status da vaga"
+          >
+            {vacancyStatusOptions.map((option) => (
+              <option key={option.value || 'all-vacancy-status'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <LuChevronDown size={16} />
+        </label>
+
+        <label className="vacancy-filter-select">
+          <LuSend size={16} />
+          <select
+            value={dispatchStatusFilter}
+            onChange={(event) => setDispatchStatusFilter(event.target.value)}
+            aria-label="Filtrar por status do disparo"
+          >
+            {dispatchStatusOptions.map((option) => (
+              <option key={option.value || 'all-dispatch-status'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <LuChevronDown size={16} />
+        </label>
+
+        <label className="vacancy-filter-select">
+          <LuCalendarCheck size={16} />
+          <select
+            value={dateFilter}
+            onChange={(event) => setDateFilter(event.target.value)}
+            aria-label="Filtrar por data"
+          >
+            <option value="">Todas as datas</option>
+            {dateOptions.map((date) => (
+              <option key={date} value={date}>
+                {date}
+              </option>
+            ))}
+          </select>
+          <LuChevronDown size={16} />
+        </label>
+
+        <button
+          type="button"
+          className="vacancy-filter-button"
+          onClick={handleClearFilters}
+          disabled={!hasActiveFilters}
+        >
+          <LuRefreshCw size={16} />
+          Limpar filtros
+        </button>
       </section>
 
       <section className="idle-slots-main-grid">
-        <aside className="idle-slots-left">
-          <div className="instant-register-card">
-            <div className="instant-register-card__circle" />
-
-            <div className="instant-register-card__icon">
-              <LuTriangleAlert size={32} />
-            </div>
-
-            <h2>
-              Registro
-              <br />
-              Instantâneo
-            </h2>
-
-            <p>
-              Localize o paciente e confirme a desistência para liberar a vaga
-              imediatamente para a fila de espera.
-            </p>
-
-            <div className="instant-register-card__actions">
-              <button type="button">
-                <LuSearch size={19} />
-                Buscar por CPF ou Nome
-              </button>
-
-              <button type="button">
-                <LuScanLine size={19} />
-                Escanear Guia Médica
-              </button>
-            </div>
-          </div>
-
-          <div className="queue-efficiency-card">
-            <span>EFICIÊNCIA DE FILA</span>
-
-            <div className="queue-efficiency-card__value">
-              <strong>84%</strong>
-              <small>↗ +12%</small>
-            </div>
-
-            <p>Taxa de preenchimento de vagas ociosas nesta semana.</p>
-
-            <div className="queue-efficiency-card__progress">
-              <div />
-            </div>
-          </div>
-
-          <div className="waiting-patients-card">
-            <h3>PACIENTES EM ESPERA</h3>
-
-            {waitingPatients.map((item) => (
-              <div key={item.id} className="waiting-patients-card__item">
-                <span>{item.specialty}</span>
-                <strong>{item.total}</strong>
-              </div>
-            ))}
-          </div>
-        </aside>
-
         <section className="idle-slots-right">
           <div className="generated-slots-card">
             <div className="generated-slots-card__header">
               <div>
                 <LuCalendarCheck size={22} />
-                <h2>Vagas Geradas por Desistência</h2>
+                <h2>Vagas Remanescentes</h2>
               </div>
-
-              <button type="button">
-                Ver Histórico Completo
-                <LuMoveRight size={15} />
-              </button>
             </div>
 
             <div className="generated-slots-table-wrapper">
               <table className="generated-slots-table">
                 <thead>
                   <tr>
-                    <th>HORÁRIO ORIGINAL</th>
-                    <th>ESPECIALIDADE / PROFISSIONAL</th>
-                    <th>STATUS DISPARO</th>
+                    <th>HORÁRIO</th>
+                    <th>ESPECIALIDADE <br />/ PROFISSIONAL</th>
+                    <th>FILA</th>
+                    <th>STATUS DA VAGA</th>
+                    <th>DISPARO</th>
+                    <th>EXPIRAÇÃO</th>
+                    <th>PACIENTE</th>
                     <th>AÇÃO</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {generatedSlots.map((slot) => (
-                    <tr key={slot.id}>
-                      <td>
-                        <strong>{slot.time}</strong>
-                        <span>{slot.date}</span>
-                      </td>
+                  {filteredSlots.length > 0 ? (
+                    filteredSlots.map((slot) => {
+                      const action = getSlotAction(slot);
 
-                      <td>
-                        <strong>{slot.specialty}</strong>
-                        <span>{slot.professional}</span>
-                      </td>
+                      return (
+                        <tr key={slot.id}>
+                          <td>
+                            <strong>{slot.time}</strong>
+                            <span>{slot.date}</span>
+                          </td>
 
-                      <td>
-                        <span
-                          className={`slot-status slot-status--${slot.status}`}
-                        >
-                          {slot.statusText}
-                        </span>
-                      </td>
+                          <td>
+                            <strong>{slot.specialty}</strong>
+                            <span>{slot.professional}</span>
+                          </td>
 
-                      <td>
-                        {slot.action === 'retry' ? (
-                          <button
-                            type="button"
-                            className="slot-action slot-action--retry"
-                          >
-                            <LuRefreshCw size={22} />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className={`slot-action ${
-                              slot.status === 'waiting'
-                                ? 'slot-action--primary'
-                                : ''
-                            } ${
-                              slot.status === 'sending'
-                                ? 'slot-action--disabled'
-                                : ''
-                            }`}
-                            disabled={slot.status === 'sending'}
-                          >
-                            {slot.action}
-                          </button>
-                        )}
+                          <td>
+                            <div className="queue-patients">
+                              <LuUsers size={15} />
+                              <strong>{slot.queuePatients}</strong>
+                              <span>
+                                {slot.queuePatients === 1 ? 'paciente' : 'pacientes'}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span
+                              className={`slot-status slot-status--${slot.vacancyStatus}`}
+                            >
+                              {slot.vacancyStatusText}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span
+                              className={`slot-status slot-status--${slot.dispatchStatus}`}
+                            >
+                              {slot.dispatchStatusText}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span className="slot-expiration">
+                              {slot.expiration}
+                            </span>
+                          </td>
+
+                          <td>
+                            {slot.confirmedPatient ? (
+                              <strong className="confirmed-patient">
+                                {slot.confirmedPatient}
+                              </strong>
+                            ) : (
+                              <span className="empty-patient">—</span>
+                            )}
+                          </td>
+
+                          <td>
+                            <button
+                              type="button"
+                              className={`slot-action slot-action--${action.variant}`}
+                              disabled={Boolean(action.disabled)}
+                              onClick={() => handleSlotAction(slot)}
+                            >
+                              {action.label}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr className="generated-slots-empty-row">
+                      <td colSpan="8">
+                        <div className="generated-slots-empty">
+                          <strong>Nenhuma vaga encontrada</strong>
+                          <span>Tente ajustar ou limpar os filtros aplicados.</span>
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <div className="automation-card">
-            <div className="automation-card__left">
-              <div className="automation-card__icon">
-                <LuHistory size={42} />
-              </div>
-
-              <div>
-                <h2>
-                  Automação de
-                  <br />
-                  Fila de Espera
-                </h2>
-
-                <p>
-                  O sistema identifica automaticamente os próximos pacientes na
-                  fila de espera prioritária e dispara notificações via WhatsApp
-                  e SMS assim que uma vaga é liberada.
-                </p>
-              </div>
-            </div>
-
-            <div className="automation-card__right">
-              <button type="button">
-                <LuZap size={20} />
-                Disparar Notificações para Fila
-              </button>
-
-              <span>ÚLTIMO DISPARO GLOBAL: HÁ 14 MIN</span>
             </div>
           </div>
         </section>
       </section>
 
-      <button type="button" className="floating-action-button">
-        <LuPlus size={28} />
-      </button>
+      {queueModalSlot ? (
+        <div
+          className="vacancy-modal-overlay"
+          role="presentation"
+          onClick={() => setQueueModalSlot(null)}
+        >
+          <div
+            className="vacancy-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="queue-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="vacancy-modal__eyebrow">Fila da especialidade</span>
+            <h2 id="queue-modal-title">Fila da especialidade</h2>
+
+            <div className="vacancy-modal__content">
+              <article className="vacancy-modal__field">
+                <span>Especialidade</span>
+                <strong>{queueModalSlot.specialty}</strong>
+              </article>
+
+              <article className="vacancy-modal__field">
+                <span>Mensagem</span>
+                <p>Nenhum paciente elegível encontrado para esta especialidade.</p>
+              </article>
+
+              <article className="vacancy-modal__field">
+                <span>Orientação</span>
+                <p>
+                  Cadastre pacientes ou atualize os interesses na Gestão de Pacientes.
+                </p>
+              </article>
+            </div>
+
+            <button
+              type="button"
+              className="vacancy-modal__button"
+              onClick={() => setQueueModalSlot(null)}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

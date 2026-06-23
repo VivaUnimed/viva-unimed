@@ -1,119 +1,114 @@
 import {
   LuCalendarDays,
+  LuChartColumn,
   LuClipboard,
   LuTriangleAlert,
-  LuSquareCheck,
-  LuPlus,
-  LuChevronDown,
-  LuSparkles,
-  LuBuilding,
 } from 'react-icons/lu';
 import './styles.css';
 
-const summaryCards = [
+const dashboardCards = [
   {
-    id: 1,
-    title: 'Total de Consultas',
-    value: '1.284',
-    description: 'Referente ao mês atual',
+    id: 'vacancies-today',
+    title: 'Vagas remanescentes hoje',
+    value: '12',
+    description: 'Horários identificados para reaproveitamento',
     icon: LuCalendarDays,
     variant: 'green',
-    badge: '+12%',
   },
   {
-    id: 2,
-    title: 'Vagas Disponíveis',
-    value: '42',
-    description: 'Disponibilidade imediata',
-    icon: LuClipboard,
+    id: 'reuse-rate',
+    title: 'Taxa de aproveitamento',
+    value: '84%',
+    description: 'Vagas preenchidas pela fila',
+    icon: LuChartColumn,
     variant: 'light-green',
   },
   {
-    id: 3,
-    title: 'Taxa de No-show',
-    value: '8,4%',
-    description: 'Absenteísmo consolidado',
+    id: 'no-show-today',
+    title: 'No-show hoje',
+    value: '03',
+    description: 'Possíveis vagas a reaproveitar',
     icon: LuTriangleAlert,
     variant: 'red',
-    badge: '-3%',
   },
   {
-    id: 4,
-    title: 'Vagas Preenchidas e hoje',
-    value: '156',
-    description: 'Meta diária: 180',
-    icon: LuSquareCheck,
-    variant: 'dark-green',
-  },
-];
-
-const idleSlots = [
-  {
-    id: 1,
-    name: 'Dra. Helena Martins',
-    info: 'Cardiologia • 08:30 - 09:00',
-    status: 'CANCELADO HÁ 15M',
-    avatar:
-      'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face',
-    danger: true,
-  },
-  {
-    id: 2,
-    name: 'Dr. Marcos Oliveira',
-    info: 'Ortopedia • 10:15 - 10:45',
-    status: 'SEM AGENDAMENTO',
-    avatar:
-      'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=80&h=80&fit=crop&crop=face',
-  },
-  {
-    id: 3,
-    name: 'Dra. Ana Paula',
-    info: 'Pediatria • 11:30 - 12:00',
-    status: 'NO-SHOW DETECTADO',
-    avatar:
-      'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=80&h=80&fit=crop&crop=face',
-    danger: true,
+    id: 'dispatch-failures',
+    title: 'Falhas no disparo',
+    value: '03',
+    description: 'Notificações que exigem atenção',
+    icon: LuClipboard,
+    variant: 'red',
   },
 ];
 
-const priorities = [
+const ongoingVacancies = [
   {
     id: 1,
-    title: 'Reunião de Alinhamento - Corpo Clínico',
     time: '14:30',
-    status: 'green',
+    specialty: 'Cardiologia',
+    professional: 'Dr. Ricardo Almeida',
+    status: 'Aguardando aceite',
+    detail: 'Expira em 08 min',
+    statusVariant: 'pending',
+    actionLabel: 'Gerenciar',
   },
   {
     id: 2,
-    title: 'Auditoria de Prontuários (Digital)',
-    time: '16:00',
-    status: 'light',
+    time: '15:00',
+    specialty: 'Ortopedia',
+    professional: 'Dra. Heloísa Santos',
+    status: 'Confirmada pela fila',
+    detail: 'Ana Souza',
+    statusVariant: 'confirmed',
+    actionLabel: 'Ver confirmação',
   },
   {
     id: 3,
-    title: 'Atualização de sistema VivaUnimed v2.4',
-    time: '22:00',
-    status: 'muted',
+    time: '15:45',
+    specialty: 'Pediatria',
+    professional: 'Dr. Fábio Mello',
+    status: 'Falha no disparo',
+    detail: 'Requer atenção',
+    statusVariant: 'alert',
+    actionLabel: 'Detalhes',
   },
 ];
 
-export default function StrategicDashboard() {
+function getCurrentDateLabel() {
+  const formattedDate = new Date().toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const [day, month, year] = formattedDate.split(' de ');
+
+  if (!day || !month || !year) {
+    return formattedDate;
+  }
+
+  return `${day} de ${month.charAt(0).toUpperCase()}${month.slice(1)}, ${year}`;
+}
+
+export default function AdminDashboard() {
+  const currentDateLabel = getCurrentDateLabel();
+
   return (
     <main className="strategic-dashboard-page">
       <section className="strategic-dashboard-header">
         <div>
-          <h1>Dashboard Estratégico</h1>
-          <p>Visão consolidada da operação VivaUnimed em tempo real.</p>
+          <h1>Dashboard</h1>
+          <p>Visão consolidada da operação de vagas remanescentes em tempo real.</p>
         </div>
 
         <div className="strategic-dashboard-date">
           <LuCalendarDays size={14} />
-          <span>e hoje: 24 de Maio, 2024</span>
+          <span>{currentDateLabel}</span>
         </div>
       </section>
 
       <section className="strategic-summary-grid">
-        {summaryCards.map((card) => {
+        {dashboardCards.map((card) => {
           const Icon = card.icon;
 
           return (
@@ -125,12 +120,6 @@ export default function StrategicDashboard() {
                 <div className="strategic-summary-card__icon">
                   <Icon size={20} />
                 </div>
-
-                {card.badge && (
-                  <span className="strategic-summary-card__badge">
-                    {card.badge}
-                  </span>
-                )}
               </div>
 
               <h2>{card.title}</h2>
@@ -141,120 +130,44 @@ export default function StrategicDashboard() {
         })}
       </section>
 
-      <section className="strategic-main-grid">
-        <div className="absence-history-card">
-          <div className="absence-history-card__header">
-            <div>
-              <h2>Histórico de Faltas</h2>
-              <p>Análise de absenteísmo nos últimos 7 dias</p>
-            </div>
-
-            <button type="button">
-              Semana Atual
-              <LuChevronDown size={14} />
-            </button>
+      <section className="strategic-bottom-grid">
+        <div className="schedules-card">
+          <div className="schedules-card__header">
+            <h2>Vagas em andamento</h2>
+            <p>Horários aguardando aceite ou confirmação pela fila inteligente</p>
           </div>
 
-          <div className="absence-chart">
-            <div className="absence-chart__line" />
-            <div className="absence-chart__line" />
-            <div className="absence-chart__line" />
+          <div className="schedules-list">
+            {ongoingVacancies.map((vacancy) => (
+              <div key={vacancy.id} className="schedule-item">
+                <div className="schedule-item__time">{vacancy.time}</div>
 
-            <div className="absence-chart__labels">
-              <span>SEG</span>
-              <span>TER</span>
-              <span className="active">QUA</span>
-              <span>QUI</span>
-              <span>SEX</span>
-              <span>SAB</span>
-              <span>DOM</span>
-            </div>
-          </div>
-        </div>
+                <div className="schedule-item__content">
+                  <div className="schedule-item__info">
+                    <strong>{vacancy.specialty}</strong>
+                    <span>{vacancy.professional}</span>
 
-        <aside className="dashboard-idle-slots-card">
-          <div className="dashboard-idle-slots-card__title">
-            <LuTriangleAlert size={18} />
-            <h2>Vagas Ociosas</h2>
-          </div>
+                    <div className="schedule-item__status-row">
+                      <span
+                        className={`schedule-item__status schedule-item__status--${vacancy.statusVariant}`}
+                      >
+                        {vacancy.status}
+                      </span>
+                      <span className="schedule-item__detail">{vacancy.detail}</span>
+                    </div>
+                  </div>
 
-          <div className="dashboard-idle-slots-list">
-            {idleSlots.map((item) => (
-              <div key={item.id} className="dashboard-idle-slot-item">
-                <img src={item.avatar} alt={item.name} />
-
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>{item.info}</span>
-                  <small className={item.danger ? 'danger' : ''}>
-                    {item.status}
-                  </small>
+                  <div className="schedule-item__meta">
+                    <button type="button" className="schedule-item__action">
+                      {vacancy.actionLabel}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-
-          <button type="button" className="dashboard-idle-slots-card__button">
-            VER TODAS AS OCORRÊNCIAS
-          </button>
-        </aside>
-      </section>
-
-      <section className="strategic-bottom-grid">
-        <div className="optimization-card">
-          <div className="optimization-card__content">
-            <span>DESTAQUE OPERACIONAL</span>
-
-            <h2>
-              Otimização de
-              <br />
-              Agenda em Tempo
-              <br />
-              Real
-            </h2>
-
-            <p>
-              Nossa IA identificou 5 janelas de oportunidade para remanejamento
-              de pacientes da fila de espera para as vagas ociosas de hoje.
-            </p>
-
-            <button type="button">Executar Remanejamento</button>
-          </div>
-
-          <div className="optimization-card__icon">
-            <LuSparkles size={40} />
-          </div>
-        </div>
-
-        <div className="priorities-card">
-          <h2>Próximas Prioridades</h2>
-
-          <div className="priorities-list">
-            {priorities.map((priority) => (
-              <div key={priority.id} className="priority-item">
-                <span className={`priority-dot priority-dot--${priority.status}`} />
-                <p>{priority.title}</p>
-                <strong>{priority.time}</strong>
-              </div>
-            ))}
-          </div>
-
-          <div className="unit-status">
-            <div className="unit-status__image">
-              <LuBuilding size={36} />
-            </div>
-
-            <div>
-              <strong>Unidade Litoral Sul</strong>
-              <span>Status: Operação Normal</span>
-            </div>
-          </div>
         </div>
       </section>
-
-      <button type="button" className="strategic-floating-button">
-        <LuPlus size={26} />
-      </button>
     </main>
   );
 }
