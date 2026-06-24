@@ -1,0 +1,94 @@
+services:
+  traefik:
+    image: traefik:v3.7.5
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - letsencrypt-data:/var/traefik/certs/:rw
+    networks:
+      - traefik-net
+    restart:
+      unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    # deploy:
+      # mode: replicated
+      # replicas: 3
+    environment:
+      - SERVER_PORT=3000
+      - DB_ADDRESS=${DB_ADDRESS}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_DATABASE=${DB_DATABASE}
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
+      - APPOINTMENT_JOB_CRON=0/1 * * * 1-5
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=PathPrefix(`/api`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls=true
+      - traefik.http.routers.api.tls.certresolver=letsencrypt
+      - traefik.docker.network=traefik-net
+    networks:
+      - traefik-net
+    restart: unless-stopped
+  front-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: front-admin
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontadmin.rule=PathPrefix(`/admin`)
+      - traefik.http.routers.frontadmin.entrypoints=websecure
+      - traefik.http.routers.frontadmin.tls=true
+      - traefik.http.routers.frontadmin.tls.certresolver=letsencrypt
+      - traefik.docker.network=traefik-net
+    networks:
+      - traefik-net
+    restart: unless-stopped
+  front-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: front-client
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontclient.rule=PathPrefix(`/`)
+      - traefik.http.routers.frontclient.entrypoints=websecure
+      - traefik.http.routers.frontclient.tls=true
+      - traefik.http.routers.frontclient.tls.certresolver=letsencrypt
+      - traefik.docker.network=traefik-net
+    networks:
+      - traefik-net
+    restart: unless-stopped
+
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: postgres_db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: myuser
+  #     POSTGRES_PASSWORD: mysecretpassword
+  #     POSTGRES_DB: mydatabase
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  letsencrypt-data:
+  # postgres_data:
+networks:
+  traefik-net:
+    name: traefik-net
+    driver: bridge

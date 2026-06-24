@@ -1,0 +1,29 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+log:
+  level: ERROR
+api:
+  dashboard: true
+  insecure: true
+entryPoints:
+  web:
+    address: :80
+    # http:
+    #   redirections:
+    #     entryPoint:
+    #       to: websecure
+    #       scheme: https
+  websecure:
+    address: :443
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: teste@teste.com
+      storage: /var/traefik/certs/letsencrypt-acme.json
+      httpChallenge:
+        entryPoint: web
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false

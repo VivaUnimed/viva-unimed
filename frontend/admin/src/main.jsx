@@ -7,8 +7,9 @@ import AuthProvider from './context/authContext/authProvider.jsx';
 import ProfessionalProvider from './context/professionalContext/professionalProvider.jsx';
 import PatientProvider from './context/patientContext/patientProvider.jsx';
 
+
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
+  <BrowserRouter basename='admin'>
     <AuthProvider>
       <ProfessionalProvider>
         <PatientProvider>
