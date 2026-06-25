@@ -23,10 +23,10 @@ export class Database {
         max: 30,
       },
       dialectOptions: {
-        ssl: {
+        ssl: config.DB_ENABLE_SSL ? {
           require: config.DB_ENABLE_SSL,
           rejectUnauthorized: false,
-        }
+        } : undefined,
       },
     });
     await this.testConnection();
