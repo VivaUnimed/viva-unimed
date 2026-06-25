@@ -1,5 +1,13 @@
 # Multi-stage build
-FROM node:24 AS builder
+
+FROM node:24 AS base
+WORKDIR /app
+COPY package*.json ./
+COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
+RUN npm install --production
+
+FROM base AS builder
 WORKDIR /app
 COPY package*.json ./
 COPY backend/package.json ./backend/
@@ -51,12 +59,8 @@ EXPOSE 80/tcp
 CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
 
 
-FROM node:24 AS api
+FROM base AS api
 WORKDIR /app
-COPY package*.json ./
-COPY backend/package.json ./backend/
-COPY shared/package.json ./shared/
-RUN npm install --production
 # # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs

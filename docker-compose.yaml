@@ -30,6 +30,7 @@ services:
       - DB_DATABASE=${DB_DATABASE}
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
       - APPOINTMENT_JOB_CRON=0/1 * * * 1-5
     labels:
       - traefik.enable=true
@@ -56,6 +57,8 @@ services:
     networks:
       - traefik-net
     restart: unless-stopped
+    depends_on:
+      - api
   front-client:
     build:
       context: .
@@ -71,23 +74,12 @@ services:
     networks:
       - traefik-net
     restart: unless-stopped
-
-  # db:
-  #   image: postgres:16-alpine
-  #   container_name: postgres_db
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_USER: myuser
-  #     POSTGRES_PASSWORD: mysecretpassword
-  #     POSTGRES_DB: mydatabase
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
+    depends_on:
+      - api
 
 volumes:
   letsencrypt-data:
-  # postgres_data:
+  postgres_data:
 networks:
   traefik-net:
     name: traefik-net
