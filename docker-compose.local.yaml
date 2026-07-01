@@ -17,6 +17,8 @@ services:
       - DB_DATABASE=viva_unimed
       - DEFAULT_ADMIN_EMAIL=admin@viva.com
       - DEFAULT_ADMIN_PASSWORD=123456
+      - JWT_SECRET=usar_uma_string_segura_para_esta_parte
+      - APPOINTMENT_JOB_CRON=0/1 * * * 1-5
     depends_on:
       - db
     networks:
