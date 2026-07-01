@@ -18,5 +18,8 @@
     "admin": "npm -w frontend/admin run dev",
     "build:shared": "npm -w shared run build",
     "client": "npm -w frontend/client run dev"
+  },
+  "devDependencies": {
+    "axios": "^1.18.1"
   }
 }

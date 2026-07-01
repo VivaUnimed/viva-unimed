@@ -8,7 +8,7 @@
     "build:routes": "tsoa spec-and-routes",
     "build": "npm run build:routes && tsc",
     "start": "npm run build:routes && tsc && node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run build && vitest run --no-isolate"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +20,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.2",
     "@types/swagger-ui-express": "^4.1.8",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
