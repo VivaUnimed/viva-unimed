@@ -27,4 +27,21 @@ describe('user controller', () => {
     expect(res.data.name).toBe('User 1');
     expect(res.data.id).toBeDefined();
   })
+
+  it('adiciona permissão', async () => {
+    const res = await client.put(`/api/user/1/roles`, {
+      role: 'Paciente',
+    });
+    expect(res.status).toBe(204);
+  })
+
+  it('remove permissão', async () => {
+    const res = await client.delete(`/api/user/1/roles`, {
+      data: {
+        role: 'Paciente',
+      },
+    });
+    expect(res.status).toBe(204);
+  })
+
 })
