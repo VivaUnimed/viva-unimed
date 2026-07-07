@@ -10,9 +10,16 @@ import {
   LuClipboardList,
 } from 'react-icons/lu';
 import { FaUserDoctor } from 'react-icons/fa6';
+import { useAuth } from '../../../context/authContext/authContext';
 import './styles.css';
 
 export default function Sidebar({ isHidden = false }) {
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <aside
       id="app-sidebar"
@@ -64,7 +71,11 @@ export default function Sidebar({ isHidden = false }) {
           <span>Configurações</span>
         </NavLink>
 
-        <button className="sidebar__logout-btn" type="button">
+        <button
+          className="sidebar__logout-btn"
+          type="button"
+          onClick={handleLogout}
+        >
           <LuLogOut className="sidebar__icon" />
           <span>Sair</span>
         </button>

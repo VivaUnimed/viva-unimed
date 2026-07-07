@@ -1,190 +1,185 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  LuChevronDown,
   LuClipboardList,
   LuPlus,
   LuRefreshCw,
   LuSearch,
-  LuSlidersHorizontal,
   LuX,
 } from 'react-icons/lu';
+import { useSpecialties } from '../../context/specialtyContext/specialtyContext';
 import './styles.css';
-
-const specialties = [
-  {
-    id: 1,
-    name: 'Cardiologia',
-    description:
-      'Especialidade voltada ao diagnóstico e tratamento de doenças do coração.',
-    professionalsCount: 8,
-    patientsInterested: 42,
-    activeVacancies: 3,
-    status: 'active',
-  },
-  {
-    id: 2,
-    name: 'Dermatologia',
-    description:
-      'Cuida da prevenção, avaliação clínica e tratamentos relacionados à pele.',
-    professionalsCount: 5,
-    patientsInterested: 28,
-    activeVacancies: 1,
-    status: 'active',
-  },
-  {
-    id: 3,
-    name: 'Ortopedia',
-    description:
-      'Responsável pelo acompanhamento de lesões, ossos, articulações e postura.',
-    professionalsCount: 6,
-    patientsInterested: 19,
-    activeVacancies: 2,
-    status: 'active',
-  },
-  {
-    id: 4,
-    name: 'Pediatria',
-    description:
-      'Atendimento focado no cuidado integral de crianças e adolescentes.',
-    professionalsCount: 4,
-    patientsInterested: 33,
-    activeVacancies: 0,
-    status: 'inactive',
-  },
-  {
-    id: 5,
-    name: 'Ginecologia',
-    description:
-      'Especialidade dedicada à saúde da mulher, prevenção e acompanhamento clínico.',
-    professionalsCount: 7,
-    patientsInterested: 24,
-    activeVacancies: 2,
-    status: 'active',
-  },
-];
-
-const statusOptions = [
-  { value: '', label: 'Status: Todas' },
-  { value: 'active', label: 'Ativas' },
-  { value: 'inactive', label: 'Inativas' },
-];
-
-const professionalsOptions = [
-  { value: '', label: 'Profissionais: Todas' },
-  { value: 'with-professionals', label: 'Com profissionais' },
-  { value: 'without-professionals', label: 'Sem profissionais' },
-];
-
-const patientsOptions = [
-  { value: '', label: 'Pacientes: Todas' },
-  { value: 'with-patients', label: 'Com pacientes na fila' },
-  { value: 'without-patients', label: 'Sem pacientes na fila' },
-];
 
 const initialFormState = {
   name: '',
-  description: '',
-  status: 'active',
 };
 
-function normalizeText(value) {
+function normalizeText(value = '') {
   return value
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-function formatStatus(status) {
-  return status === 'active' ? 'Ativa' : 'Inativa';
+function getSummaryLabel(total) {
+  return `${total} ${total === 1 ? 'especialidade cadastrada' : 'especialidades cadastradas'} no ambiente administrativo.`;
+}
+
+function SpecialtiesModal({
+  title,
+  description,
+  onClose,
+  children,
+}) {
+  return (
+    <div className="specialties-modal-backdrop" onClick={onClose}>
+      <section
+        className="specialties-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="specialties-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="specialties-modal__header">
+          <div>
+            <h3 id="specialties-modal-title">{title}</h3>
+            <p>{description}</p>
+          </div>
+
+          <button
+            type="button"
+            className="specialties-modal__close"
+            onClick={onClose}
+            aria-label="Fechar modal"
+          >
+            <LuX size={18} />
+          </button>
+        </div>
+
+        {children}
+      </section>
+    </div>
+  );
+}
+
+function DeleteSpecialtyModal({
+  specialty,
+  isLoading,
+  onClose,
+  onConfirm,
+}) {
+  return (
+    <SpecialtiesModal
+      title="Excluir especialidade"
+      description="Essa ação removerá a especialidade cadastrada no ambiente administrativo."
+      onClose={onClose}
+    >
+      <div className="specialties-modal__body specialties-confirmation">
+        <p>
+          Tem certeza que deseja excluir{' '}
+          <strong>{specialty?.name}</strong>?
+        </p>
+
+        <div className="specialties-form__actions">
+          <button
+            type="button"
+            className="specialties-form__cancel"
+            onClick={onClose}
+            disabled={isLoading}
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            className="specialties-form__delete"
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Excluindo...' : 'Excluir'}
+          </button>
+        </div>
+      </div>
+    </SpecialtiesModal>
+  );
 }
 
 export default function Specialties() {
-  const [specialtiesList, setSpecialtiesList] = useState(specialties);
+  const {
+    specialtyState,
+    getSpecialties,
+    createSpecialty,
+    updateSpecialty,
+    deleteSpecialty,
+  } = useSpecialties();
+  const { specialties, isLoading, error } = specialtyState;
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [professionalsFilter, setProfessionalsFilter] = useState('');
-  const [patientsFilter, setPatientsFilter] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSpecialtyId, setEditingSpecialtyId] = useState(null);
   const [formData, setFormData] = useState(initialFormState);
+  const [specialtyPendingDelete, setSpecialtyPendingDelete] = useState(null);
 
+  useEffect(() => {
+    const loadSpecialties = async () => {
+      try {
+        await getSpecialties();
+      } catch {
+        // O estado global já armazena a falha para a interface.
+      }
+    };
+
+    loadSpecialties();
+  }, []);
+
+  const specialtiesList = Array.isArray(specialties) ? specialties : [];
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
-  const hasActiveFilters = Boolean(
-    normalizedSearchTerm || statusFilter || professionalsFilter || patientsFilter
-  );
-
-  const editingSpecialty = specialtiesList.find(
-    (specialty) => specialty.id === editingSpecialtyId
-  );
-
-  const modalMetrics = editingSpecialty ?? {
-    professionalsCount: 0,
-    patientsInterested: 0,
-    activeVacancies: 0,
-  };
-
-  const activeSpecialtiesCount = specialtiesList.filter(
-    (specialty) => specialty.status === 'active'
-  ).length;
-
-  const inactiveSpecialtiesCount = specialtiesList.length - activeSpecialtiesCount;
+  const hasActiveFilters = Boolean(normalizedSearchTerm);
 
   const filteredSpecialties = specialtiesList.filter((specialty) => {
-    const matchesSearch =
-      !normalizedSearchTerm ||
-      normalizeText(specialty.name).includes(normalizedSearchTerm) ||
-      normalizeText(specialty.description).includes(normalizedSearchTerm);
-
-    const matchesStatus =
-      !statusFilter || specialty.status === statusFilter;
-
-    const matchesProfessionals =
-      !professionalsFilter ||
-      (professionalsFilter === 'with-professionals'
-        ? specialty.professionalsCount > 0
-        : specialty.professionalsCount === 0);
-
-    const matchesPatients =
-      !patientsFilter ||
-      (patientsFilter === 'with-patients'
-        ? specialty.patientsInterested > 0
-        : specialty.patientsInterested === 0);
-
     return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesProfessionals &&
-      matchesPatients
+      !normalizedSearchTerm ||
+      normalizeText(specialty.name ?? '').includes(normalizedSearchTerm)
     );
   });
 
+  const handleRefresh = async () => {
+    try {
+      await getSpecialties();
+    } catch {
+      // O estado global já armazena a falha para a interface.
+    }
+  };
+
   const handleClearFilters = () => {
     setSearchTerm('');
-    setStatusFilter('');
-    setProfessionalsFilter('');
-    setPatientsFilter('');
   };
 
   const handleOpenCreateModal = () => {
     setEditingSpecialtyId(null);
     setFormData(initialFormState);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
   const handleOpenEditModal = (specialty) => {
     setEditingSpecialtyId(specialty.id);
     setFormData({
-      name: specialty.name,
-      description: specialty.description,
-      status: specialty.status,
+      name: specialty.name ?? '',
     });
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
     setEditingSpecialtyId(null);
     setFormData(initialFormState);
+  };
+
+  const handleOpenDeleteModal = (specialty) => {
+    setSpecialtyPendingDelete(specialty);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setSpecialtyPendingDelete(null);
   };
 
   const handleChangeForm = (event) => {
@@ -195,50 +190,49 @@ export default function Specialties() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const nextSpecialtyData = {
+    const payload = {
       name: formData.name.trim(),
-      description: formData.description.trim(),
-      status: formData.status,
     };
 
-    if (editingSpecialtyId !== null) {
-      setSpecialtiesList((currentList) =>
-        currentList.map((specialty) =>
-          specialty.id === editingSpecialtyId
-            ? { ...specialty, ...nextSpecialtyData }
-            : specialty
-        )
-      );
-    } else {
-      setSpecialtiesList((currentList) => [
-        {
-          id: Math.max(0, ...currentList.map((specialty) => specialty.id)) + 1,
-          professionalsCount: 0,
-          patientsInterested: 0,
-          activeVacancies: 0,
-          ...nextSpecialtyData,
-        },
-        ...currentList,
-      ]);
-    }
+    try {
+      if (editingSpecialtyId !== null) {
+        await updateSpecialty(payload, editingSpecialtyId);
+      } else {
+        await createSpecialty(payload);
+      }
 
-    handleCloseModal();
+      handleCloseFormModal();
+    } catch {
+      // O estado global já armazena a falha para a interface.
+    }
   };
 
-  const handleToggleStatus = (specialtyId) => {
-    setSpecialtiesList((currentList) =>
-      currentList.map((specialty) =>
-        specialty.id === specialtyId
-          ? {
-              ...specialty,
-              status: specialty.status === 'active' ? 'inactive' : 'active',
-            }
-          : specialty
-      )
-    );
+  const handleConfirmDelete = async () => {
+    if (!specialtyPendingDelete) {
+      return;
+    }
+
+    try {
+      await deleteSpecialty(specialtyPendingDelete.id);
+      handleCloseDeleteModal();
+    } catch {
+      // O estado global já armazena a falha para a interface.
+    }
+  };
+
+  const getEmptyStateMessage = () => {
+    if (isLoading) {
+      return 'Carregando especialidades...';
+    }
+
+    if (hasActiveFilters) {
+      return 'Nenhuma especialidade encontrada para a busca informada.';
+    }
+
+    return 'Nenhuma especialidade cadastrada.';
   };
 
   return (
@@ -262,6 +256,20 @@ export default function Specialties() {
         </button>
       </section>
 
+      {error ? (
+        <div className="specialties-feedback-banner specialties-feedback-banner--error" role="alert">
+          <LuX size={16} />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="specialties-feedback-banner" role="status">
+          <LuRefreshCw size={16} className="specialties-feedback-banner__spinner" />
+          <span>Sincronizando especialidades com o backend...</span>
+        </div>
+      ) : null}
+
       <section className="specialties-table-card">
         <div className="specialties-table-card__header">
           <div>
@@ -270,10 +278,7 @@ export default function Specialties() {
               <h2>Especialidades cadastradas</h2>
             </div>
 
-            <p>
-              {activeSpecialtiesCount} ativas e {inactiveSpecialtiesCount} inativas
-              no ambiente administrativo.
-            </p>
+            <p>{getSummaryLabel(specialtiesList.length)}</p>
           </div>
         </div>
 
@@ -288,74 +293,35 @@ export default function Specialties() {
             />
           </div>
 
-          <label className="specialties-filter-button">
-            <LuSlidersHorizontal size={16} />
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              aria-label="Filtrar por status"
+          <div className="specialties-filters__actions">
+            <button
+              type="button"
+              className="specialties-filter-action-button"
+              onClick={handleRefresh}
+              disabled={isLoading}
             >
-              {statusOptions.map((option) => (
-                <option key={option.value || option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <LuChevronDown size={16} className="specialties-filter-button__chevron" />
-          </label>
+              <LuRefreshCw size={16} />
+              Atualizar
+            </button>
 
-          <label className="specialties-filter-button specialties-filter-button--wide">
-            <LuSlidersHorizontal size={16} />
-            <select
-              value={professionalsFilter}
-              onChange={(event) => setProfessionalsFilter(event.target.value)}
-              aria-label="Filtrar por quantidade de profissionais"
+            <button
+              type="button"
+              className="specialties-filter-action-button"
+              onClick={handleClearFilters}
+              disabled={!hasActiveFilters}
             >
-              {professionalsOptions.map((option) => (
-                <option key={option.value || option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <LuChevronDown size={16} className="specialties-filter-button__chevron" />
-          </label>
-
-          <label className="specialties-filter-button specialties-filter-button--wide">
-            <LuSlidersHorizontal size={16} />
-            <select
-              value={patientsFilter}
-              onChange={(event) => setPatientsFilter(event.target.value)}
-              aria-label="Filtrar por pacientes interessados"
-            >
-              {patientsOptions.map((option) => (
-                <option key={option.value || option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <LuChevronDown size={16} className="specialties-filter-button__chevron" />
-          </label>
-
-          <button
-            type="button"
-            className="specialties-filter-clear-button"
-            onClick={handleClearFilters}
-            disabled={!hasActiveFilters}
-          >
-            <LuRefreshCw size={16} />
-            Limpar filtros
-          </button>
+              <LuX size={16} />
+              Limpar busca
+            </button>
+          </div>
         </div>
 
         <div className="specialties-table-wrapper">
           <table className="specialties-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>ESPECIALIDADE</th>
-                <th>PROFISSIONAIS VINCULADOS</th>
-                <th>PACIENTES INTERESSADOS</th>
-                <th>VAGAS ABERTAS</th>
-                <th>STATUS</th>
                 <th>AÇÕES</th>
               </tr>
             </thead>
@@ -365,53 +331,13 @@ export default function Specialties() {
                 filteredSpecialties.map((specialty) => (
                   <tr key={specialty.id}>
                     <td>
+                      <span className="specialty-id-badge">#{specialty.id}</span>
+                    </td>
+
+                    <td>
                       <div className="specialty-info">
                         <strong>{specialty.name}</strong>
-                        <span>{specialty.description}</span>
                       </div>
-                    </td>
-
-                    <td>
-                      <div className="specialty-metric">
-                        <strong>{specialty.professionalsCount}</strong>
-                        <span>
-                          {specialty.professionalsCount === 1
-                            ? 'profissional'
-                            : 'profissionais'}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td>
-                      <div className="specialty-metric">
-                        <strong>{specialty.patientsInterested}</strong>
-                        <span>
-                          {specialty.patientsInterested === 1
-                            ? 'paciente'
-                            : 'pacientes'}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td>
-                      <div className="specialty-metric specialty-metric--vacancies">
-                        <strong>{specialty.activeVacancies}</strong>
-                        <span>
-                          {specialty.activeVacancies === 1 ? 'vaga aberta' : 'vagas abertas'}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td>
-                      <span
-                        className={
-                          specialty.status === 'active'
-                            ? 'specialties-status-badge specialties-status-badge--active'
-                            : 'specialties-status-badge specialties-status-badge--inactive'
-                        }
-                      >
-                        {formatStatus(specialty.status)}
-                      </span>
                     </td>
 
                     <td>
@@ -420,20 +346,18 @@ export default function Specialties() {
                           type="button"
                           className="specialties-actions__edit"
                           onClick={() => handleOpenEditModal(specialty)}
+                          disabled={isLoading}
                         >
                           Editar
                         </button>
 
                         <button
                           type="button"
-                          className={
-                            specialty.status === 'active'
-                              ? 'specialties-actions__deactivate'
-                              : 'specialties-actions__activate'
-                          }
-                          onClick={() => handleToggleStatus(specialty.id)}
+                          className="specialties-actions__delete"
+                          onClick={() => handleOpenDeleteModal(specialty)}
+                          disabled={isLoading}
                         >
-                          {specialty.status === 'active' ? 'Desativar' : 'Ativar'}
+                          Excluir
                         </button>
                       </div>
                     </td>
@@ -441,8 +365,8 @@ export default function Specialties() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="specialties-table__empty">
-                    Nenhuma especialidade encontrada com os filtros aplicados.
+                  <td colSpan="3" className="specialties-table__empty">
+                    {getEmptyStateMessage()}
                   </td>
                 </tr>
               )}
@@ -458,113 +382,69 @@ export default function Specialties() {
         </div>
       </section>
 
-      {isModalOpen ? (
-        <div className="specialties-modal-backdrop" onClick={handleCloseModal}>
-          <section
-            className="specialties-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="specialties-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="specialties-modal__header">
-              <div>
-                <h3 id="specialties-modal-title">
-                  {editingSpecialtyId !== null
-                    ? 'Editar especialidade'
-                    : 'Nova especialidade'}
-                </h3>
-                <p>
-                  {editingSpecialtyId !== null
-                    ? 'Atualize os dados da especialidade utilizada no sistema.'
-                    : 'Cadastre uma nova especialidade para uso nas filas, vagas e profissionais.'}
-                </p>
-              </div>
+      {isFormModalOpen ? (
+        <SpecialtiesModal
+          title={
+            editingSpecialtyId !== null
+              ? 'Editar especialidade'
+              : 'Nova especialidade'
+          }
+          description={
+            editingSpecialtyId !== null
+              ? 'Atualize o nome da especialidade utilizada no sistema.'
+              : 'Cadastre uma nova especialidade para uso nas filas, vagas e profissionais.'
+          }
+          onClose={handleCloseFormModal}
+        >
+          <form className="specialties-form" onSubmit={handleSubmit}>
+            <label>
+              Nome da especialidade
+              <input
+                type="text"
+                name="name"
+                placeholder="Ex: Oftalmologia"
+                value={formData.name}
+                onChange={handleChangeForm}
+                maxLength={80}
+                required
+              />
+            </label>
 
+            <div className="specialties-form__actions">
               <button
                 type="button"
-                className="specialties-modal__close"
-                onClick={handleCloseModal}
-                aria-label="Fechar modal"
+                className="specialties-form__cancel"
+                onClick={handleCloseFormModal}
+                disabled={isLoading}
               >
-                <LuX size={18} />
+                Cancelar
               </button>
-            </div>
 
-            <form className="specialties-form" onSubmit={handleSubmit}>
-              <label>
-                Nome da especialidade
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Ex: Oftalmologia"
-                  value={formData.name}
-                  onChange={handleChangeForm}
-                  maxLength={80}
-                  required
-                />
-              </label>
-
-              <label>
-                Descrição
-                <textarea
-                  name="description"
-                  placeholder="Descreva brevemente o contexto de uso desta especialidade."
-                  value={formData.description}
-                  onChange={handleChangeForm}
-                  rows={4}
-                  maxLength={220}
-                  required
-                />
-              </label>
-
-              <label className="specialties-form__status-field">
-                Status inicial
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChangeForm}
-                >
-                  <option value="active">Ativa</option>
-                  <option value="inactive">Inativa</option>
-                </select>
-              </label>
-
-              <div className="specialties-form__meta">
-                <article>
-                  <span>Profissionais vinculados</span>
-                  <strong>{modalMetrics.professionalsCount}</strong>
-                </article>
-
-                <article>
-                  <span>Pacientes interessados</span>
-                  <strong>{modalMetrics.patientsInterested}</strong>
-                </article>
-
-                <article>
-                  <span>Vagas abertas</span>
-                  <strong>{modalMetrics.activeVacancies}</strong>
-                </article>
-              </div>
-
-              <div className="specialties-form__actions">
-                <button
-                  type="button"
-                  className="specialties-form__cancel"
-                  onClick={handleCloseModal}
-                >
-                  Cancelar
-                </button>
-
-                <button type="submit" className="specialties-form__submit">
-                  {editingSpecialtyId !== null
+              <button
+                type="submit"
+                className="specialties-form__submit"
+                disabled={isLoading}
+              >
+                {isLoading
+                  ? editingSpecialtyId !== null
+                    ? 'Salvando...'
+                    : 'Cadastrando...'
+                  : editingSpecialtyId !== null
                     ? 'Salvar alterações'
                     : 'Cadastrar especialidade'}
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
+              </button>
+            </div>
+          </form>
+        </SpecialtiesModal>
+      ) : null}
+
+      {specialtyPendingDelete ? (
+        <DeleteSpecialtyModal
+          specialty={specialtyPendingDelete}
+          isLoading={isLoading}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+        />
       ) : null}
     </main>
   );

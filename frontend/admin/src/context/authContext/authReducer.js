@@ -3,6 +3,34 @@ import * as authTypes from './authTypes';
 
 export const authReducer = (state, action) => {
   switch (action.type) {
+    // Inicialização da sessão
+    case authTypes.INIT_SESSION_REQUEST:
+      return {
+        ...state,
+        isSessionLoading: true,
+        error: null,
+      };
+
+    case authTypes.INIT_SESSION_SUCCESS:
+      return {
+        ...state,
+        token: action.payload.token,
+        user: action.payload.user,
+        isAuthenticated: true,
+        isSessionLoading: false,
+        error: null,
+      };
+
+    case authTypes.INIT_SESSION_FAILURE:
+      return {
+        ...state,
+        token: null,
+        user: null,
+        isAuthenticated: false,
+        isSessionLoading: false,
+        error: action.payload?.error || null,
+      };
+
     // login
     case authTypes.LOGIN_REQUEST:
       return {
@@ -16,15 +44,19 @@ export const authReducer = (state, action) => {
     case authTypes.LOGIN_SUCCESS:
       return {
         ...state,
+        token: action.payload.token,
         user: action.payload.user,
         isAuthenticated: true,
         isAuthenticating: false,
         isLoading: false,
+        error: null,
       };
 
     case authTypes.LOGIN_FAILURE:
       return {
         ...state,
+        token: null,
+        user: null,
         error: action.payload.error,
         isAuthenticated: false,
         isAuthenticating: false,
@@ -44,6 +76,7 @@ export const authReducer = (state, action) => {
       return {
         ...authInitialState,
         isLoading: false,
+        isSessionLoading: false,
       };
 
     // signup
@@ -67,54 +100,6 @@ export const authReducer = (state, action) => {
         ...state,
         error: action.payload.error,
         isLoading: false,
-      };
-
-    // password reset request
-    case authTypes.PASSWORD_RESET_REQUEST_REQUEST:
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-        message: '',
-      };
-
-    case authTypes.PASSWORD_RESET_REQUEST_SUCCESS:
-      return {
-        ...state,
-        isLoading: false,
-        message: action.payload.message,
-        resetEmail: action.payload.email,
-      };
-
-    case authTypes.PASSWORD_RESET_REQUEST_FAILURE:
-      return {
-        ...state,
-        isLoading: false,
-        error: action.payload.error,
-      };
-
-    // password reset confirm
-    case authTypes.PASSWORD_RESET_CONFIRM_REQUEST:
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-        message: '',
-      };
-
-    case authTypes.PASSWORD_RESET_CONFIRM_SUCCESS:
-      return {
-        ...state,
-        isLoading: false,
-        message: action.payload.message,
-        resetEmail: '',
-      };
-
-    case authTypes.PASSWORD_RESET_CONFIRM_FAILURE:
-      return {
-        ...state,
-        isLoading: false,
-        error: action.payload.error,
       };
 
     default:

@@ -205,6 +205,12 @@
   background: linear-gradient(135deg, #0b8f60 0%, #0f6b47 100%);
 }
 
+.create-patient-specialty-option:disabled,
+.create-patient-field select:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
 .create-patient-field small {
   font-size: 12px;
   line-height: 16px;
@@ -214,6 +220,28 @@
 
 small.create-patient-field__hint {
   color: #6b7280;
+}
+
+.create-patient-feedback {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+}
+
+.create-patient-feedback p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.create-patient-feedback--error {
+  background-color: #fff4f4;
+  border-color: #f4d4d4;
+}
+
+.create-patient-feedback--error p {
+  color: #b42318;
 }
 
 .create-patient-field--full {
@@ -276,6 +304,12 @@ small.create-patient-field__hint {
 
 .create-patient-actions__button--primary svg {
   stroke: #ffffff;
+}
+
+.create-patient-actions__button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 @media (max-width: 860px) {

@@ -4,12 +4,34 @@ import { LuBell, LuCircleHelp, LuMenu, LuX } from 'react-icons/lu';
 import { useAuth } from '../../../context/authContext/authContext';
 import './styles.css';
 
-const adminProfile = [
-  { label: 'Nome', value: 'Administrador Unimed' },
-  { label: 'Perfil', value: 'Administrador' },
-  { label: 'Unidade', value: 'Unimed Litoral Sul/RS' },
-  { label: 'E-mail', value: 'admin@unimed.com' },
-];
+const roleLabelMap = {
+  Admin: 'Administrador',
+  Tecnico: 'Técnico',
+  Paciente: 'Paciente',
+};
+
+const getProfileItems = (user) => {
+  const roleNames = Array.isArray(user?.roles)
+    ? user.roles
+        .filter(Boolean)
+        .map((role) => roleLabelMap[role] || role)
+        .join(', ')
+    : '';
+
+  const unit =
+    user?.unit ||
+    user?.unidade ||
+    user?.unitName ||
+    user?.unit_name ||
+    '';
+
+  return [
+    { label: 'Nome', value: user?.name || 'Não informado' },
+    { label: 'Perfil', value: roleNames || 'Não informado' },
+    ...(unit ? [{ label: 'Unidade', value: unit }] : []),
+    { label: 'E-mail', value: user?.email || 'Não informado' },
+  ];
+};
 
 const helpTopics = [
   'Cadastre vagas remanescentes pela página Vagas.',
@@ -102,7 +124,9 @@ function TopbarModal({
   );
 }
 
-function ProfileModal({ onClose }) {
+function ProfileModal({ onClose, user }) {
+  const profileItems = getProfileItems(user);
+
   return (
     <TopbarModal
       title="Meu perfil"
@@ -112,7 +136,7 @@ function ProfileModal({ onClose }) {
       onClose={onClose}
     >
       <div className="topbar__modal-content">
-        {adminProfile.map((item) => (
+        {profileItems.map((item) => (
           <div key={item.label} className="topbar__modal-info">
             <span>{item.label}</span>
             <strong>{item.value}</strong>
@@ -147,12 +171,13 @@ function HelpModal({ onClose }) {
 
 export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const profileMenuRef = useRef(null);
   const notificationsRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+  const userName = user?.name || 'Usuário';
 
   useEffect(() => {
     if (!isMenuOpen && !isNotificationsOpen) {
@@ -379,15 +404,16 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
             <button
               type="button"
               className={`topbar__profile${isMenuOpen ? ' topbar__profile--active' : ''}`}
-              aria-label="Perfil"
+              aria-label={`Perfil de ${userName}`}
               aria-haspopup="menu"
               aria-expanded={isMenuOpen}
               aria-controls="topbar-profile-menu"
               onClick={handleToggleMenu}
+              title={userName}
             >
               <img
                 src="https://i.pravatar.cc/40?img=18"
-                alt="Avatar do usuário"
+                alt={`Avatar de ${userName}`}
                 className="topbar__avatar"
               />
             </button>
@@ -419,11 +445,9 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
 
                 <button
                   type="button"
-                  className="topbar__profile-menu-item topbar__profile-menu-item--disabled"
+                  className="topbar__profile-menu-item"
                   role="menuitem"
-                  disabled
-                  aria-disabled="true"
-                  title="Logout indisponível neste ambiente"
+                  onClick={handleLogout}
                 >
                   Sair
                 </button>
@@ -434,7 +458,7 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
       </header>
 
       {activeModal === 'profile' ? (
-        <ProfileModal onClose={handleCloseModal} />
+        <ProfileModal onClose={handleCloseModal} user={user} />
       ) : null}
 
       {activeModal === 'help' ? (

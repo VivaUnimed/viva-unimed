@@ -20,6 +20,7 @@ const defaultFormState = {
   cpf: '',
   phone: '',
   email: '',
+  birth: '',
   interests: [],
   status: 'Em fila',
 };
@@ -61,12 +62,16 @@ export default function PatientForm({
   variant = 'create',
   initialValues = defaultFormState,
   onSave,
+  isSubmitting = false,
+  submitError = '',
 }) {
   const navigate = useNavigate();
   const { patientState } = usePatients();
+  const isCreateVariant = variant === 'create';
   const [formData, setFormData] = useState(() => ({
     ...defaultFormState,
     ...initialValues,
+    birth: initialValues.birth ?? '',
     interests: Array.isArray(initialValues.interests) ? initialValues.interests : [],
   }));
   const [errors, setErrors] = useState({});
@@ -150,14 +155,18 @@ export default function PatientForm({
       nextErrors.email = 'Informe um e-mail válido.';
     }
 
-    if (!formData.interests.length) {
+    if (isCreateVariant && !formData.birth) {
+      nextErrors.birth = 'Informe a data de nascimento do paciente.';
+    }
+
+    if (!isCreateVariant && !formData.interests.length) {
       nextErrors.interests = 'Selecione ao menos uma especialidade de interesse.';
     }
 
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = validateForm();
@@ -167,14 +176,23 @@ export default function PatientForm({
       return;
     }
 
-    onSave?.({
-      ...formData,
+    const normalizedFormData = {
       name: formData.name.trim(),
       cpf: formData.cpf.trim(),
       phone: formData.phone.trim(),
       email: formData.email.trim(),
-      interests: formData.interests,
-    });
+      birth: formData.birth,
+    };
+
+    if (!isCreateVariant) {
+      Object.assign(normalizedFormData, {
+        interests: formData.interests,
+        status: formData.status,
+      });
+    }
+
+    // TODO: integrar os dados da seção "Fila inteligente" quando houver suporte no backend/contexto.
+    await onSave?.(normalizedFormData);
   };
 
   return (
@@ -257,6 +275,19 @@ export default function PatientForm({
                 />
                 {errors.email ? <small>{errors.email}</small> : null}
               </label>
+
+              {isCreateVariant ? (
+                <label className="create-patient-field">
+                  <span>Data de nascimento</span>
+                  <input
+                    type="date"
+                    name="birth"
+                    value={formData.birth}
+                    onChange={handleChange}
+                  />
+                  {errors.birth ? <small>{errors.birth}</small> : null}
+                </label>
+              ) : null}
             </div>
           </div>
 
@@ -269,7 +300,12 @@ export default function PatientForm({
             <div className="create-patient-form__grid create-patient-form__grid--secondary">
               <label className="create-patient-field">
                 <span>{content.statusLabel}</span>
-                <select name="status" value={formData.status} onChange={handleChange}>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  disabled={isCreateVariant}
+                >
                   {patientStatusOptions.map((status) => (
                     <option key={status} value={status}>
                       {status}
@@ -295,6 +331,7 @@ export default function PatientForm({
                         className={`create-patient-specialty-option${isSelected ? ' create-patient-specialty-option--selected' : ''}`}
                         onClick={() => handleToggleInterest(specialty)}
                         aria-pressed={isSelected}
+                        disabled={isCreateVariant}
                       >
                         {specialty}
                       </button>
@@ -302,13 +339,22 @@ export default function PatientForm({
                   })}
                 </div>
                 <small className="create-patient-field__hint">
-                  Selecione uma ou mais especialidades para inserir o paciente na fila
-                  inteligente.
+                  {isCreateVariant
+                    ? 'A seção Fila inteligente permanece visualmente disponível e será integrada futuramente.'
+                    : 'Selecione uma ou mais especialidades para inserir o paciente na fila inteligente.'}
                 </small>
-                {errors.interests ? <small>{errors.interests}</small> : null}
+                {!isCreateVariant && errors.interests ? (
+                  <small>{errors.interests}</small>
+                ) : null}
               </div>
             </div>
           </div>
+
+          {submitError ? (
+            <div className="create-patient-feedback create-patient-feedback--error" role="alert">
+              <p>{submitError}</p>
+            </div>
+          ) : null}
 
           <aside className="create-patient-notice">
             <LuHeartPulse size={18} />
@@ -320,15 +366,17 @@ export default function PatientForm({
               type="button"
               className="create-patient-actions__button create-patient-actions__button--ghost"
               onClick={() => navigate('/patients')}
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="create-patient-actions__button create-patient-actions__button--primary"
+              disabled={isSubmitting}
             >
               <LuSave size={16} />
-              {content.submitLabel}
+              {isSubmitting ? 'Salvando...' : content.submitLabel}
             </button>
           </div>
         </form>
