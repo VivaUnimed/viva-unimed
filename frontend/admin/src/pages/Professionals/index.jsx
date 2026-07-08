@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LuBadgeCheck,
   LuUserPlus,
@@ -20,7 +20,9 @@ import {
 export default function Professionals() {
   const location = useLocation();
   const navigate = useNavigate();
-  const feedbackMessage = location.state?.successMessage ?? '';
+  const [feedbackMessage, setFeedbackMessage] = useState(
+    () => location.state?.successMessage ?? '',
+  );
   const [professionals] = useState(() => getStoredProfessionals());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -35,6 +37,27 @@ export default function Professionals() {
   const hasActiveFilters = Boolean(
     normalizedSearchTerm || statusFilter || specialtyFilter || unitFilter
   );
+
+  useEffect(() => {
+    const routeFeedbackMessage = location.state?.successMessage;
+
+    if (!routeFeedbackMessage) {
+      return;
+    }
+
+    setFeedbackMessage(routeFeedbackMessage);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: null,
+      },
+    );
+  }, [location.hash, location.pathname, location.search, location.state, navigate]);
 
   const handleClearFilters = () => {
     setSearchTerm('');

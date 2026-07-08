@@ -103,12 +103,35 @@ export default function Patients() {
   const navigate = useNavigate();
   const { patientState, getPatients } = usePatients();
   const patients = patientState.patients;
+  const [feedbackMessage, setFeedbackMessage] = useState(
+    () => location.state?.successMessage ?? '',
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [contactFilter, setContactFilter] = useState('');
   const hasLoadedPatientsRef = useRef(false);
-  const feedbackMessage = location.state?.successMessage ?? '';
 
   const isMockMode = false;
+
+  useEffect(() => {
+    const routeFeedbackMessage = location.state?.successMessage;
+
+    if (!routeFeedbackMessage) {
+      return;
+    }
+
+    setFeedbackMessage(routeFeedbackMessage);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: null,
+      },
+    );
+  }, [location.hash, location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
 
