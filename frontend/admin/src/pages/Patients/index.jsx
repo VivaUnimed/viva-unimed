@@ -11,6 +11,7 @@ import {
 } from 'react-icons/lu';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { usePatients } from '../../context/patientContext/patientContext';
+import { formatCpf, formatPhone } from '../../data/patients';
 import './styles.css';
 
 const contactOptions = [
@@ -48,18 +49,30 @@ function formatDate(value) {
 }
 
 function hasRegisteredPhone(patient) {
-  const phone = patient?.user?.phone ?? patient?.phone;
+  const phone = patient?.phone;
 
   return Boolean(String(phone ?? '').trim()) && phone !== '-';
 }
 
-function getPatientIdentifier(patient) {
-  if (patient?.patientId) {
-    return `ID do paciente: ${patient.patientId}`;
+function formatPhoneValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '-';
   }
 
-  if (patient?.userId) {
-    return `ID do usuário: ${patient.userId}`;
+  return formatPhone(String(value));
+}
+
+function formatCpfValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatCpf(String(value));
+}
+
+function getPatientIdentifier(patient) {
+  if (patient?.id && patient?.userId) {
+    return `Paciente #${patient.id} · Usuário #${patient.userId}`;
   }
 
   return 'ID indisponível';
@@ -89,7 +102,7 @@ export default function Patients() {
   const location = useLocation();
   const navigate = useNavigate();
   const { patientState, getPatients } = usePatients();
-  const patients = patientState.adminPatients;
+  const patients = patientState.patients;
   const [searchTerm, setSearchTerm] = useState('');
   const [contactFilter, setContactFilter] = useState('');
   const hasLoadedPatientsRef = useRef(false);
@@ -299,7 +312,7 @@ export default function Patients() {
             <tbody>
               {filteredPatients.length > 0 ? (
                 filteredPatients.map((patient) => (
-                  <tr key={patient.patientId}>
+                  <tr key={patient.id}>
                     <td>
                       <div className="patient-info">
                         <div className="patient-info__avatar" aria-hidden="true">
@@ -315,7 +328,9 @@ export default function Patients() {
                     <td>
                       <div className="patient-contact">
                         <strong className="table-main-text">
-                          {hasRegisteredPhone(patient) ? patient.phone : '-'}
+                          {hasRegisteredPhone(patient)
+                            ? formatPhoneValue(patient.phone)
+                            : '-'}
                         </strong>
                         <span className="table-secondary-text">
                           {patient.email && patient.email !== '-'
@@ -327,7 +342,9 @@ export default function Patients() {
 
                     <td>
                       <strong className="table-main-text">
-                        {patient.cpf && patient.cpf !== '-' ? patient.cpf : '-'}
+                        {patient.cpf && patient.cpf !== '-'
+                          ? formatCpfValue(patient.cpf)
+                          : '-'}
                       </strong>
                     </td>
 
@@ -350,18 +367,14 @@ export default function Patients() {
                         <button
                           type="button"
                           className="patient-action-button patient-action-button--primary"
-                          onClick={() =>
-                            navigate(`/patients/${patient.patientId}`)
-                          }
+                          onClick={() => navigate(`/patients/${patient.id}`)}
                         >
                           Detalhes
                         </button>
                         <button
                           type="button"
                           className="patient-action-button"
-                          onClick={() =>
-                            navigate(`/patients/${patient.patientId}/edit`)
-                          }
+                          onClick={() => navigate(`/patients/${patient.id}/edit`)}
                         >
                           Editar
                         </button>

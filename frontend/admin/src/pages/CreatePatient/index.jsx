@@ -14,13 +14,7 @@ export default function CreatePatient() {
     setSubmitError('');
 
     try {
-      await createPatient({
-        name: formData.name,
-        cpf: formData.cpf,
-        phone: formData.phone,
-        email: formData.email,
-        birth: formData.birth,
-      });
+      await createPatient(formData);
 
       navigate('/patients', {
         state: { successMessage: `Paciente ${formData.name} cadastrado com sucesso.` },

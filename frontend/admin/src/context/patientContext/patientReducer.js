@@ -16,8 +16,6 @@ export const patientReducer = (state, action) => {
       return {
         ...state,
         patients: action.payload?.patients ?? [],
-        users: action.payload?.users ?? [],
-        adminPatients: action.payload?.adminPatients ?? [],
         isLoading: false,
         error: null,
       };

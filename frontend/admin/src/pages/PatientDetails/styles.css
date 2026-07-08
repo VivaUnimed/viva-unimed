@@ -30,6 +30,16 @@
   padding: 20px 22px;
 }
 
+.patient-details-card--error {
+  margin-bottom: 12px;
+  border-color: #f0d5d5;
+  background-color: #fff4f4;
+}
+
+.patient-details-card--error .patient-details-message {
+  color: #b42318;
+}
+
 .patient-details-card__header {
   display: flex;
   align-items: flex-start;
@@ -92,6 +102,34 @@
 
 .patient-details-edit-button svg {
   stroke: #ffffff;
+}
+
+.patient-details-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.patient-details-delete-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #f0d5d5;
+  border-radius: 10px;
+  background-color: #fff4f4;
+  color: #b42318;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.patient-details-delete-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .patient-details-grid {
@@ -187,6 +225,15 @@
   }
 
   .patient-details-edit-button {
+    width: 100%;
+  }
+
+  .patient-details-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .patient-details-delete-button {
     width: 100%;
   }
 }

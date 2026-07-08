@@ -1,8 +1,6 @@
 import { useReducer } from 'react';
 
 import * as patientApi from '../../api/patientApi';
-import * as userApi from '../../api/userApi';
-import { buildAdminPatients } from '../../utils/patients/buildAdminPatients';
 import { patientContext } from './patientContext';
 import { patientInitialState } from './patientInitialState';
 import { patientReducer } from './patientReducer';
@@ -18,22 +16,16 @@ export default function PatientProvider({ children }) {
     patientDispatch({ type: patientTypes.GET_ALL_PATIENTS_REQUEST });
 
     try {
-      const [patients, users] = await Promise.all([
-        patientApi.getAllPatients(),
-        userApi.getAllUsers(),
-      ]);
-      const adminPatients = buildAdminPatients(patients, users);
+      const patients = await patientApi.getAllPatients();
 
       patientDispatch({
         type: patientTypes.GET_ALL_PATIENTS_SUCCESS,
         payload: {
           patients,
-          users,
-          adminPatients,
         },
       });
 
-      return adminPatients;
+      return patients;
     } catch (error) {
       patientDispatch({
         type: patientTypes.GET_ALL_PATIENTS_FAILURE,
@@ -44,23 +36,15 @@ export default function PatientProvider({ children }) {
     }
   };
 
+  const getPatientById = async (patientId) => {
+    return patientApi.getPatientById(patientId);
+  };
+
   const createPatient = async (patientData) => {
     patientDispatch({ type: patientTypes.CREATE_PATIENT_REQUEST });
 
     try {
-      const user = await userApi.createUser({
-        name: patientData.name,
-        email: patientData.email,
-        phone: patientData.phone,
-        cpf: patientData.cpf,
-        password: patientData.password,
-        roles: ['Paciente'],
-      });
-
-      const patient = await patientApi.createPatient({
-        userId: user.id,
-        birth: patientData.birth,
-      });
+      const patient = await patientApi.createPatient(patientData);
 
       patientDispatch({
         type: patientTypes.CREATE_PATIENT_SUCCESS,
@@ -84,11 +68,7 @@ export default function PatientProvider({ children }) {
     patientDispatch({ type: patientTypes.UPDATE_PATIENT_REQUEST });
 
     try {
-      // TODO: editar name, email, phone e cpf apenas quando existir endpoint confirmado de atualização de usuário.
-      const patient = await patientApi.updatePatient(
-        { birth: patientData?.birth },
-        patientId,
-      );
+      const patient = await patientApi.updatePatient(patientData, patientId);
 
       patientDispatch({
         type: patientTypes.UPDATE_PATIENT_SUCCESS,
@@ -138,6 +118,7 @@ export default function PatientProvider({ children }) {
         patientState,
         patientDispatch,
         getPatients,
+        getPatientById,
         createPatient,
         updatePatient,
         deletePatient,

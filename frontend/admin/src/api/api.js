@@ -44,13 +44,13 @@ const handleResponse = async (response) => {
   // 403: usuário autenticado, mas sem permissão para acessar o recurso
   if (response.status === 403) {
     const errorData = await parseJsonSafe(response);
-    throw new Error(errorData?.message || 'Acesso negado');
+    throw new Error(errorData?.details || errorData?.message || 'Acesso negado');
   }
 
   // Trata outros erros HTTP, como 400, 404 e 500
   if (!response.ok) {
     const errorData = await parseJsonSafe(response);
-    throw new Error(errorData?.message || 'Erro na requisição');
+    throw new Error(errorData?.details || errorData?.message || 'Erro na requisição');
   }
 
   // 204: requisição bem-sucedida, mas sem conteúdo na resposta

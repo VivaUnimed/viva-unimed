@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { LuChevronLeft, LuPencilLine } from 'react-icons/lu';
+import { LuChevronLeft, LuPencilLine, LuTrash2 } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePatients } from '../../context/patientContext/patientContext';
 import PatientNotFound from '../../components/patients/PatientNotFound';
+import { formatCpf, formatPhone } from '../../data/patients';
 import './styles.css';
 
 const formatDate = (date) => {
@@ -10,10 +11,17 @@ const formatDate = (date) => {
     return '-';
   }
 
-  const parsedDate = new Date(date);
+  const normalizedValue = String(date).trim();
+  const dateOnlyMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (dateOnlyMatch) {
+    return `${dateOnlyMatch[3]}/${dateOnlyMatch[2]}/${dateOnlyMatch[1]}`;
+  }
+
+  const parsedDate = new Date(normalizedValue);
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return String(date);
+    return normalizedValue;
   }
 
   return new Intl.DateTimeFormat('pt-BR').format(parsedDate);
@@ -27,50 +35,116 @@ const formatValue = (value) => {
   return value;
 };
 
+const formatPhoneValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatPhone(String(value));
+};
+
+const formatCpfValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatCpf(String(value));
+};
+
 export default function PatientDetails() {
   const navigate = useNavigate();
   const { patientId } = useParams();
-  const { patientState, getPatients } = usePatients();
-  const [hasAttemptedInitialLoad, setHasAttemptedInitialLoad] = useState(
-    patientState.adminPatients.length > 0,
+  const { patientState, getPatientById, deletePatient } = usePatients();
+  const cachedPatient = patientState.patients.find(
+    (currentPatient) => String(currentPatient.id) === String(patientId),
   );
-  const patient = patientState.adminPatients.find(
-    (currentPatient) => String(currentPatient.patientId) === String(patientId),
-  );
+  const [patient, setPatient] = useState(cachedPatient ?? null);
+  const [isLoading, setIsLoading] = useState(!cachedPatient);
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [isNotFound, setIsNotFound] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (patientState.adminPatients.length > 0) {
-      setHasAttemptedInitialLoad(true);
-      return;
-    }
-
     let isMounted = true;
 
-    const loadPatients = async () => {
+    const loadPatient = async () => {
+      if (!cachedPatient) {
+        setIsLoading(true);
+      }
+      setLoadError('');
+      setActionError('');
+
       try {
-        await getPatients();
-      } catch {
-        // O erro fica disponível em patientState.error.
+        const loadedPatient = await getPatientById(patientId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setPatient(loadedPatient);
+        setIsNotFound(false);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error?.message === 'NotFound') {
+          setIsNotFound(true);
+          setPatient(null);
+          return;
+        }
+
+        setLoadError(
+          error?.message || 'Não foi possível carregar o paciente no momento.',
+        );
       } finally {
         if (isMounted) {
-          setHasAttemptedInitialLoad(true);
+          setIsLoading(false);
         }
       }
     };
 
-    loadPatients();
+    loadPatient();
 
     return () => {
       isMounted = false;
     };
-  }, [patientState.adminPatients.length]);
+  }, [cachedPatient, getPatientById, patientId]);
 
-  if (
-    patientState.isLoading ||
-    (!hasAttemptedInitialLoad &&
-      patientState.adminPatients.length === 0 &&
-      !patientState.error)
-  ) {
+  const handleDelete = async () => {
+    if (!patient) {
+      return;
+    }
+
+    const hasConfirmedDeletion = window.confirm(
+      `Deseja excluir o paciente ${patient.name}? Esta ação também remove o usuário vinculado.`,
+    );
+
+    if (!hasConfirmedDeletion) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setActionError('');
+
+    try {
+      await deletePatient(patient.id);
+      navigate('/patients', {
+        state: {
+          successMessage: `Paciente ${patient.name} excluído com sucesso.`,
+        },
+      });
+    } catch (error) {
+      setActionError(
+        error?.message || 'Não foi possível excluir o paciente.',
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoading) {
     return (
       <main className="patient-details-page">
         <section className="patient-details-card">
@@ -80,13 +154,15 @@ export default function PatientDetails() {
     );
   }
 
-  if (patientState.error) {
+  if (isNotFound) {
+    return <PatientNotFound />;
+  }
+
+  if (loadError && !patient) {
     return (
       <main className="patient-details-page">
         <section className="patient-details-card">
-          <p className="patient-details-message">
-            Não foi possível carregar o paciente no momento.
-          </p>
+          <p className="patient-details-message">{loadError}</p>
         </section>
       </main>
     );
@@ -111,6 +187,12 @@ export default function PatientDetails() {
         </div>
       </section>
 
+      {actionError ? (
+        <section className="patient-details-card patient-details-card--error">
+          <p className="patient-details-message">{actionError}</p>
+        </section>
+      ) : null}
+
       <section className="patient-details-card">
         <header className="patient-details-card__header">
           <div className="patient-details-identity">
@@ -121,14 +203,25 @@ export default function PatientDetails() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="patient-details-edit-button"
-            onClick={() => navigate(`/patients/${patient.patientId}/edit`)}
-          >
-            <LuPencilLine size={16} />
-            Editar paciente
-          </button>
+          <div className="patient-details-actions">
+            <button
+              type="button"
+              className="patient-details-edit-button"
+              onClick={() => navigate(`/patients/${patient.id}/edit`)}
+            >
+              <LuPencilLine size={16} />
+              Editar paciente
+            </button>
+            <button
+              type="button"
+              className="patient-details-delete-button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <LuTrash2 size={16} />
+              {isDeleting ? 'Excluindo...' : 'Excluir paciente'}
+            </button>
+          </div>
         </header>
 
         <div className="patient-details-grid">
@@ -139,12 +232,12 @@ export default function PatientDetails() {
 
           <article className="patient-details-field">
             <span>CPF</span>
-            <strong>{formatValue(patient.cpf)}</strong>
+            <strong>{formatCpfValue(patient.cpf)}</strong>
           </article>
 
           <article className="patient-details-field">
             <span>Telefone / WhatsApp</span>
-            <strong>{formatValue(patient.phone)}</strong>
+            <strong>{formatPhoneValue(patient.phone)}</strong>
           </article>
 
           <article className="patient-details-field">
@@ -159,7 +252,7 @@ export default function PatientDetails() {
 
           <article className="patient-details-field">
             <span>ID do paciente</span>
-            <strong>{formatValue(patient.patientId)}</strong>
+            <strong>{formatValue(patient.id)}</strong>
           </article>
 
           <article className="patient-details-field">

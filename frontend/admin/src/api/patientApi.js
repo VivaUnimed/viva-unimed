@@ -12,6 +12,26 @@ const removeUndefinedFields = (payload = {}) => {
   );
 };
 
+const normalizePhone = (phone) => {
+  if (phone === undefined || phone === null || phone === '') {
+    return undefined;
+  }
+
+  const onlyNumbers = String(phone).replace(/\D/g, '');
+
+  return onlyNumbers ? Number(onlyNumbers) : undefined;
+};
+
+const normalizeTextField = (value) => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue || undefined;
+};
+
 const normalizeUserId = (userId) => {
   if (userId === undefined || userId === null || userId === '') {
     return undefined;
@@ -24,10 +44,19 @@ const normalizeUserId = (userId) => {
 
 const normalizePatientPayload = (patientData = {}) => ({
   userId: normalizeUserId(patientData.userId),
+  name: normalizeTextField(patientData.name),
+  email: normalizeTextField(patientData.email)?.toLowerCase(),
+  phone: normalizePhone(patientData.phone),
+  cpf: normalizeTextField(patientData.cpf),
+  password: normalizeTextField(patientData.password),
   birth: patientData.birth,
 });
 
 const normalizePatientUpdatePayload = (patientData = {}) => ({
+  name: normalizeTextField(patientData.name),
+  email: normalizeTextField(patientData.email)?.toLowerCase(),
+  phone: normalizePhone(patientData.phone),
+  cpf: normalizeTextField(patientData.cpf),
   birth: patientData.birth,
 });
 
@@ -46,7 +75,9 @@ export const getAllPatients = async () => {
 };
 
 export const getPatientById = async (id) => {
-  return getRequest(`/patient/${id}`);
+  const data = await getRequest(`/patient/${id}`);
+
+  return data?.patient ?? data;
 };
 
 export const createPatient = async (patientData) => {
