@@ -1,6 +1,6 @@
 import { Controller, Route, Get, Path, Tags, Post, Body, Queries, Delete, Request, Put } from "tsoa";
 import { NotFound } from "../error";
-import type { IUser, IUserCreate, IUserListParams, Role } from "shared";
+import type { IUser, IUserCreate, IUserListParams, IUserUpdate, Role } from "shared";
 import service from "../service";
 import { Guard, Security } from "./guards";
 
@@ -34,6 +34,17 @@ export class UserController extends Controller {
   @Security(Guard.JWT, ["user.read"])
   async list(@Queries() params: IUserListParams): Promise<IUser[]> {
     return service.user.list(params);
+  }
+
+  /** Atualiza os dados básicos de um usuário específico */
+  @Put("/{userId}")
+  @Security(Guard.JWT, ["user.edit"])
+  async update(@Path() userId: number, @Body() data: Partial<IUserUpdate>): Promise<IUser> {
+    const user = await service.user.update(userId, data);
+    if(!user) {
+      throw new NotFound();
+    }
+    return user;
   }
 
   /** Retorna o perfil e dados do usuário autenticado na sessão */

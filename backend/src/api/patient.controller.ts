@@ -1,4 +1,4 @@
-import type { IPatient, IPatientCreate, IPatientListParams } from "shared";
+import type { IPatient, IPatientCreate, IPatientListParams, IPatientUpdate } from "shared";
 import service from "../service";
 import { Body, Controller, Delete, Get, Path, Post, Put, Queries, Route, Tags } from "tsoa";
 import { Guard, Security } from "./guards";
@@ -16,7 +16,7 @@ export class PatientController extends Controller {
   @Post()
   @Security(Guard.JWT, ['patient.create'])
   create(@Body() data: IPatientCreate): Promise<IPatient> {
-    return service.patient.create(data.userId, data);
+    return service.patient.create(data);
   }
 
   /**
@@ -24,7 +24,7 @@ export class PatientController extends Controller {
    */
   @Put("/{id}")
   @Security(Guard.JWT, ['patient.edit'])
-  update(@Path() id: number, @Body() data: Partial<Omit<IPatientCreate, 'userId'>>): Promise<IPatient> {
+  update(@Path() id: number, @Body() data: IPatientUpdate): Promise<IPatient> {
     return service.patient.update(id, data);
   }
 
