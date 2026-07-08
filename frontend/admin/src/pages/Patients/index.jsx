@@ -11,7 +11,7 @@ import {
 } from 'react-icons/lu';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { usePatients } from '../../context/patientContext/patientContext';
-import { formatCpf, formatPhone } from '../../data/patients';
+import { formatCpf, formatPhone } from '../../utils/patients/patientFormatters';
 import './styles.css';
 
 const contactOptions = [

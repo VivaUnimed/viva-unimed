@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import PatientForm from '../../components/patients/PatientForm';
 import PatientNotFound from '../../components/patients/PatientNotFound';
 import { usePatients } from '../../context/patientContext/patientContext';
-import { getPatientFormInitialValues } from '../../data/patients';
+import { getPatientFormInitialValues } from '../../utils/patients/patientForm';
 import '../PatientDetails/styles.css';
 
 export default function EditPatient() {

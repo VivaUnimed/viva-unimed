@@ -3,7 +3,7 @@ import { LuChevronLeft, LuPencilLine, LuTrash2 } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePatients } from '../../context/patientContext/patientContext';
 import PatientNotFound from '../../components/patients/PatientNotFound';
-import { formatCpf, formatPhone } from '../../data/patients';
+import { formatCpf, formatPhone } from '../../utils/patients/patientFormatters';
 import './styles.css';
 
 const formatDate = (date) => {

@@ -8,7 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import {
   isPhoneValid,
-} from '../../../data/patients';
+} from '../../../utils/patients/patientFormatters';
 import '../../../pages/CreatePatient/styles.css';
 
 const defaultFormState = {
