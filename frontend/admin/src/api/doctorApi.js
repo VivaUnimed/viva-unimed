@@ -6,9 +6,11 @@ import {
 } from './api';
 import {
   mapDoctorToProfessional,
+  mergeProfessionalWithUser,
 } from '../data/professionals';
 import {
   createUser,
+  getUserById,
   updateUser,
 } from './userApi';
 
@@ -76,6 +78,15 @@ export const getDoctorById = async (doctorId) => {
   return mapDoctorToProfessional(data?.doctor ?? data);
 };
 
+export const getProfessionalById = async (doctorId) => {
+  const [doctor, user] = await Promise.all([
+    getDoctorById(doctorId),
+    getUserById(doctorId),
+  ]);
+
+  return mergeProfessionalWithUser(doctor, user);
+};
+
 export const createDoctor = async (doctorData) => {
   const data = await postRequest('/doctor', normalizeDoctorPayload(doctorData));
 
@@ -131,7 +142,7 @@ export const createProfessional = async (professionalData) => {
       await addDoctorSpeciality(createdDoctor.id, specialityId);
     }
 
-    return getDoctorById(createdDoctor.id);
+    return getProfessionalById(createdDoctor.id);
   } catch (error) {
     const persistedSteps = [];
 
@@ -194,7 +205,7 @@ export const updateProfessional = async (professionalData, currentProfessional) 
       await addDoctorSpeciality(professionalId, specialityId);
     }
 
-    return getDoctorById(professionalId);
+    return getProfessionalById(professionalId);
   } catch (error) {
     const persistedSteps = [];
 

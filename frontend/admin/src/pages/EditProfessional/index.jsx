@@ -5,24 +5,18 @@ import ProfessionalNotFound from '../../components/professionals/ProfessionalNot
 import {
   getProfessionalFormInitialValues,
   getProfessionalSpecialtyOptions,
-  mergeProfessionalWithUser,
 } from '../../data/professionals';
 import { useProfessionals } from '../../context/professionalContext/professionalContext';
 import { useSpecialties } from '../../context/specialtyContext/specialtyContext';
-import { getUserById } from '../../api/userApi';
 import '../CreateProfessional/styles.css';
 
 export default function EditProfessional() {
   const navigate = useNavigate();
   const { professionalId } = useParams();
-  const { professionalState, getProfessionalById, updateProfessional } = useProfessionals();
+  const { getProfessionalById, updateProfessional } = useProfessionals();
   const { specialtyState, getSpecialties } = useSpecialties();
-  const cachedProfessional = professionalState.professionals.find(
-    (currentProfessional) =>
-      String(currentProfessional.id) === String(professionalId),
-  );
-  const [professional, setProfessional] = useState(cachedProfessional ?? null);
-  const [isLoading, setIsLoading] = useState(!cachedProfessional);
+  const [professional, setProfessional] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isNotFound, setIsNotFound] = useState(false);
@@ -31,29 +25,24 @@ export default function EditProfessional() {
     let isMounted = true;
 
     const loadFormDependencies = async () => {
-      if (!cachedProfessional) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       setSubmitError('');
+      setProfessional(null);
+      setIsNotFound(false);
 
       try {
-        const [doctor, user] = await Promise.all([
+        const [loadedProfessional] = await Promise.all([
           getProfessionalById(professionalId),
-          getUserById(professionalId),
+          getSpecialties().catch(() => {
+            // A falha das opções de especialidade continua visível em specialtyState.error.
+          }),
         ]);
-
-        try {
-          await getSpecialties();
-        } catch {
-          // A falha das opções de especialidade continua visível em specialtyState.error.
-        }
 
         if (!isMounted) {
           return;
         }
 
-        setProfessional(mergeProfessionalWithUser(doctor, user));
-        setIsNotFound(false);
+        setProfessional(loadedProfessional);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -80,7 +69,7 @@ export default function EditProfessional() {
     return () => {
       isMounted = false;
     };
-  }, [cachedProfessional, professionalId]);
+  }, [professionalId]);
 
   if (isLoading) {
     return (

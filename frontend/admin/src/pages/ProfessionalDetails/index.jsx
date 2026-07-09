@@ -6,7 +6,7 @@ import {
   formatProfessionalRegistration,
 } from '../../data/professionals';
 import { useProfessionals } from '../../context/professionalContext/professionalContext';
-import { formatPhone } from '../../utils/patients/patientFormatters';
+import { formatCpf, formatPhone } from '../../utils/patients/patientFormatters';
 import './styles.css';
 
 const toSlug = (value = '') =>
@@ -32,16 +32,20 @@ const formatPhoneValue = (value) => {
   return formatPhone(String(value));
 };
 
+const formatCpfValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatCpf(String(value));
+};
+
 export default function ProfessionalDetails() {
   const navigate = useNavigate();
   const { professionalId } = useParams();
-  const { professionalState, getProfessionalById, deleteProfessional } = useProfessionals();
-  const cachedProfessional = professionalState.professionals.find(
-    (currentProfessional) =>
-      String(currentProfessional.id) === String(professionalId),
-  );
-  const [professional, setProfessional] = useState(cachedProfessional ?? null);
-  const [isLoading, setIsLoading] = useState(!cachedProfessional);
+  const { getProfessionalById, deleteProfessional } = useProfessionals();
+  const [professional, setProfessional] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [actionError, setActionError] = useState('');
   const [isNotFound, setIsNotFound] = useState(false);
@@ -51,11 +55,11 @@ export default function ProfessionalDetails() {
     let isMounted = true;
 
     const loadProfessional = async () => {
-      if (!cachedProfessional) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       setLoadError('');
       setActionError('');
+      setProfessional(null);
+      setIsNotFound(false);
 
       try {
         const loadedProfessional = await getProfessionalById(professionalId);
@@ -65,7 +69,6 @@ export default function ProfessionalDetails() {
         }
 
         setProfessional(loadedProfessional);
-        setIsNotFound(false);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -92,7 +95,7 @@ export default function ProfessionalDetails() {
     return () => {
       isMounted = false;
     };
-  }, [cachedProfessional, professionalId]);
+  }, [professionalId]);
 
   const handleDelete = async () => {
     if (!professional) {
@@ -230,6 +233,11 @@ export default function ProfessionalDetails() {
           <article className="professional-details-field">
             <span>E-mail</span>
             <strong>{formatValue(professional.email)}</strong>
+          </article>
+
+          <article className="professional-details-field">
+            <span>CPF</span>
+            <strong>{formatCpfValue(professional.cpf)}</strong>
           </article>
 
           <article className="professional-details-field">

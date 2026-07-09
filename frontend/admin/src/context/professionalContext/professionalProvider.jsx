@@ -36,7 +36,7 @@ export default function ProfessionalProvider({ children }) {
   };
 
   const getProfessionalById = async (professionalId) => {
-    return doctorApi.getDoctorById(professionalId);
+    return doctorApi.getProfessionalById(professionalId);
   };
 
   const createProfessional = async (newProfessional) => {
