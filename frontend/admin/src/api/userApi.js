@@ -1,4 +1,4 @@
-import { getRequest, postRequest } from './api';
+import { getRequest, postRequest, putRequest } from './api';
 
 const normalizePhone = (phone) => {
   if (!phone) {
@@ -12,11 +12,18 @@ const normalizePhone = (phone) => {
 
 const normalizeUserPayload = (userData = {}) => ({
   name: userData.name?.trim() ?? '',
-  email: userData.email?.trim() ?? '',
+  email: userData.email?.trim()?.toLowerCase() ?? '',
   phone: normalizePhone(userData.phone),
   cpf: userData.cpf?.trim() || undefined,
   password: userData.password,
-  roles: userData.roles ?? ['Paciente'],
+  roles: userData.roles,
+});
+
+const normalizeUserUpdatePayload = (userData = {}) => ({
+  name: userData.name?.trim() || undefined,
+  email: userData.email?.trim()?.toLowerCase() || undefined,
+  phone: normalizePhone(userData.phone),
+  cpf: userData.cpf?.trim() || undefined,
 });
 
 const removeUndefinedFields = (payload = {}) => {
@@ -63,4 +70,11 @@ export const createUser = async (userData) => {
   return data?.user ?? data;
 };
 
-// TODO: implementar atualização de dados básicos do usuário quando o endpoint for confirmado.
+export const updateUser = async (userId, userData) => {
+  const normalizedPayload = removeUndefinedFields(
+    normalizeUserUpdatePayload(userData),
+  );
+  const data = await putRequest(`/user/${userId}`, normalizedPayload);
+
+  return data?.user ?? data;
+};

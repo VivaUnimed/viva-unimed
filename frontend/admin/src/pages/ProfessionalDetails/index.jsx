@@ -1,10 +1,12 @@
-import { LuCalendarDays, LuChevronLeft, LuClock3, LuPencilLine } from 'react-icons/lu';
+import { useEffect, useState } from 'react';
+import { LuChevronLeft, LuPencilLine, LuTrash2 } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProfessionalNotFound from '../../components/professionals/ProfessionalNotFound';
 import {
   formatProfessionalRegistration,
-  getStoredProfessionals,
 } from '../../data/professionals';
+import { useProfessionals } from '../../context/professionalContext/professionalContext';
+import { formatPhone } from '../../utils/patients/patientFormatters';
 import './styles.css';
 
 const toSlug = (value = '') =>
@@ -14,24 +16,143 @@ const toSlug = (value = '') =>
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-');
 
-const formatShift = (shift = {}) => `${shift.start ?? '--:--'} - ${shift.end ?? '--:--'}`;
+const formatValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return value;
+};
+
+const formatPhoneValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatPhone(String(value));
+};
 
 export default function ProfessionalDetails() {
   const navigate = useNavigate();
   const { professionalId } = useParams();
-  const professionals = getStoredProfessionals();
-  const professional = professionals.find(
+  const { professionalState, getProfessionalById, deleteProfessional } = useProfessionals();
+  const cachedProfessional = professionalState.professionals.find(
     (currentProfessional) =>
       String(currentProfessional.id) === String(professionalId),
   );
+  const [professional, setProfessional] = useState(cachedProfessional ?? null);
+  const [isLoading, setIsLoading] = useState(!cachedProfessional);
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [isNotFound, setIsNotFound] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfessional = async () => {
+      if (!cachedProfessional) {
+        setIsLoading(true);
+      }
+      setLoadError('');
+      setActionError('');
+
+      try {
+        const loadedProfessional = await getProfessionalById(professionalId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setProfessional(loadedProfessional);
+        setIsNotFound(false);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error?.message === 'NotFound') {
+          setIsNotFound(true);
+          setProfessional(null);
+          return;
+        }
+
+        setLoadError(
+          error?.message || 'Não foi possível carregar o profissional no momento.',
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadProfessional();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cachedProfessional, professionalId]);
+
+  const handleDelete = async () => {
+    if (!professional) {
+      return;
+    }
+
+    const hasConfirmedDeletion = window.confirm(
+      `Deseja remover o vínculo profissional de ${professional.name}? O backend atual exclui apenas o registro de doctor; o usuário vinculado permanece cadastrado.`,
+    );
+
+    if (!hasConfirmedDeletion) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setActionError('');
+
+    try {
+      await deleteProfessional(professional.id);
+      navigate('/professionals', {
+        state: {
+          successMessage: `Vínculo profissional de ${professional.name} removido com sucesso.`,
+        },
+      });
+    } catch (error) {
+      setActionError(
+        error?.message || 'Não foi possível remover o vínculo profissional.',
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <main className="professional-details-page">
+        <section className="professional-details-card">
+          <p className="professional-details-message">Carregando profissional...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (isNotFound) {
+    return <ProfessionalNotFound />;
+  }
+
+  if (loadError && !professional) {
+    return (
+      <main className="professional-details-page">
+        <section className="professional-details-card">
+          <p className="professional-details-message">{loadError}</p>
+        </section>
+      </main>
+    );
+  }
 
   if (!professional) {
     return <ProfessionalNotFound />;
   }
-
-  const formattedWorkload = professional.weeklyHours
-    ? `${professional.weeklyHours}h semanais`
-    : 'Carga horária não informada';
 
   return (
     <main className="professional-details-page">
@@ -48,6 +169,12 @@ export default function ProfessionalDetails() {
         </div>
       </section>
 
+      {actionError ? (
+        <section className="professional-details-card professional-details-card--error">
+          <p className="professional-details-message">{actionError}</p>
+        </section>
+      ) : null}
+
       <section className="professional-details-card">
         <header className="professional-details-card__header">
           <div className="professional-details-identity">
@@ -62,20 +189,32 @@ export default function ProfessionalDetails() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="professional-details-edit-button"
-            onClick={() => navigate(`/professionals/${professional.id}/edit`)}
-          >
-            <LuPencilLine size={16} />
-            Editar profissional
-          </button>
+          <div className="professional-details-actions">
+            <button
+              type="button"
+              className="professional-details-edit-button"
+              onClick={() => navigate(`/professionals/${professional.id}/edit`)}
+            >
+              <LuPencilLine size={16} />
+              Editar profissional
+            </button>
+
+            <button
+              type="button"
+              className="professional-details-delete-button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <LuTrash2 size={16} />
+              {isDeleting ? 'Removendo...' : 'Excluir vínculo'}
+            </button>
+          </div>
         </header>
 
         <div className="professional-details-grid">
           <article className="professional-details-field">
             <span>Nome</span>
-            <strong>{professional.name}</strong>
+            <strong>{formatValue(professional.name)}</strong>
           </article>
 
           <article className="professional-details-field">
@@ -85,12 +224,12 @@ export default function ProfessionalDetails() {
 
           <article className="professional-details-field">
             <span>Telefone</span>
-            <strong>{professional.phone || 'Não informado'}</strong>
+            <strong>{formatPhoneValue(professional.phone)}</strong>
           </article>
 
           <article className="professional-details-field">
             <span>E-mail</span>
-            <strong>{professional.email}</strong>
+            <strong>{formatValue(professional.email)}</strong>
           </article>
 
           <article className="professional-details-field">
@@ -105,49 +244,25 @@ export default function ProfessionalDetails() {
           </article>
 
           <article className="professional-details-field">
-            <span>Unidade</span>
-            <strong>{professional.unit || 'Não informada'}</strong>
-          </article>
-
-          <article className="professional-details-field">
-            <span>Carga horária</span>
-            <div className="professional-details-meta">
-              <LuClock3 size={16} />
-              <strong>{formattedWorkload}</strong>
-            </div>
-          </article>
-
-          <article className="professional-details-field">
-            <span>Dias de atendimento</span>
-            <div className="professional-details-meta">
-              <LuCalendarDays size={16} />
-              <strong>{professional.schedule.days.join(', ')}</strong>
-            </div>
+            <span>ID do profissional</span>
+            <strong>{formatValue(professional.id)}</strong>
           </article>
 
           <article className="professional-details-field professional-details-field--full">
             <span>Especialidades</span>
             <div className="professional-details-specialties">
-              {professional.specialties.map((specialty) => (
-                <span key={specialty} className="professional-details-specialty-badge">
-                  {specialty}
-                </span>
-              ))}
-            </div>
-          </article>
-
-          <article className="professional-details-field professional-details-field--full">
-            <span>Horários de atendimento</span>
-            <div className="professional-details-schedule">
-              <div className="professional-details-schedule__shift">
-                <small>Turno da manhã</small>
-                <strong>{formatShift(professional.schedule.morning)}</strong>
-              </div>
-
-              <div className="professional-details-schedule__shift">
-                <small>Turno da tarde</small>
-                <strong>{formatShift(professional.schedule.afternoon)}</strong>
-              </div>
+              {professional.specialities.length > 0 ? (
+                professional.specialities.map((speciality) => (
+                  <span
+                    key={speciality.id}
+                    className="professional-details-specialty-badge"
+                  >
+                    {speciality.name}
+                  </span>
+                ))
+              ) : (
+                <strong>Sem especialidades vinculadas.</strong>
+              )}
             </div>
           </article>
         </div>

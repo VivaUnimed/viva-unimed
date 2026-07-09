@@ -114,11 +114,12 @@ export const getRequest = async (endpoint) => {
 };
 
 // Requisição DELETE usada para remover dados no backend.
-export const deleteRequest = async (endpoint) => {
+export const deleteRequest = async (endpoint, data) => {
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     credentials: 'include',
     method: 'DELETE',
     headers: getHeaders(),
+    body: data !== undefined ? JSON.stringify(data) : undefined,
   });
 
   return handleResponse(response);

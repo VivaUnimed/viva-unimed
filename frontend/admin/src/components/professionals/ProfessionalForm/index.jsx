@@ -1,86 +1,67 @@
 import { useState } from 'react';
-import { LuCamera, LuChevronLeft, LuClock, LuSun } from 'react-icons/lu';
+import { LuChevronLeft, LuSave } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import {
   getProfessionalSpecialtyOptions,
-  getProfessionalUnitOptions,
   professionalStatusOptions,
-  professionalUfOptions,
-  professionalWeekDayOptions,
 } from '../../../data/professionals';
+import { isPhoneValid } from '../../../utils/patients/patientFormatters';
 
 const defaultFormData = {
   name: '',
   email: '',
   phone: '',
+  cpf: '',
   crm: '',
-  uf: 'RS',
-  weeklyHours: '',
-  unit: '',
-  profilePhoto: null,
-  profilePhotoName: '',
   status: 'Ativo',
-  morningStart: '08:00',
-  morningEnd: '12:00',
-  afternoonStart: '13:30',
-  afternoonEnd: '18:00',
 };
 
-const defaultSelectedDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 const isEmailValid = (value) => /\S+@\S+\.\S+/.test(value);
 
 const formContentByVariant = {
   create: {
     title: 'Novo Profissional',
     description:
-      'Cadastre profissionais que poderão ser vinculados às vagas remanescentes e à agenda operacional.',
+      'Cadastre o usuário, o vínculo profissional e as especialidades usando o fluxo atual do backend.',
     submitLabel: 'Salvar profissional',
-    statusLabel: 'Status Inicial',
+    statusLabel: 'Status inicial',
+    notice:
+      'O backend atual cria usuário e doctor em etapas separadas. Se alguma chamada falhar no meio do processo, a interface mostrará a falha sem esconder persistência parcial.',
   },
   edit: {
     title: 'Editar Profissional',
     description:
-      'Atualize os dados cadastrais, especialidades e horários do profissional usando o mock local da gestão.',
+      'Atualize os dados básicos do usuário, o cadastro de doctor e os vínculos de especialidade com as rotas existentes.',
     submitLabel: 'Salvar alterações',
     statusLabel: 'Status do profissional',
+    notice:
+      'A edição também depende de chamadas separadas para User, Doctor e especialidades. O fluxo permanece explícito para acompanhar as limitações atuais do backend.',
   },
 };
 
 export default function ProfessionalForm({
   variant = 'create',
   initialValues = {},
-  existingProfessionals = [],
+  specialtyOptions = [],
   onSave,
   isSaving = false,
+  submitError = '',
+  isLoadingSpecialties = false,
+  specialtiesError = '',
 }) {
   const navigate = useNavigate();
   const content = formContentByVariant[variant] ?? formContentByVariant.create;
   const [formData, setFormData] = useState(() => ({
     ...defaultFormData,
     ...initialValues,
-    profilePhoto: null,
-    profilePhotoName: initialValues.profilePhotoName ?? '',
-    morningStart: initialValues.schedule?.morning?.start ?? defaultFormData.morningStart,
-    morningEnd: initialValues.schedule?.morning?.end ?? defaultFormData.morningEnd,
-    afternoonStart:
-      initialValues.schedule?.afternoon?.start ?? defaultFormData.afternoonStart,
-    afternoonEnd:
-      initialValues.schedule?.afternoon?.end ?? defaultFormData.afternoonEnd,
   }));
   const [errors, setErrors] = useState({});
-  const [selectedSpecialties, setSelectedSpecialties] = useState(
-    Array.isArray(initialValues.specialties) ? initialValues.specialties : [],
+  const [selectedSpecialityIds, setSelectedSpecialityIds] = useState(
+    Array.isArray(initialValues.specialityIds)
+      ? initialValues.specialityIds.map((specialityId) => Number(specialityId))
+      : [],
   );
-  const [selectedDays, setSelectedDays] = useState(
-    Array.isArray(initialValues.schedule?.days) && initialValues.schedule.days.length > 0
-      ? initialValues.schedule.days
-      : defaultSelectedDays,
-  );
-  const specialtyOptions = getProfessionalSpecialtyOptions(
-    existingProfessionals,
-    selectedSpecialties,
-  );
-  const unitOptions = getProfessionalUnitOptions(existingProfessionals);
+  const availableSpecialties = getProfessionalSpecialtyOptions(specialtyOptions);
 
   const clearFieldError = (fieldName) => {
     setErrors((currentErrors) => {
@@ -94,70 +75,54 @@ export default function ProfessionalForm({
     });
   };
 
-  const handleChange = ({ target }) => {
-    const { name, value, type, files } = target;
-    const selectedFile = type === 'file' ? files?.[0] ?? null : null;
-
+  const handleChange = ({ target: { name, value } }) => {
     setFormData((currentFormData) => ({
       ...currentFormData,
-      [name]: type === 'file' ? selectedFile : value,
-      ...(type === 'file'
-        ? { profilePhotoName: selectedFile?.name ?? currentFormData.profilePhotoName }
-        : {}),
+      [name]: value,
     }));
 
     clearFieldError(name);
   };
 
-  const handleToggleSpecialty = (specialty) => {
-    const nextSpecialties = selectedSpecialties.includes(specialty)
-      ? selectedSpecialties.filter(
-          (currentSpecialty) => currentSpecialty !== specialty,
-        )
-      : [...selectedSpecialties, specialty];
+  const handleToggleSpecialty = (specialityId) => {
+    const normalizedSpecialityId = Number(specialityId);
 
-    setSelectedSpecialties(nextSpecialties);
-
-    if (nextSpecialties.length > 0) {
-      clearFieldError('specialties');
-    }
-  };
-
-  const handleToggleDay = (day) => {
-    setSelectedDays((currentDays) =>
-      currentDays.includes(day)
-        ? currentDays.filter((currentDay) => currentDay !== day)
-        : [...currentDays, day],
+    setSelectedSpecialityIds((currentIds) =>
+      currentIds.includes(normalizedSpecialityId)
+        ? currentIds.filter((currentId) => currentId !== normalizedSpecialityId)
+        : [...currentIds, normalizedSpecialityId],
     );
   };
 
   const validateForm = () => {
     const nextErrors = {};
+    const trimmedPhone = formData.phone.trim();
+    const trimmedCpf = formData.cpf.trim();
 
     if (!formData.name.trim()) {
       nextErrors.name = 'Informe o nome completo do profissional.';
     }
 
     if (!formData.email.trim()) {
-      nextErrors.email = 'Informe o e-mail corporativo.';
+      nextErrors.email = 'Informe o e-mail do profissional.';
     } else if (!isEmailValid(formData.email.trim())) {
-      nextErrors.email = 'Informe um e-mail corporativo válido.';
+      nextErrors.email = 'Informe um e-mail válido.';
     }
 
-    if (!formData.phone.trim()) {
-      nextErrors.phone = 'Informe o telefone ou WhatsApp.';
+    if (trimmedPhone && !/^[\d\s()+-]+$/.test(trimmedPhone)) {
+      nextErrors.phone = 'Use apenas números e caracteres de formatação válidos.';
+    } else if (trimmedPhone && !isPhoneValid(trimmedPhone)) {
+      nextErrors.phone = 'Informe um telefone com DDD válido.';
+    }
+
+    if (trimmedCpf && trimmedCpf.replace(/\D/g, '').length !== 11) {
+      nextErrors.cpf = 'Informe um CPF com 11 dígitos ou deixe o campo em branco.';
     }
 
     if (!formData.crm.trim()) {
-      nextErrors.crm = 'Informe o número de registro (CRM).';
-    }
-
-    if (selectedSpecialties.length === 0) {
-      nextErrors.specialties = 'Selecione ao menos uma especialidade de atuação.';
-    }
-
-    if (!formData.unit) {
-      nextErrors.unit = 'Selecione a unidade de atendimento.';
+      nextErrors.crm = 'Informe o CRM do profissional.';
+    } else if (formData.crm.trim().length < 4) {
+      nextErrors.crm = 'O CRM deve ter ao menos 4 caracteres.';
     }
 
     if (!formData.status) {
@@ -167,7 +132,7 @@ export default function ProfessionalForm({
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = validateForm();
@@ -177,29 +142,14 @@ export default function ProfessionalForm({
       return;
     }
 
-    onSave?.({
+    await onSave?.({
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone.trim(),
+      cpf: formData.cpf.trim(),
       crm: formData.crm.trim(),
-      uf: formData.uf,
-      weeklyHours: formData.weeklyHours ? Number(formData.weeklyHours) : null,
-      specialties: selectedSpecialties,
-      unit: formData.unit,
       status: formData.status,
-      profilePhotoName:
-        formData.profilePhoto?.name || formData.profilePhotoName || null,
-      schedule: {
-        days: selectedDays,
-        morning: {
-          start: formData.morningStart,
-          end: formData.morningEnd,
-        },
-        afternoon: {
-          start: formData.afternoonStart,
-          end: formData.afternoonEnd,
-        },
-      },
+      specialityIds: selectedSpecialityIds,
     });
   };
 
@@ -235,7 +185,7 @@ export default function ProfessionalForm({
                   <input
                     type="text"
                     name="name"
-                    placeholder="Ex: Dr. João da Silva"
+                    placeholder="Ex: Dra. Joana da Silva"
                     value={formData.name}
                     onChange={handleChange}
                     aria-invalid={Boolean(errors.name)}
@@ -245,7 +195,7 @@ export default function ProfessionalForm({
                 </label>
 
                 <label className="create-professional-field">
-                  <span>E-mail corporativo</span>
+                  <span>E-mail</span>
                   <input
                     type="email"
                     name="email"
@@ -263,51 +213,43 @@ export default function ProfessionalForm({
                   <input
                     type="text"
                     name="phone"
-                    placeholder="(53) 00000-0000"
+                    placeholder="(53) 99999-0000"
                     value={formData.phone}
                     onChange={handleChange}
                     aria-invalid={Boolean(errors.phone)}
                     className={errors.phone ? 'create-professional-input--error' : ''}
                   />
+                  <small className="create-professional-field__hint">
+                    Campo opcional no backend atual.
+                  </small>
                   {errors.phone ? <small>{errors.phone}</small> : null}
+                </label>
+
+                <label className="create-professional-field">
+                  <span>CPF</span>
+                  <input
+                    type="text"
+                    name="cpf"
+                    placeholder="000.000.000-00"
+                    value={formData.cpf}
+                    onChange={handleChange}
+                    aria-invalid={Boolean(errors.cpf)}
+                    className={errors.cpf ? 'create-professional-input--error' : ''}
+                  />
+                  <small className="create-professional-field__hint">
+                    Campo opcional, salvo via User.
+                  </small>
+                  {errors.cpf ? <small>{errors.cpf}</small> : null}
                 </label>
               </section>
 
               <section className="create-professional-section">
                 <h3 className="create-professional-section__eyebrow">
-                  PERFIL E DOCUMENTOS
+                  FLUXO ATUAL DO BACKEND
                 </h3>
 
-                <div className="create-professional-upload-field">
-                  <span>Foto de Perfil</span>
-
-                  <label
-                    htmlFor="profilePhoto"
-                    className="create-professional-upload-card"
-                  >
-                    <div className="create-professional-upload-card__icon">
-                      <LuCamera size={26} />
-                    </div>
-
-                    <div className="create-professional-upload-card__content">
-                      <strong>
-                        {formData.profilePhoto?.name ||
-                          formData.profilePhotoName ||
-                          'Selecionar foto de perfil'}
-                      </strong>
-                      <span>PNG ou JPG até 2MB.</span>
-                      <span>Utilizada na agenda.</span>
-                    </div>
-                  </label>
-
-                  <input
-                    id="profilePhoto"
-                    name="profilePhoto"
-                    type="file"
-                    accept=".png,.jpg,.jpeg"
-                    className="create-professional-upload-input"
-                    onChange={handleChange}
-                  />
+                <div className="create-professional-note">
+                  <p>{content.notice}</p>
                 </div>
 
                 <div
@@ -337,204 +279,85 @@ export default function ProfessionalForm({
 
             <section className="create-professional-section create-professional-section--main">
               <h3 className="create-professional-section__eyebrow">
-                ATUAÇÃO PROFISSIONAL
+                VÍNCULO PROFISSIONAL
               </h3>
 
               <div className="create-professional-field">
-                <span>Especialidades de atuação</span>
+                <span>Especialidades</span>
 
-                <div
-                  className={`create-professional-specialties professional-specialties${errors.specialties ? ' create-professional-specialties--error professional-specialties--error' : ''}`}
-                  role="group"
-                  aria-label="Especialidades de atuação"
-                >
-                  {specialtyOptions.map((specialty) => {
-                    const isSelected = selectedSpecialties.includes(specialty);
+                {isLoadingSpecialties ? (
+                  <div className="create-professional-empty-state">
+                    Carregando especialidades...
+                  </div>
+                ) : availableSpecialties.length > 0 ? (
+                  <div
+                    className="create-professional-specialties professional-specialties"
+                    role="group"
+                    aria-label="Especialidades de atuação"
+                  >
+                    {availableSpecialties.map((speciality) => {
+                      const isSelected = selectedSpecialityIds.includes(
+                        Number(speciality.id),
+                      );
 
-                    return (
-                      <button
-                        key={specialty}
-                        type="button"
-                        className={`create-professional-specialty-option professional-specialty-option${isSelected ? ' create-professional-specialty-option--selected professional-specialty-option--selected' : ''}`}
-                        onClick={() => handleToggleSpecialty(specialty)}
-                        aria-pressed={isSelected}
-                      >
-                        {specialty}
-                      </button>
-                    );
-                  })}
-                </div>
+                      return (
+                        <button
+                          key={speciality.id}
+                          type="button"
+                          className={`create-professional-specialty-option professional-specialty-option${isSelected ? ' create-professional-specialty-option--selected professional-specialty-option--selected' : ''}`}
+                          onClick={() => handleToggleSpecialty(speciality.id)}
+                          aria-pressed={isSelected}
+                        >
+                          {speciality.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="create-professional-empty-state">
+                    Nenhuma especialidade disponível. Cadastre especialidades na gestão
+                    administrativa antes de vinculá-las aos profissionais.
+                  </div>
+                )}
 
                 <small className="create-professional-field__hint">
-                  Selecione uma ou mais especialidades para uso nas vagas
-                  remanescentes e na agenda operacional.
+                  O vínculo é opcional e usa as rotas atuais de adicionar/remover
+                  especialidade em Doctor.
                 </small>
-                {errors.specialties ? <small>{errors.specialties}</small> : null}
+                {specialtiesError ? <small>{specialtiesError}</small> : null}
               </div>
 
-              <div className="create-professional-row">
-                <label className="create-professional-field">
-                  <span>Nº Registro (CRM)</span>
-                  <input
-                    type="text"
-                    name="crm"
-                    placeholder="00000"
-                    value={formData.crm}
-                    onChange={handleChange}
-                    aria-invalid={Boolean(errors.crm)}
-                    className={errors.crm ? 'create-professional-input--error' : ''}
-                  />
-                  {errors.crm ? <small>{errors.crm}</small> : null}
-                </label>
-
-                <label className="create-professional-field">
-                  <span>UF</span>
-                  <select name="uf" value={formData.uf} onChange={handleChange}>
-                    {professionalUfOptions.map((uf) => (
-                      <option key={uf} value={uf}>
-                        {uf}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <label className="create-professional-field">
-                <span>Unidade de atendimento</span>
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleChange}
-                  aria-invalid={Boolean(errors.unit)}
-                  className={errors.unit ? 'create-professional-input--error' : ''}
-                >
-                  <option value="">Selecione uma unidade</option>
-                  {unitOptions.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {unit}
-                    </option>
-                  ))}
-                </select>
-                {errors.unit ? <small>{errors.unit}</small> : null}
-              </label>
-
-              <label className="create-professional-field">
-                <span>Carga Horária Semanal</span>
+              <label className="create-professional-field create-professional-field--spaced">
+                <span>CRM</span>
                 <input
-                  type="number"
-                  name="weeklyHours"
-                  placeholder="40"
-                  min="0"
-                  value={formData.weeklyHours}
+                  type="text"
+                  name="crm"
+                  placeholder="Ex: 12345-RS"
+                  value={formData.crm}
                   onChange={handleChange}
+                  aria-invalid={Boolean(errors.crm)}
+                  className={errors.crm ? 'create-professional-input--error' : ''}
                 />
+                <small className="create-professional-field__hint">
+                  O backend atual persiste o CRM como string única.
+                </small>
+                {errors.crm ? <small>{errors.crm}</small> : null}
               </label>
             </section>
           </div>
 
-          <section className="create-professional-section create-professional-section--schedule">
-            <div className="create-professional-schedule-header">
-              <h3 className="create-professional-section__eyebrow">
-                HORÁRIO DE ATENDIMENTO
-              </h3>
-              <span className="create-professional-weekly-badge">
-                PADRÃO SEMANAL
-              </span>
+          {submitError ? (
+            <div className="create-professional-feedback create-professional-feedback--error" role="alert">
+              <p>{submitError}</p>
             </div>
-
-            <div
-              className="create-professional-days"
-              role="group"
-              aria-label="Dias de atendimento"
-            >
-              {professionalWeekDayOptions.map((day) => {
-                const isSelected = selectedDays.includes(day);
-
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    className={`create-professional-day-button${isSelected ? ' create-professional-day-button--active' : ''}`}
-                    onClick={() => handleToggleDay(day)}
-                    aria-pressed={isSelected}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="create-professional-time-hint">
-              Clique no campo de horário para ver sugestões prontas ou digite
-              manualmente.
-            </div>
-
-            <div className="create-professional-time-grid">
-              <div className="create-professional-time-card">
-                <div className="create-professional-time-card__title">
-                  <LuSun size={18} />
-                  <span>Período Manhã</span>
-                </div>
-
-                <div className="create-professional-time-inputs">
-                  <input
-                    type="time"
-                    name="morningStart"
-                    value={formData.morningStart}
-                    onChange={handleChange}
-                    step="1800"
-                  />
-                  <span>até</span>
-                  <input
-                    type="time"
-                    name="morningEnd"
-                    value={formData.morningEnd}
-                    onChange={handleChange}
-                    step="1800"
-                  />
-                </div>
-              </div>
-
-              <div className="create-professional-time-card">
-                <div className="create-professional-time-card__title">
-                  <LuClock size={18} />
-                  <span>Período Tarde</span>
-                </div>
-
-                <div className="create-professional-time-inputs">
-                  <input
-                    type="time"
-                    name="afternoonStart"
-                    value={formData.afternoonStart}
-                    onChange={handleChange}
-                    step="1800"
-                  />
-                  <span>até</span>
-                  <input
-                    type="time"
-                    name="afternoonEnd"
-                    value={formData.afternoonEnd}
-                    onChange={handleChange}
-                    step="1800"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="create-professional-schedule-notice">
-              <LuClock size={16} />
-              <span>
-                Estes horários serão replicados para todos os dias úteis
-                selecionados acima.
-              </span>
-            </div>
-          </section>
+          ) : null}
 
           <div className="create-professional-actions">
             <button
               type="button"
               className="create-professional-actions__cancel"
               onClick={() => navigate('/professionals')}
+              disabled={isSaving}
             >
               Cancelar
             </button>
@@ -544,7 +367,8 @@ export default function ProfessionalForm({
               className="create-professional-actions__save"
               disabled={isSaving}
             >
-              {content.submitLabel}
+              <LuSave size={16} />
+              {isSaving ? 'Salvando...' : content.submitLabel}
             </button>
           </div>
         </form>
