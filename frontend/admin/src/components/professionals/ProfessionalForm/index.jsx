@@ -153,6 +153,31 @@ export default function ProfessionalForm({
     });
   };
 
+  const statusField = (
+    <div
+      className={`create-professional-status${errors.status ? ' create-professional-status--error' : ''}`}
+    >
+      <span>{content.statusLabel}</span>
+
+      <div className="create-professional-status__options">
+        {professionalStatusOptions.map((status) => (
+          <label key={status}>
+            <input
+              type="radio"
+              name="status"
+              value={status}
+              checked={formData.status === status}
+              onChange={handleChange}
+            />
+            {status}
+          </label>
+        ))}
+      </div>
+
+      {errors.status ? <small>{errors.status}</small> : null}
+    </div>
+  );
+
   return (
     <main className="create-professional-page">
       <section className="create-professional-header">
@@ -243,38 +268,19 @@ export default function ProfessionalForm({
                 </label>
               </section>
 
-              <section className="create-professional-section">
-                <h3 className="create-professional-section__eyebrow">
-                  FLUXO ATUAL DO BACKEND
-                </h3>
+              {variant === 'edit' ? (
+                <section className="create-professional-section">
+                  <h3 className="create-professional-section__eyebrow">
+                    FLUXO ATUAL DO BACKEND
+                  </h3>
 
-                <div className="create-professional-note">
-                  <p>{content.notice}</p>
-                </div>
-
-                <div
-                  className={`create-professional-status${errors.status ? ' create-professional-status--error' : ''}`}
-                >
-                  <span>{content.statusLabel}</span>
-
-                  <div className="create-professional-status__options">
-                    {professionalStatusOptions.map((status) => (
-                      <label key={status}>
-                        <input
-                          type="radio"
-                          name="status"
-                          value={status}
-                          checked={formData.status === status}
-                          onChange={handleChange}
-                        />
-                        {status}
-                      </label>
-                    ))}
+                  <div className="create-professional-note">
+                    <p>{content.notice}</p>
                   </div>
 
-                  {errors.status ? <small>{errors.status}</small> : null}
-                </div>
-              </section>
+                  {statusField}
+                </section>
+              ) : null}
             </div>
 
             <section className="create-professional-section create-professional-section--main">
@@ -343,6 +349,8 @@ export default function ProfessionalForm({
                 </small>
                 {errors.crm ? <small>{errors.crm}</small> : null}
               </label>
+
+              {variant === 'create' ? statusField : null}
             </section>
           </div>
 
