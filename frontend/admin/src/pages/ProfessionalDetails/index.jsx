@@ -256,7 +256,7 @@ export default function ProfessionalDetails() {
             <strong>{formatValue(professional.id)}</strong>
           </article>
 
-          <article className="professional-details-field professional-details-field--full">
+          <article className="professional-details-field professional-details-field--wide">
             <span>Especialidades</span>
             <div className="professional-details-specialties">
               {professional.specialities.length > 0 ? (

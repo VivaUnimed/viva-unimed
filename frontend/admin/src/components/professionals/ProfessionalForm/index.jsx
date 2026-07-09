@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LuChevronLeft, LuSave } from 'react-icons/lu';
+import { LuCheck, LuChevronLeft } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import {
   getProfessionalSpecialtyOptions,
@@ -375,7 +375,7 @@ export default function ProfessionalForm({
               className="create-professional-actions__save"
               disabled={isSaving}
             >
-              <LuSave size={16} />
+              <LuCheck size={16} />
               {isSaving ? 'Salvando...' : content.submitLabel}
             </button>
           </div>

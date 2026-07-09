@@ -130,8 +130,8 @@ export default function Professionals() {
         <div>
           <h1>Gestão de Profissionais</h1>
           <p>
-            Gerencie profissionais e especialidades usando as rotas atuais de
-            Doctor, User e Speciality.
+            Gerencie profissionais e especialidades utilizados no cadastro de vagas
+            remanescentes.
           </p>
         </div>
 
