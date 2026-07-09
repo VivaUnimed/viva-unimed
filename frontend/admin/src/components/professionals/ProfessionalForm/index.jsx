@@ -25,8 +25,6 @@ const formContentByVariant = {
       'Cadastre o usuário, o vínculo profissional e as especialidades usando o fluxo atual do backend.',
     submitLabel: 'Salvar profissional',
     statusLabel: 'Status inicial',
-    notice:
-      'O backend atual cria usuário e doctor em etapas separadas. Se alguma chamada falhar no meio do processo, a interface mostrará a falha sem esconder persistência parcial.',
   },
   edit: {
     title: 'Editar Profissional',
@@ -34,8 +32,6 @@ const formContentByVariant = {
       'Atualize os dados básicos do usuário, o cadastro de doctor e os vínculos de especialidade com as rotas existentes.',
     submitLabel: 'Salvar alterações',
     statusLabel: 'Status do profissional',
-    notice:
-      'A edição também depende de chamadas separadas para User, Doctor e especialidades. O fluxo permanece explícito para acompanhar as limitações atuais do backend.',
   },
 };
 
@@ -267,20 +263,6 @@ export default function ProfessionalForm({
                   {errors.cpf ? <small>{errors.cpf}</small> : null}
                 </label>
               </section>
-
-              {variant === 'edit' ? (
-                <section className="create-professional-section">
-                  <h3 className="create-professional-section__eyebrow">
-                    FLUXO ATUAL DO BACKEND
-                  </h3>
-
-                  <div className="create-professional-note">
-                    <p>{content.notice}</p>
-                  </div>
-
-                  {statusField}
-                </section>
-              ) : null}
             </div>
 
             <section className="create-professional-section create-professional-section--main">
@@ -350,7 +332,7 @@ export default function ProfessionalForm({
                 {errors.crm ? <small>{errors.crm}</small> : null}
               </label>
 
-              {variant === 'create' ? statusField : null}
+              {statusField}
             </section>
           </div>
 
