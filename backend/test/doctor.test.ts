@@ -8,6 +8,7 @@ describe('doctor controller', () => {
 
   beforeAll(async () => {
     await client.login();
+
     const userRes = await client.post('/api/user', {
       name: 'Médico Teste',
       email: `medico.teste.${Date.now()}@example.com`,
@@ -40,9 +41,30 @@ describe('doctor controller', () => {
     expect(Array.isArray(res.data)).toBe(true);
     expect(res.data.length).toBeGreaterThan(0);
 
+    // garante que o médico recém criado está na listagem
     const createdDoctorIsInList = res.data.some((doc: any) => doc.id === doctorId);
-
     expect(createdDoctorIsInList).toBe(true);
+
+    const primeiroMedico = res.data[0];
+
+    // dados vindos do usuário
+    expect(primeiroMedico).toHaveProperty('id');
+    expect(primeiroMedico).toHaveProperty('name');
+    expect(primeiroMedico).toHaveProperty('email');
+    expect(primeiroMedico).toHaveProperty('cpf');
+    expect(primeiroMedico).toHaveProperty('phone');
+    expect(primeiroMedico).toHaveProperty('roles');
+    expect(primeiroMedico).toHaveProperty('permissions');
+
+    // dados exclusivos do médico
+    expect(primeiroMedico).toHaveProperty('crm');
+    expect(primeiroMedico).toHaveProperty('enabled');
+    expect(primeiroMedico).toHaveProperty('specialities');
+
+    // valida que as listas vieram no formato correto
+    expect(Array.isArray(primeiroMedico.roles)).toBe(true);
+    expect(Array.isArray(primeiroMedico.permissions)).toBe(true);
+    expect(Array.isArray(primeiroMedico.specialities)).toBe(true);
   });
 
   it('atualiza os dados de um medico existente', async () => {
@@ -51,6 +73,7 @@ describe('doctor controller', () => {
       crm: '1236-RJ',
       enabled: true,
     });
+    expect(res.status).toBe(200)
   });
 
   it('busca médico por id', async () => {
