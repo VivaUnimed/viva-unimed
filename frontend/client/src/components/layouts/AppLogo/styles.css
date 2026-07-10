@@ -1,0 +1,17 @@
+.app-logo {
+  flex: none;
+  align-self: stretch;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.app-logo-small {
+  width: 312px;
+  height: 80px;
+}
+
+.app-logo-large {
+  width: min(100%, 320px);
+  height: 82px;
+}

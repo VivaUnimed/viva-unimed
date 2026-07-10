@@ -1,0 +1,41 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+  color: black;
+}
+
+body {
+  background-color: #f5f5f5;
+}
+
+/* Barra de Rolagem */
+
+/* trilho */
+::-webkit-scrollbar {
+  background-color: #f1f1f1;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 5rem;
+}
+
+/* scroll */
+::-webkit-scrollbar-thumb {
+  background-color: #c1c1c189;
+  border-radius: 50rem;
+}
+
+/* trilho */
+::-webkit-scrollbar {
+  background-color: #f1f1f1;
+  width: 7px;
+  height: 7px;
+  border-radius: 50px;
+}
+
+/* scroll */
+::-webkit-scrollbar-thumb {
+  background-color: #c1c1c189;
+  border-radius: 500px;
+}

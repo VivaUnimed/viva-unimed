@@ -1,0 +1,157 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 10px;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background: #f3f4f6;
+}
+
+.app-bottom-nav {
+  position: fixed;
+  right: auto;
+  bottom: 0;
+  left: 50%;
+  z-index: 50;
+  width: min(100%, 390px);
+  transform: translateX(-50%);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.consultas-card .consultas-content,
+.consulta-detalhes-card .consulta-modal,
+.alertas-card .alertas-content,
+.especialidades-card .especialidades-content,
+.interesses-card .interesses-content,
+.perfil-card .perfil-content,
+.vagas-card .vagas-content {
+  padding-bottom: calc(106px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .app-bottom-nav[class] {
+    position: fixed;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 0;
+    z-index: 80;
+    width: 136px;
+    height: 100vh;
+    padding: 30px 16px;
+    transform: none;
+    background: #0a8f4c;
+    border-radius: 0;
+    box-shadow: 10px 0 28px rgba(10, 143, 76, 0.18);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex: none;
+  }
+
+  .consultas-card .consultas-content,
+  .consulta-detalhes-card .consulta-modal,
+  .alertas-card .alertas-content,
+  .especialidades-card .especialidades-content,
+  .interesses-card .interesses-content,
+  .perfil-card .perfil-content,
+  .vagas-card .vagas-content {
+    padding-bottom: 32px;
+  }
+
+  .app-bottom-nav .bottom-nav-item {
+    width: 104px;
+    min-height: 68px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .app-bottom-nav .bottom-nav-item svg {
+    color: currentColor;
+  }
+
+  .app-bottom-nav .bottom-nav-item span {
+    font-size: 9px;
+    line-height: 1.15;
+    text-align: left;
+  }
+
+  .app-bottom-nav .bottom-nav-item.active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    padding: 10px 12px;
+  }
+
+  .app-bottom-nav .bottom-nav-item.active svg {
+    color: #ffffff;
+  }
+
+  .consultas-header .app-logo-small,
+  .consulta-detalhes-header .app-logo-small,
+  .alertas-header .app-logo-small,
+  .interesses-header .app-logo-small,
+  .perfil-header .app-logo-small,
+  .vagas-header .app-logo-small {
+    position: fixed;
+    top: 16px;
+    left: 12px;
+    z-index: 90;
+    width: 104px;
+    height: 54px;
+    margin: 0;
+    transform: none;
+    align-self: auto;
+  }
+
+  .login-paciente-header .app-logo-small,
+  .signup-paciente-header .app-logo-small,
+  .reset-password-header .app-logo-small {
+    position: fixed;
+    top: 24px;
+    left: 32px;
+    z-index: 70;
+    width: 240px;
+    height: 62px;
+    margin: 0;
+    transform: none;
+    align-self: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-bottom-nav[class] {
+    width: 156px;
+    padding: 32px 18px;
+  }
+
+  .app-bottom-nav .bottom-nav-item {
+    width: 116px;
+  }
+
+  .consultas-header .app-logo-small,
+  .consulta-detalhes-header .app-logo-small,
+  .alertas-header .app-logo-small,
+  .interesses-header .app-logo-small,
+  .perfil-header .app-logo-small,
+  .vagas-header .app-logo-small {
+    left: 18px;
+    width: 120px;
+    height: 60px;
+  }
+}

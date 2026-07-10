@@ -1,0 +1,63 @@
+services:
+  traefik:
+    extends:
+      file: docker-compose.yaml
+      service: traefik
+    networks:
+      - traefik-net
+  api:
+    extends:
+      file: docker-compose.yaml
+      service: api
+    environment:
+      - DB_ADDRESS=db
+      - DB_PORT=5432
+      - DB_PASSWORD=localdbpassword
+      - DB_USERNAME=localdbuser
+      - DB_DATABASE=viva_unimed
+      - DEFAULT_ADMIN_EMAIL=admin@viva.com
+      - DEFAULT_ADMIN_PASSWORD=123456
+      - JWT_SECRET=usar_uma_string_segura_para_esta_parte
+      - APPOINTMENT_JOB_CRON=0/1 * * * 1-5
+    depends_on:
+      - db
+    networks:
+      - internal-net
+      - traefik-net
+  front-admin:
+    extends:
+      file: docker-compose.yaml
+      service: front-admin
+    networks:
+      - traefik-net
+  front-client:
+    extends:
+      file: docker-compose.yaml
+      service: front-client
+    networks:
+      - traefik-net
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: localdbuser
+      POSTGRES_PASSWORD: localdbpassword
+      POSTGRES_DB: viva_unimed
+    ports:
+       - "5433:5432"
+    volumes:
+      - viva_pg_data:/var/lib/postgresql/data
+    networks:
+      - internal-net
+
+volumes:
+  letsencrypt-data:
+  viva_pg_data:
+networks:
+  traefik-net:
+    name: traefik-net
+    driver: bridge
+  internal-net:
+    name: internal-net
+    driver: bridge

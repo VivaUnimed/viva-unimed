@@ -1,0 +1,12 @@
+node_modules# Ignore root level node_modules
+node_modules
+
+# Ignore any node_modules folder nested anywhere in the project (monorepos)
+**/node_modules
+
+# Optional but recommended exclusions to keep builds fast and clean
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.git
+.dockerignore

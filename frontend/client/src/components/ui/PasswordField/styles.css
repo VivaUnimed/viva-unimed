@@ -1,0 +1,60 @@
+.password-field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.password-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.password-field-header label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: 0.08em;
+}
+
+.password-field-group {
+  position: relative;
+}
+
+.password-field-group input {
+  width: 100%;
+  height: 54px;
+  border: none;
+  border-radius: 16px;
+  background: #e5e7e9;
+  padding: 0 50px 0 16px;
+  font-size: 18px;
+  color: #374151;
+  outline: none;
+}
+
+.password-field-group input::placeholder {
+  color: #9ca3af;
+}
+
+.show-password-btn {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.forgot-password-btn {
+  background: transparent;
+  border: none;
+  color: #008f4c;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+}

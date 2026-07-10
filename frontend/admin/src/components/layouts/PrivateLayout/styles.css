@@ -1,0 +1,26 @@
+.private-layout {
+  --sidebar-width: 260px;
+  display: flex;
+  min-height: 100vh;
+  height: 100vh;
+  background-color: #f6f7f9;
+  overflow: hidden;
+}
+
+.private-layout--sidebar-hidden {
+  --sidebar-width: 0px;
+}
+
+.private-layout__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.private-layout__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}

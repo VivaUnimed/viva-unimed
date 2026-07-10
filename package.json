@@ -1,0 +1,25 @@
+{
+  "name": "viva_unimed",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "workspaces": [
+    "frontend/admin",
+    "frontend/client",
+    "shared",
+    "backend"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backend": "npm run build:shared && npm -w backend start",
+    "admin": "npm -w frontend/admin run dev",
+    "build:shared": "npm -w shared run build",
+    "client": "npm -w frontend/client run dev"
+  },
+  "devDependencies": {
+    "axios": "^1.18.1"
+  }
+}
