@@ -17,10 +17,12 @@ export const PERMISSIONS = [
   "patient.create",
   "patient.read",
   "patient.edit",
-  "patient.delete"
+  "patient.delete",
+  "appointment.create",
+  "appointment.read",
+  "appointment.edit",
+  "appointment.delete"
 ] as const;
-
-
 
 /** Tipo derivado que restringe strings apenas aos valores definidos em PERMISSIONS */
 export type Permission = typeof PERMISSIONS[number];
