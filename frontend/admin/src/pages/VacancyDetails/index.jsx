@@ -24,12 +24,12 @@ function getPageCopy(vacancy) {
   if (vacancy.vacancyStatus === 'booked') {
     return {
       eyebrow: 'Vaga reservada',
-      title: 'Reserva registrada no backend',
+      title: `${vacancy.specialty} • ${vacancy.time}`,
       description:
-        'A vaga foi marcada como reservada. Esta consulta não expõe o paciente confirmado pelas rotas atuais.',
-      highlightTitle: 'Paciente confirmado não exposto',
+        'Esta vaga já foi reservada e segue disponível apenas para consulta.',
+      highlightTitle: 'Reserva confirmada',
       highlightDescription:
-        'O backend atual marca a vaga como booked, mas não retorna nesta tela qual paciente aceitou a oferta.',
+        'A vaga não está mais disponível para novos encaminhamentos.',
       highlightModifier: 'confirmed',
     };
   }
@@ -37,10 +37,10 @@ function getPageCopy(vacancy) {
   if (vacancy.vacancyStatus === 'expired') {
     return {
       eyebrow: 'Vaga encerrada',
-      title: 'A vaga expirou',
+      title: `${vacancy.specialty} • ${vacancy.time}`,
       description:
-        'O registro continua disponível para consulta administrativa mesmo após a expiração.',
-      highlightTitle: 'Expiração registrada',
+        'O horário desta vaga já expirou e o registro permanece disponível para consulta.',
+      highlightTitle: 'Prazo encerrado',
       highlightDescription: getVacancyStatusDescription(vacancy.vacancyStatus),
       highlightModifier: 'ended',
     };
@@ -49,9 +49,9 @@ function getPageCopy(vacancy) {
   if (vacancy.vacancyStatus === 'cancelled') {
     return {
       eyebrow: 'Vaga encerrada',
-      title: 'A vaga foi cancelada',
+      title: `${vacancy.specialty} • ${vacancy.time}`,
       description:
-        'O backend mantém a vaga apenas para acompanhamento administrativo após o cancelamento.',
+        'Esta vaga foi cancelada e permanece visível para acompanhamento.',
       highlightTitle: 'Cancelamento registrado',
       highlightDescription: getVacancyStatusDescription(vacancy.vacancyStatus),
       highlightModifier: 'ended',
@@ -60,11 +60,11 @@ function getPageCopy(vacancy) {
 
   if (vacancy.vacancyStatus === 'no_show') {
     return {
-      eyebrow: 'Histórico de atendimento',
-      title: 'A vaga registra no-show',
+      eyebrow: 'Histórico da vaga',
+      title: `${vacancy.specialty} • ${vacancy.time}`,
       description:
-        'O fluxo atual do backend mantém esse registro apenas para consulta e histórico operacional.',
-      highlightTitle: 'No-show registrado',
+        'Esta vaga teve registro de não comparecimento e permanece no histórico.',
+      highlightTitle: 'Não comparecimento registrado',
       highlightDescription: getVacancyStatusDescription(vacancy.vacancyStatus),
       highlightModifier: 'ended',
     };
@@ -74,10 +74,12 @@ function getPageCopy(vacancy) {
     eyebrow: 'Gestão da vaga',
     title: `${vacancy.specialty} • ${vacancy.time}`,
     description:
-      'A tela reflete apenas os dados expostos hoje pelas rotas de vagas e fila de espera.',
-    highlightTitle: 'Processamento automático',
+      'Acompanhe as principais informações da vaga e os pacientes compatíveis no momento.',
+    highlightTitle: 'Vaga disponível',
     highlightDescription:
-      'A fila inteligente continua sendo processada pelo backend. Aqui o admin acompanha apenas os dados disponíveis nessas rotas.',
+      vacancy.queuePatients > 0
+        ? `Existem ${vacancy.queuePatients} ${vacancy.queuePatients === 1 ? 'paciente compatível' : 'pacientes compatíveis'} para esta vaga no momento.`
+        : 'No momento, não há pacientes compatíveis para esta vaga.',
     highlightModifier: 'active',
   };
 }
@@ -109,16 +111,16 @@ function getDetailsFields(vacancy) {
       icon: vacancy.vacancyStatus === 'booked' ? LuCircleCheck : LuClock3,
     },
     {
-      label: 'Fila compatível atual',
+      label: 'Pacientes na fila',
       value: `${vacancy.queuePatients} ${vacancy.queuePatients === 1 ? 'paciente' : 'pacientes'}`,
       icon: LuUsers,
     },
     {
-      label: 'ID da vaga',
+      label: 'Código da vaga',
       value: String(vacancy.id),
     },
     {
-      label: 'Cadastro administrativo',
+      label: 'Registrada por',
       value: vacancy.createdByEmail
         ? `${vacancy.createdByName} • ${vacancy.createdByEmail}`
         : vacancy.createdByName,
@@ -184,7 +186,7 @@ export default function VacancyDetails() {
     }
 
     const isConfirmed = window.confirm(
-      `Deseja excluir a vaga #${vacancy.id}? O backend atual pode bloquear a exclusão se houver reserva ou vínculos críticos.`,
+      `Deseja excluir a vaga #${vacancy.id}? Esta ação removerá o registro da lista de vagas.`,
     );
 
     if (!isConfirmed) {
@@ -215,7 +217,7 @@ export default function VacancyDetails() {
         <section className="vacancy-details-card vacancy-details-card--empty">
           <span className="vacancy-details-eyebrow">Consulta de vaga</span>
           <h1>Carregando vaga...</h1>
-          <p>Aguarde enquanto buscamos os dados atuais do backend.</p>
+          <p>Aguarde enquanto buscamos os dados da vaga.</p>
         </section>
       </main>
     );
@@ -238,7 +240,7 @@ export default function VacancyDetails() {
         <section className="vacancy-details-card vacancy-details-card--empty">
           <span className="vacancy-details-eyebrow">Consulta de vaga</span>
           <h1>Vaga não encontrada.</h1>
-          <p>O identificador informado não existe na base atual do backend.</p>
+          <p>A vaga informada não foi encontrada.</p>
 
           <button
             type="button"
@@ -300,7 +302,7 @@ export default function VacancyDetails() {
                   {vacancy.vacancyStatusText}
                 </span>
                 <span className="vacancy-details-badge vacancy-details-badge--info">
-                  Fila atual: {vacancy.queuePatients}
+                  Pacientes na fila: {vacancy.queuePatients}
                 </span>
               </div>
             </div>
@@ -325,7 +327,7 @@ export default function VacancyDetails() {
               title={
                 canDeleteVacancy(vacancy)
                   ? 'Excluir vaga'
-                  : 'O backend atual não permite excluir vagas reservadas ou com no-show.'
+                  : 'Vagas reservadas ou com não comparecimento não podem ser excluídas.'
               }
             >
               <LuTrash2 size={16} />
@@ -378,9 +380,9 @@ export default function VacancyDetails() {
           <div className="vacancy-history__header">
             <LuUsers size={18} />
             <div>
-              <h2>Fila compatível no backend</h2>
+              <h2>Fila compatível</h2>
               <p>
-                Solicitações waiting compatíveis com a vaga pelas rotas atuais.
+                Pacientes compatíveis com esta vaga neste momento.
               </p>
             </div>
           </div>
@@ -392,17 +394,17 @@ export default function VacancyDetails() {
                   <span>{queueRequest.requestedDateTime}</span>
                   <strong>{queueRequest.patientName}</strong>
                   <p>
-                    {queueRequest.doctorScopeLabel}. Tentativas: {queueRequest.attempts}.{' '}
+                    {queueRequest.doctorScopeLabel}. Tentativas de contato: {queueRequest.attempts}.{' '}
                     {queueRequest.cooldownLabel}.
                   </p>
                 </article>
               ))
             ) : (
               <article className="vacancy-history__item">
-                <span>Fila atual</span>
+                <span>Fila compatível</span>
                 <strong>Nenhum paciente compatível no momento</strong>
                 <p>
-                  O backend atual não retorna solicitações waiting compatíveis para esta vaga.
+                  Quando houver pacientes elegíveis para esta vaga, eles aparecerão aqui.
                 </p>
               </article>
             )}
@@ -424,7 +426,7 @@ export default function VacancyDetails() {
 
           {!canDeleteVacancy(vacancy) ? (
             <p className="vacancy-details-footer__helper">
-              O backend atual bloqueia a exclusão de vagas reservadas ou com no-show.
+              Vagas reservadas ou com não comparecimento não podem ser excluídas.
             </p>
           ) : null}
         </footer>

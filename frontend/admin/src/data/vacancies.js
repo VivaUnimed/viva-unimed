@@ -8,15 +8,15 @@ const vacancyStatusLabels = {
 
 const vacancyStatusDescriptions = {
   open:
-    'A vaga segue aberta no backend e depende do processamento automático da fila inteligente.',
+    'A vaga está disponível para novos atendimentos.',
   booked:
-    'A vaga foi marcada como reservada no backend atual, mas esta rota não informa qual paciente confirmou.',
+    'A vaga já foi reservada e não está mais disponível para novos encaminhamentos.',
   expired:
-    'A vaga expirou sem reserva confirmada no fluxo atual do backend.',
+    'O horário da vaga expirou sem reserva confirmada.',
   cancelled:
-    'A vaga foi cancelada e permanece disponível apenas para consulta administrativa.',
+    'A vaga foi cancelada e permanece disponível para consulta.',
   no_show:
-    'A vaga registra no-show no backend atual e não pode ser removida pelo fluxo administrativo.',
+    'A vaga teve registro de não comparecimento.',
 };
 
 const normalizeId = (value) => Number(value);
@@ -123,7 +123,7 @@ export const getVacancyStatusLabel = (status) => {
 };
 
 export const getVacancyStatusDescription = (status) => {
-  return vacancyStatusDescriptions[status] ?? 'Status indisponível no backend atual.';
+  return vacancyStatusDescriptions[status] ?? 'Status indisponível no momento.';
 };
 
 export const getVacancyQueueRequests = (appointment, requests = []) => {
@@ -223,11 +223,11 @@ export const buildVacancyQueueItems = (
       requestedDateTime: formatVacancyDateTime(request.date),
       attempts: Number(request.attempts) || 0,
       doctorScopeLabel: request.doctorId
-        ? 'Solicitação vinculada a este profissional'
-        : 'Solicitação aberta para qualquer profissional da especialidade',
+        ? 'Preferência por este profissional'
+        : 'Atendimento com qualquer profissional da especialidade',
       cooldownLabel: request.cooldownUntil
-        ? `Cooldown até ${formatVacancyDateTime(request.cooldownUntil)}`
-        : 'Sem cooldown registrado',
+        ? `Novo contato liberado após ${formatVacancyDateTime(request.cooldownUntil)}`
+        : 'Contato disponível no momento',
     };
   });
 };
@@ -237,6 +237,6 @@ export const canDeleteVacancy = (vacancy) => {
 };
 
 export const vacancyEditUnavailableMessage =
-  'O backend atual não permite editar vagas por rota administrativa.';
+  'A edição desta vaga ainda não está disponível.';
 
 export const canEditVacancy = () => false;
