@@ -420,10 +420,6 @@ export default function VacancyDetails() {
             Voltar para vagas
           </button>
 
-          <p className="vacancy-details-footer__helper">
-            {vacancyEditUnavailableMessage}
-          </p>
-
           {!canDeleteVacancy(vacancy) ? (
             <p className="vacancy-details-footer__helper">
               Vagas reservadas ou com não comparecimento não podem ser excluídas.

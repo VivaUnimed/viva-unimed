@@ -140,7 +140,6 @@ export default function Vacancies() {
       || [
         vacancy.specialty,
         vacancy.professional,
-        vacancy.createdByLabel,
         String(vacancy.id),
       ].some((value) => normalizeText(value).includes(normalizedSearchTerm));
 
@@ -244,7 +243,7 @@ export default function Vacancies() {
           <LuSearch size={18} />
           <input
             type="search"
-            placeholder="Buscar por especialidade, profissional, vaga ou usuário..."
+            placeholder="Buscar por especialidade, profissional ou vaga..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -321,7 +320,6 @@ export default function Vacancies() {
                     <th>ESPECIALIDADE / PROFISSIONAL</th>
                     <th>FILA COMPATÍVEL</th>
                     <th>STATUS DA VAGA</th>
-                    <th>CADASTRO</th>
                     <th>AÇÃO</th>
                   </tr>
                 </thead>
@@ -357,12 +355,6 @@ export default function Vacancies() {
                             {vacancy.vacancyStatusText}
                           </span>
                         </td>
-
-                        <td>
-                          <strong>Vaga #{vacancy.id}</strong>
-                          <span>{vacancy.createdByLabel}</span>
-                        </td>
-
                         <td>
                           <button
                             type="button"
@@ -376,7 +368,7 @@ export default function Vacancies() {
                     ))
                   ) : (
                     <tr className="generated-slots-empty-row">
-                      <td colSpan="6">
+                      <td colSpan="5">
                         <div className="generated-slots-empty">
                           <strong>Nenhuma vaga encontrada</strong>
                           <span>{emptyMessage}</span>
