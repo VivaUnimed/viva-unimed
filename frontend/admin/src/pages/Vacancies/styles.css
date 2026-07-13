@@ -599,62 +599,37 @@
 /* Botões de ação */
 
 .slot-action {
-  min-width: 150px;
-  min-height: 38px;
-  padding: 0 14px;
+  min-width: 94px;
+  min-height: 34px;
+  padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   background-color: #f5f3f1;
   color: #4b5563;
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   white-space: nowrap;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .slot-action:disabled {
   opacity: 1;
+  cursor: not-allowed;
 }
 
 .slot-action--primary {
-  background-color: #007a49;
-  border-color: #007a49;
+  min-height: 34px;
+  background-color: #0b8a57;
+  border-color: #0b8a57;
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(0, 122, 73, 0.12);
-}
-
-.slot-action--secondary {
-  background-color: #ffffff;
-  border-color: #d8ebe1;
-  color: #007a49;
-}
-
-.slot-action--danger {
-  background-color: #ffffff;
-  border-color: #ffd1d1;
-  color: #d92d20;
-}
-
-.slot-action--disabled {
-  background-color: #ece7e3;
-  border-color: #ece7e3;
-  color: #9ca3af;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.slot-actions-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.slot-actions-group .slot-action {
-  width: 100%;
-  min-width: 0;
 }
 
 /* Mantém oculto o antigo botão flutuante */

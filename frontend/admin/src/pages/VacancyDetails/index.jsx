@@ -6,6 +6,7 @@ import {
   LuCircleCheck,
   LuClock3,
   LuHistory,
+  LuPencilLine,
   LuTrash2,
   LuUsers,
 } from 'react-icons/lu';
@@ -288,19 +289,48 @@ export default function VacancyDetails() {
         ) : null}
 
         <header className="vacancy-details-card__header">
-          <div>
-            <span className="vacancy-details-eyebrow">{pageCopy.eyebrow}</span>
-            <h1>{pageCopy.title}</h1>
-            <p>{pageCopy.description}</p>
+          <div className="vacancy-details-identity">
+            <div>
+              <span className="vacancy-details-eyebrow">{pageCopy.eyebrow}</span>
+              <h1>{pageCopy.title}</h1>
+              <p>{pageCopy.description}</p>
+
+              <div className="vacancy-details-badges">
+                <span className={`vacancy-details-badge vacancy-details-badge--${vacancy.vacancyStatus}`}>
+                  {vacancy.vacancyStatusText}
+                </span>
+                <span className="vacancy-details-badge vacancy-details-badge--info">
+                  Fila atual: {vacancy.queuePatients}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="vacancy-details-badges">
-            <span className={`vacancy-details-badge vacancy-details-badge--${vacancy.vacancyStatus}`}>
-              {vacancy.vacancyStatusText}
-            </span>
-            <span className="vacancy-details-badge vacancy-details-badge--info">
-              Fila atual: {vacancy.queuePatients}
-            </span>
+          <div className="vacancy-details-actions">
+            <button
+              type="button"
+              className="vacancy-details-edit-button"
+              disabled={!canEditVacancy(vacancy)}
+              title={vacancyEditUnavailableMessage}
+            >
+              <LuPencilLine size={16} />
+              Editar vaga
+            </button>
+
+            <button
+              type="button"
+              className="vacancy-details-delete-button"
+              onClick={handleDelete}
+              disabled={isDeleting || !canDeleteVacancy(vacancy)}
+              title={
+                canDeleteVacancy(vacancy)
+                  ? 'Excluir vaga'
+                  : 'O backend atual não permite excluir vagas reservadas ou com no-show.'
+              }
+            >
+              <LuTrash2 size={16} />
+              {isDeleting ? 'Excluindo...' : 'Excluir vaga'}
+            </button>
           </div>
         </header>
 
@@ -380,39 +410,13 @@ export default function VacancyDetails() {
         </section>
 
         <footer className="vacancy-details-footer">
-          <div className="vacancy-details-footer__actions">
-            <button
-              type="button"
-              className="vacancy-details-primary-button"
-              onClick={() => navigate('/vacancies')}
-            >
-              Voltar para vagas
-            </button>
-
-            <button
-              type="button"
-              className="vacancy-details-secondary-button"
-              disabled={!canEditVacancy(vacancy)}
-              title={vacancyEditUnavailableMessage}
-            >
-              Editar indisponível
-            </button>
-
-            <button
-              type="button"
-              className="vacancy-details-secondary-button vacancy-details-secondary-button--danger"
-              onClick={handleDelete}
-              disabled={isDeleting || !canDeleteVacancy(vacancy)}
-              title={
-                canDeleteVacancy(vacancy)
-                  ? 'Excluir vaga'
-                  : 'O backend atual não permite excluir vagas reservadas ou com no-show.'
-              }
-            >
-              <LuTrash2 size={16} />
-              {isDeleting ? 'Excluindo...' : 'Excluir vaga'}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="vacancy-details-primary-button"
+            onClick={() => navigate('/vacancies')}
+          >
+            Voltar para vagas
+          </button>
 
           <p className="vacancy-details-footer__helper">
             {vacancyEditUnavailableMessage}
