@@ -1,351 +1,237 @@
-const VACANCIES_STORAGE_KEY = 'viva-unimed-admin-vacancies';
-const VACANCIES_STORAGE_VERSION = 1;
+const vacancyStatusLabels = {
+  open: 'Aberta',
+  booked: 'Reservada',
+  expired: 'Expirada',
+  cancelled: 'Cancelada',
+  no_show: 'No-show',
+};
 
-const generatedVacancies = [
-  {
-    id: 1,
-    time: '14:30',
-    date: 'Hoje, 24 Out',
-    specialty: 'Cardiologia',
-    professional: 'Dr. Ricardo Almeida',
-    queuePatients: 12,
-    vacancyStatus: 'waiting-acceptance',
-    vacancyStatusText: 'Aguardando aceite',
-    dispatchStatus: 'success',
-    dispatchStatusText: 'Enviado com sucesso',
-    expiration: 'Expira em 08 min',
-    confirmedPatient: null,
-    acceptanceTimestamp: null,
-    finalDescription: '',
-    history: [
-      {
-        id: '1-created',
-        title: 'Vaga cadastrada',
-        description: 'Disponibilidade registrada e enviada para a fila inteligente.',
-        timestamp: 'Hoje, 14:20',
-      },
-      {
-        id: '1-dispatch',
-        title: 'Disparo concluído',
-        description: 'Pacientes elegíveis foram notificados automaticamente.',
-        timestamp: 'Hoje, 14:21',
-      },
-      {
-        id: '1-waiting',
-        title: 'Aguardando aceite',
-        description: 'A vaga segue ativa até o limite de expiração configurado.',
-        timestamp: 'Hoje, 14:22',
-      },
-    ],
-  },
-  {
-    id: 2,
-    time: '15:15',
-    date: 'Hoje, 24 Out',
-    specialty: 'Pediatria',
-    professional: 'Dr. Fábio Mello',
-    queuePatients: 9,
-    vacancyStatus: 'open',
-    vacancyStatusText: 'Aberta',
-    dispatchStatus: 'error',
-    dispatchStatusText: 'Falha no disparo',
-    expiration: 'Falha antes do aceite',
-    confirmedPatient: null,
-    acceptanceTimestamp: null,
-    finalDescription: '',
-    history: [
-      {
-        id: '2-created',
-        title: 'Vaga cadastrada',
-        description: 'A unidade abriu a vaga para a fila de Pediatria.',
-        timestamp: 'Hoje, 15:00',
-      },
-      {
-        id: '2-error',
-        title: 'Falha no disparo',
-        description: 'O envio automático não chegou aos pacientes elegíveis.',
-        timestamp: 'Hoje, 15:01',
-      },
-    ],
-  },
-  {
-    id: 3,
-    time: '16:45',
-    date: 'Hoje, 24 Out',
-    specialty: 'Dermatologia',
-    professional: 'Dra. Cláudia Lima',
-    queuePatients: 0,
-    vacancyStatus: 'open',
-    vacancyStatusText: 'Aberta',
-    dispatchStatus: 'error',
-    dispatchStatusText: 'Falha no disparo',
-    expiration: 'Falha antes do aceite',
-    confirmedPatient: null,
-    acceptanceTimestamp: null,
-    finalDescription: '',
-    history: [
-      {
-        id: '3-created',
-        title: 'Vaga cadastrada',
-        description: 'A disponibilidade foi registrada para Dermatologia.',
-        timestamp: 'Hoje, 16:31',
-      },
-      {
-        id: '3-no-queue',
-        title: 'Fila sem elegíveis',
-        description: 'Nenhum paciente com interesse ativo foi encontrado.',
-        timestamp: 'Hoje, 16:32',
-      },
-    ],
-  },
-  {
-    id: 4,
-    time: '09:00',
-    date: 'Amanhã, 25 Out',
-    specialty: 'Endocrinologia',
-    professional: 'Dr. Rafael Tavares',
-    queuePatients: 6,
-    vacancyStatus: 'open',
-    vacancyStatusText: 'Aberta',
-    dispatchStatus: 'error',
-    dispatchStatusText: 'Falha no disparo',
-    expiration: 'Falha antes do aceite',
-    confirmedPatient: null,
-    acceptanceTimestamp: null,
-    finalDescription: '',
-    history: [
-      {
-        id: '4-created',
-        title: 'Vaga cadastrada',
-        description: 'Oferta liberada para pacientes em Endocrinologia.',
-        timestamp: 'Hoje, 18:05',
-      },
-      {
-        id: '4-error',
-        title: 'Falha no disparo',
-        description: 'A notificação automática não foi concluída.',
-        timestamp: 'Hoje, 18:06',
-      },
-    ],
-  },
-  {
-    id: 5,
-    time: '11:20',
-    date: 'Amanhã, 25 Out',
-    specialty: 'Ginecologia',
-    professional: 'Dra. Marina Costa',
-    queuePatients: 18,
-    vacancyStatus: 'confirmed',
-    vacancyStatusText: 'Confirmada',
-    dispatchStatus: 'success',
-    dispatchStatusText: 'Enviado com sucesso',
-    expiration: 'Finalizada',
-    confirmedPatient: 'Ana Souza',
-    acceptanceTimestamp: 'Amanhã, 25 Out às 10:58',
-    finalDescription: '',
-    history: [
-      {
-        id: '5-created',
-        title: 'Vaga cadastrada',
-        description: 'A vaga foi criada pela unidade e entrou na fila inteligente.',
-        timestamp: 'Hoje, 17:42',
-      },
-      {
-        id: '5-dispatch',
-        title: 'Disparo concluído',
-        description: 'Pacientes elegíveis receberam a oferta da vaga.',
-        timestamp: 'Hoje, 17:43',
-      },
-      {
-        id: '5-confirmed',
-        title: 'Paciente confirmou',
-        description: 'Ana Souza aceitou a oferta dentro do prazo.',
-        timestamp: 'Amanhã, 25 Out às 10:58',
-      },
-    ],
-  },
-  {
-    id: 6,
-    time: '13:10',
-    date: 'Amanhã, 25 Out',
-    specialty: 'Neurologia',
-    professional: 'Dra. Isabela Moura',
-    queuePatients: 14,
-    vacancyStatus: 'expired',
-    vacancyStatusText: 'Expirada',
-    dispatchStatus: 'success',
-    dispatchStatusText: 'Enviado com sucesso',
-    expiration: 'Expirou há 12 min',
-    confirmedPatient: null,
-    acceptanceTimestamp: null,
-    finalDescription: 'Nenhum paciente aceitou dentro do prazo.',
-    history: [
-      {
-        id: '6-created',
-        title: 'Vaga cadastrada',
-        description: 'Oferta enviada para pacientes da fila de Neurologia.',
-        timestamp: 'Amanhã, 25 Out às 12:35',
-      },
-      {
-        id: '6-dispatch',
-        title: 'Disparo enviado',
-        description: 'A notificação foi entregue para os pacientes elegíveis.',
-        timestamp: 'Amanhã, 25 Out às 12:36',
-      },
-      {
-        id: '6-expired',
-        title: 'Prazo encerrado',
-        description: 'Nenhum aceite foi registrado antes da expiração.',
-        timestamp: 'Amanhã, 25 Out às 12:58',
-      },
-    ],
-  },
-  {
-    id: 7,
-    time: '15:40',
-    date: 'Amanhã, 25 Out',
-    specialty: 'Otorrinolaringologia',
-    professional: 'Dr. Gustavo Nunes',
-    queuePatients: 4,
-    vacancyStatus: 'cancelled',
-    vacancyStatusText: 'Cancelada',
-    dispatchStatus: 'success',
-    dispatchStatusText: 'Enviado com sucesso',
-    expiration: 'Cancelada pela unidade',
-    confirmedPatient: null,
-    acceptanceTimestamp: null,
-    finalDescription: 'Vaga cancelada pela unidade.',
-    history: [
-      {
-        id: '7-created',
-        title: 'Vaga cadastrada',
-        description: 'Horário aberto e colocado na fila inteligente.',
-        timestamp: 'Amanhã, 25 Out às 14:50',
-      },
-      {
-        id: '7-dispatch',
-        title: 'Disparo concluído',
-        description: 'Pacientes elegíveis foram notificados com sucesso.',
-        timestamp: 'Amanhã, 25 Out às 14:51',
-      },
-      {
-        id: '7-cancelled',
-        title: 'Vaga cancelada',
-        description: 'A unidade removeu a disponibilidade antes do aceite.',
-        timestamp: 'Amanhã, 25 Out às 15:10',
-      },
-    ],
-  },
+const vacancyStatusDescriptions = {
+  open:
+    'A vaga segue aberta no backend e depende do processamento automático da fila inteligente.',
+  booked:
+    'A vaga foi marcada como reservada no backend atual, mas esta rota não informa qual paciente confirmou.',
+  expired:
+    'A vaga expirou sem reserva confirmada no fluxo atual do backend.',
+  cancelled:
+    'A vaga foi cancelada e permanece disponível apenas para consulta administrativa.',
+  no_show:
+    'A vaga registra no-show no backend atual e não pode ser removida pelo fluxo administrativo.',
+};
+
+const normalizeId = (value) => Number(value);
+
+const toValidDate = (value) => {
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate;
+};
+
+const formatLocalDateKey = (value) => {
+  const parsedDate = toValidDate(value);
+
+  if (!parsedDate) {
+    return String(value ?? '');
+  }
+
+  const year = String(parsedDate.getFullYear());
+  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const sortRequestsByDate = (firstRequest, secondRequest) => {
+  const firstTimestamp = toValidDate(firstRequest?.date)?.getTime() ?? 0;
+  const secondTimestamp = toValidDate(secondRequest?.date)?.getTime() ?? 0;
+
+  if (firstTimestamp !== secondTimestamp) {
+    return firstTimestamp - secondTimestamp;
+  }
+
+  return normalizeId(firstRequest?.id) - normalizeId(secondRequest?.id);
+};
+
+export const normalizeText = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+export const vacancyStatusOptions = [
+  { value: '', label: 'Todos os status da vaga' },
+  { value: 'open', label: vacancyStatusLabels.open },
+  { value: 'booked', label: vacancyStatusLabels.booked },
+  { value: 'expired', label: vacancyStatusLabels.expired },
+  { value: 'cancelled', label: vacancyStatusLabels.cancelled },
+  { value: 'no_show', label: vacancyStatusLabels.no_show },
 ];
 
-function cloneVacancies(value) {
-  return JSON.parse(JSON.stringify(value));
-}
+export const createLookupById = (items = []) => {
+  const entries = items
+    .filter((item) => item?.id !== undefined && item?.id !== null)
+    .map((item) => [normalizeId(item.id), item]);
 
-export function getGeneratedVacancies() {
-  return cloneVacancies(generatedVacancies);
-}
+  return new Map(entries);
+};
 
-export function loadVacancies() {
-  if (typeof window === 'undefined') {
-    return getGeneratedVacancies();
+export const formatVacancyDate = (value) => {
+  const parsedDate = toValidDate(value);
+
+  if (!parsedDate) {
+    return '-';
   }
 
-  try {
-    const rawValue = window.localStorage.getItem(VACANCIES_STORAGE_KEY);
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsedDate);
+};
 
-    if (!rawValue) {
-      return getGeneratedVacancies();
-    }
+export const formatVacancyTime = (value) => {
+  const parsedDate = toValidDate(value);
 
-    const parsedValue = JSON.parse(rawValue);
-
-    if (
-      parsedValue?.version === VACANCIES_STORAGE_VERSION
-      && Array.isArray(parsedValue.slots)
-    ) {
-      return cloneVacancies(parsedValue.slots);
-    }
-  } catch (error) {
-    return getGeneratedVacancies();
+  if (!parsedDate) {
+    return '-';
   }
 
-  return getGeneratedVacancies();
-}
+  return new Intl.DateTimeFormat('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(parsedDate);
+};
 
-export function persistVacancies(slots) {
-  if (typeof window === 'undefined') {
-    return;
+export const formatVacancyDateTime = (value) => {
+  const formattedDate = formatVacancyDate(value);
+  const formattedTime = formatVacancyTime(value);
+
+  if (formattedDate === '-' && formattedTime === '-') {
+    return '-';
   }
 
-  try {
-    window.localStorage.setItem(
-      VACANCIES_STORAGE_KEY,
-      JSON.stringify({
-        version: VACANCIES_STORAGE_VERSION,
-        slots,
-      }),
-    );
-    window.dispatchEvent(new Event('vacancies-updated'));
-  } catch (error) {
-    // Mantem a tela funcional mesmo se o storage estiver indisponivel.
-  }
-}
+  return `${formattedDate} às ${formattedTime}`;
+};
 
-export function findVacancyById(vacancyId) {
-  return loadVacancies().find(
-    (vacancy) => String(vacancy.id) === String(vacancyId),
-  );
-}
+export const getVacancyStatusLabel = (status) => {
+  return vacancyStatusLabels[status] ?? String(status ?? 'Status indisponível');
+};
 
-export function getVacancyFinalDescription(vacancy) {
-  if (vacancy.vacancyStatus === 'expired') {
-    return 'Nenhum paciente aceitou dentro do prazo.';
+export const getVacancyStatusDescription = (status) => {
+  return vacancyStatusDescriptions[status] ?? 'Status indisponível no backend atual.';
+};
+
+export const getVacancyQueueRequests = (appointment, requests = []) => {
+  if (!appointment) {
+    return [];
   }
 
-  if (vacancy.vacancyStatus === 'cancelled') {
-    return 'Vaga cancelada pela unidade.';
-  }
+  return requests
+    .filter((request) => {
+      const requestDoctorId =
+        request?.doctorId === undefined || request?.doctorId === null
+          ? null
+          : normalizeId(request.doctorId);
 
-  return vacancy.finalDescription || '';
-}
+      return (
+        request?.status === 'waiting'
+        && normalizeId(request?.specialityId) === normalizeId(appointment.specialityId)
+        && (
+          requestDoctorId === null
+          || requestDoctorId === normalizeId(appointment.doctorId)
+        )
+      );
+    })
+    .sort(sortRequestsByDate);
+};
 
-export function getSlotAction(slot) {
-  if (slot.vacancyStatus === 'confirmed') {
-    return {
-      label: 'Ver confirmação',
-      variant: 'secondary',
-    };
-  }
-
-  if (slot.vacancyStatus === 'expired' || slot.vacancyStatus === 'cancelled') {
-    return {
-      label: 'Detalhes',
-      variant: 'secondary',
-    };
-  }
-
-  if (slot.dispatchStatus === 'error') {
-    return slot.queuePatients > 0
-      ? {
-          label: 'Tentar novamente',
-          variant: 'primary',
-        }
-      : {
-          label: 'Ver fila',
-          variant: 'secondary',
-        };
-  }
-
-  if (slot.vacancyStatus === 'waiting-acceptance' && slot.dispatchStatus === 'success') {
-    return {
-      label: 'Gerenciar',
-      variant: 'primary',
-    };
-  }
+export const buildVacancyFromAppointment = (
+  appointment,
+  {
+    professionalsById = new Map(),
+    specialtiesById = new Map(),
+    requests = [],
+  } = {},
+) => {
+  const doctorId = normalizeId(appointment?.doctorId);
+  const specialityId = normalizeId(appointment?.specialityId);
+  const professional = professionalsById.get(doctorId);
+  const speciality = specialtiesById.get(specialityId);
+  const queueRequests = getVacancyQueueRequests(appointment, requests);
 
   return {
-    label: 'Detalhes',
-    variant: 'secondary',
+    id: normalizeId(appointment?.id),
+    doctorId,
+    specialityId,
+    createdBy: normalizeId(appointment?.createdBy),
+    createdByLabel: appointment?.createdBy
+      ? `Usuário #${appointment.createdBy}`
+      : 'Usuário não informado',
+    rawDate: appointment?.date ?? '',
+    dateKey: formatLocalDateKey(appointment?.date),
+    date: formatVacancyDate(appointment?.date),
+    time: formatVacancyTime(appointment?.date),
+    dateTime: formatVacancyDateTime(appointment?.date),
+    specialty: speciality?.name ?? `Especialidade #${specialityId}`,
+    professional: professional?.name ?? `Profissional #${doctorId}`,
+    queuePatients: queueRequests.length,
+    vacancyStatus: appointment?.status ?? 'open',
+    vacancyStatusText: getVacancyStatusLabel(appointment?.status),
+    statusDescription: getVacancyStatusDescription(appointment?.status),
   };
-}
+};
+
+export const buildVacancyList = (appointments = [], relationships = {}) => {
+  return appointments
+    .map((appointment) => buildVacancyFromAppointment(appointment, relationships))
+    .sort((firstVacancy, secondVacancy) => {
+      const now = Date.now();
+      const firstTimestamp = toValidDate(firstVacancy.rawDate)?.getTime() ?? 0;
+      const secondTimestamp = toValidDate(secondVacancy.rawDate)?.getTime() ?? 0;
+      const firstIsPast = firstTimestamp < now;
+      const secondIsPast = secondTimestamp < now;
+
+      if (firstIsPast !== secondIsPast) {
+        return firstIsPast ? 1 : -1;
+      }
+
+      if (firstTimestamp !== secondTimestamp) {
+        return firstTimestamp - secondTimestamp;
+      }
+
+      return firstVacancy.id - secondVacancy.id;
+    });
+};
+
+export const buildVacancyQueueItems = (
+  appointment,
+  requests = [],
+  patientsById = new Map(),
+) => {
+  return getVacancyQueueRequests(appointment, requests).map((request) => {
+    const patient = patientsById.get(normalizeId(request.patientId));
+
+    return {
+      id: normalizeId(request.id),
+      patientId: normalizeId(request.patientId),
+      patientName: patient?.name ?? `Paciente #${request.patientId}`,
+      requestedDateTime: formatVacancyDateTime(request.date),
+      attempts: Number(request.attempts) || 0,
+      doctorScopeLabel: request.doctorId
+        ? 'Solicitação vinculada a este profissional'
+        : 'Solicitação aberta para qualquer profissional da especialidade',
+      cooldownLabel: request.cooldownUntil
+        ? `Cooldown até ${formatVacancyDateTime(request.cooldownUntil)}`
+        : 'Sem cooldown registrado',
+    };
+  });
+};
+
+export const canDeleteVacancy = (vacancy) => {
+  return vacancy?.vacancyStatus !== 'booked' && vacancy?.vacancyStatus !== 'no_show';
+};

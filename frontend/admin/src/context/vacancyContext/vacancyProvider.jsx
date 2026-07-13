@@ -3,48 +3,45 @@ import { vacancyContext as VacancyContext } from './vacancyContext';
 import { vacancyInitialState } from './vacancyInitialState';
 import { vacancyReducer } from './vacancyReducer';
 import { vacancyTypes } from './vacancyTypes';
+import {
+  createAppointment,
+  deleteAppointment,
+  getAllAppointments,
+  getAppointmentById,
+} from '../../api/appointmentApi';
+import { getAllAppointmentRequests } from '../../api/appointmentRequestApi';
+import { getAllDoctors, getProfessionalById } from '../../api/doctorApi';
+import { getAllPatients } from '../../api/patientApi';
+import { getAllSpecialties, getSpecialtyById } from '../../api/specialityApi';
+import { getUserById } from '../../api/userApi';
+import {
+  buildVacancyFromAppointment,
+  buildVacancyList,
+  buildVacancyQueueItems,
+  createLookupById,
+  getVacancyQueueRequests,
+} from '../../data/vacancies';
 
-const buildVacancyFromData = (vacancyData, existingVacancies = []) => {
-  const nextId =
-    existingVacancies.reduce(
-      (highestId, vacancy) => Math.max(highestId, Number(vacancy.id) || 0),
-      0,
-    ) + 1;
+const normalizeSpecialityEntity = (specialityData) => (
+  specialityData?.speciality ?? specialityData?.specialty ?? specialityData ?? null
+);
 
-  return {
-    id: nextId,
-    time: vacancyData.time ?? '',
-    date: vacancyData.date ?? '',
-    specialty: vacancyData.specialty ?? '',
-    professional: vacancyData.professional ?? '',
-    unit: vacancyData.unit ?? '',
-    type: vacancyData.type ?? '',
-    queuePatients: Number(vacancyData.queuePatients) || 0,
-    vacancyStatus: vacancyData.vacancyStatus ?? 'open',
-    vacancyStatusText: vacancyData.vacancyStatusText ?? 'Aberta',
-    dispatchStatus: vacancyData.dispatchStatus ?? 'success',
-    dispatchStatusText:
-      vacancyData.dispatchStatusText ?? 'Enviado com sucesso',
-    expiration: vacancyData.expiration ?? '',
-    confirmedPatient: vacancyData.confirmedPatient ?? null,
-    acceptanceTimestamp: vacancyData.acceptanceTimestamp ?? null,
-    finalDescription: vacancyData.finalDescription ?? '',
-    history: Array.isArray(vacancyData.history) ? vacancyData.history : [],
-    createdAt: new Date().toISOString(),
-  };
+const normalizeUserEntity = (userData) => userData?.user ?? userData ?? null;
+
+const loadVacanciesFromBackend = async () => {
+  const appointments = await getAllAppointments();
+  const [professionals, specialties, waitingRequests] = await Promise.all([
+    getAllDoctors().catch(() => []),
+    getAllSpecialties().catch(() => []),
+    getAllAppointmentRequests({ status: 'waiting' }).catch(() => []),
+  ]);
+
+  return buildVacancyList(appointments, {
+    professionalsById: createLookupById(professionals),
+    specialtiesById: createLookupById(specialties),
+    requests: waitingRequests,
+  });
 };
-
-const buildUpdatedVacancyFromData = (vacancyData, currentVacancy) => ({
-  ...currentVacancy,
-  ...vacancyData,
-  queuePatients:
-    vacancyData.queuePatients === undefined
-      ? currentVacancy.queuePatients
-      : Number(vacancyData.queuePatients) || 0,
-  history: Array.isArray(vacancyData.history)
-    ? vacancyData.history
-    : currentVacancy.history,
-});
 
 export default function VacancyProvider({ children }) {
   const [vacancyState, vacancyDispatch] = useReducer(
@@ -58,7 +55,7 @@ export default function VacancyProvider({ children }) {
     });
 
     try {
-      const vacancies = vacancyState.vacancies;
+      const vacancies = await loadVacanciesFromBackend();
 
       vacancyDispatch({
         type: vacancyTypes.GET_ALL_VACANCIES_SUCCESS,
@@ -72,8 +69,47 @@ export default function VacancyProvider({ children }) {
         payload: { error: error.message },
       });
 
-      return [];
+      throw error;
     }
+  };
+
+  const getVacancyById = async (vacancyId) => {
+    const appointment = await getAppointmentById(vacancyId);
+    const [professional, specialityData, createdByUserData, waitingRequests] = await Promise.all([
+      getProfessionalById(appointment.doctorId).catch(() => null),
+      getSpecialtyById(appointment.specialityId).catch(() => null),
+      getUserById(appointment.createdBy).catch(() => null),
+      getAllAppointmentRequests({
+        status: 'waiting',
+        specialityId: appointment.specialityId,
+      }).catch(() => []),
+    ]);
+    const matchingRequests = getVacancyQueueRequests(appointment, waitingRequests);
+    const patients = matchingRequests.length > 0
+      ? await getAllPatients().catch(() => [])
+      : [];
+    const queueRequests = buildVacancyQueueItems(
+      appointment,
+      waitingRequests,
+      createLookupById(patients),
+    );
+    const vacancy = buildVacancyFromAppointment(appointment, {
+      professionalsById: createLookupById(professional ? [professional] : []),
+      specialtiesById: createLookupById(
+        normalizeSpecialityEntity(specialityData)
+          ? [normalizeSpecialityEntity(specialityData)]
+          : [],
+      ),
+      requests: waitingRequests,
+    });
+    const createdByUser = normalizeUserEntity(createdByUserData);
+
+    return {
+      ...vacancy,
+      createdByName: createdByUser?.name ?? vacancy.createdByLabel,
+      createdByEmail: createdByUser?.email ?? '',
+      queueRequests,
+    };
   };
 
   const createVacancy = async (vacancyData) => {
@@ -82,14 +118,10 @@ export default function VacancyProvider({ children }) {
     });
 
     try {
-      const vacancy = buildVacancyFromData(
-        vacancyData,
-        vacancyState.vacancies,
-      );
+      const vacancy = await createAppointment(vacancyData);
 
       vacancyDispatch({
         type: vacancyTypes.CREATE_VACANCY_SUCCESS,
-        payload: { vacancy },
       });
 
       return vacancy;
@@ -99,69 +131,48 @@ export default function VacancyProvider({ children }) {
         payload: { error: error.message },
       });
 
-      return null;
+      throw error;
     }
   };
 
-  const updateVacancy = async (vacancyData, id) => {
+  const updateVacancy = async () => {
     vacancyDispatch({
       type: vacancyTypes.UPDATE_VACANCY_REQUEST,
     });
 
     try {
-      const currentVacancy = vacancyState.vacancies.find(
-        (vacancy) => String(vacancy.id) === String(id),
-      );
-
-      if (!currentVacancy) {
-        throw new Error('Vaga nao encontrada.');
-      }
-
-      const vacancy = buildUpdatedVacancyFromData(vacancyData, currentVacancy);
-
-      vacancyDispatch({
-        type: vacancyTypes.UPDATE_VACANCY_SUCCESS,
-        payload: { vacancy, id },
-      });
-
-      return vacancy;
+      throw new Error('O backend atual não permite editar vagas por rota administrativa.');
     } catch (error) {
       vacancyDispatch({
         type: vacancyTypes.UPDATE_VACANCY_FAILURE,
         payload: { error: error.message },
       });
 
-      return null;
+      throw error;
     }
   };
 
-  const deleteVacancy = async (id) => {
+  const deleteVacancy = async (vacancyId) => {
     vacancyDispatch({
       type: vacancyTypes.DELETE_VACANCY_REQUEST,
     });
 
     try {
-      const currentVacancy = vacancyState.vacancies.find(
-        (vacancy) => String(vacancy.id) === String(id),
-      );
-
-      if (!currentVacancy) {
-        throw new Error('Vaga nao encontrada.');
-      }
+      await deleteAppointment(vacancyId);
 
       vacancyDispatch({
         type: vacancyTypes.DELETE_VACANCY_SUCCESS,
-        payload: { id },
+        payload: { id: vacancyId },
       });
 
-      return id;
+      return vacancyId;
     } catch (error) {
       vacancyDispatch({
         type: vacancyTypes.DELETE_VACANCY_FAILURE,
         payload: { error: error.message },
       });
 
-      return null;
+      throw error;
     }
   };
 
@@ -171,6 +182,7 @@ export default function VacancyProvider({ children }) {
         vacancyState,
         vacancyDispatch,
         getVacancies,
+        getVacancyById,
         createVacancy,
         updateVacancy,
         deleteVacancy,

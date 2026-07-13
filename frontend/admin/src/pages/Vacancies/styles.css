@@ -70,6 +70,16 @@
   flex-shrink: 0;
 }
 
+.vacancy-feedback-banner--error {
+  border-color: #ffd8d8;
+  background: linear-gradient(135deg, #fff3f3 0%, #fffafa 100%);
+  color: #b42318;
+}
+
+.vacancy-feedback-banner--error svg {
+  stroke: #e11d48;
+}
+
 .vacancy-feedback-banner span {
   font-size: 13px;
   line-height: 18px;
@@ -136,13 +146,25 @@
   stroke: #e11d48;
 }
 
+.vacancy-summary-card--booked .vacancy-summary-card__icon,
+.vacancy-summary-card--queue .vacancy-summary-card__icon {
+  background-color: #e6f7ef;
+}
+
+.vacancy-summary-card--booked .vacancy-summary-card__icon svg,
+.vacancy-summary-card--queue .vacancy-summary-card__icon svg {
+  stroke: #007a49;
+}
+
 .vacancy-summary-card--expired .vacancy-summary-card__icon,
-.vacancy-summary-card--cancelled .vacancy-summary-card__icon {
+.vacancy-summary-card--cancelled .vacancy-summary-card__icon,
+.vacancy-summary-card--no-show .vacancy-summary-card__icon {
   background-color: #f0eeec;
 }
 
 .vacancy-summary-card--expired .vacancy-summary-card__icon svg,
-.vacancy-summary-card--cancelled .vacancy-summary-card__icon svg {
+.vacancy-summary-card--cancelled .vacancy-summary-card__icon svg,
+.vacancy-summary-card--no-show .vacancy-summary-card__icon svg {
   stroke: #5f6368;
 }
 
@@ -334,7 +356,7 @@
 
 .generated-slots-table {
   width: 100%;
-  min-width: 1280px;
+  min-width: 980px;
   border-collapse: collapse;
   table-layout: auto;
 }
@@ -362,22 +384,22 @@
 
 .generated-slots-table th:nth-child(1),
 .generated-slots-table td:nth-child(1) {
-  width: 110px;
+  width: 140px;
 }
 
 .generated-slots-table th:nth-child(2),
 .generated-slots-table td:nth-child(2) {
-  width: 150px;
+  width: 240px;
 }
 
 .generated-slots-table th:nth-child(3),
 .generated-slots-table td:nth-child(3) {
-  width: 190px;
+  width: 180px;
 }
 
 .generated-slots-table th:nth-child(4),
 .generated-slots-table td:nth-child(4) {
-  width: 120px;
+  width: 150px;
 }
 
 .generated-slots-table th:nth-child(5),
@@ -387,17 +409,7 @@
 
 .generated-slots-table th:nth-child(6),
 .generated-slots-table td:nth-child(6) {
-  width: 170px;
-}
-
-.generated-slots-table th:nth-child(7),
-.generated-slots-table td:nth-child(7) {
-  width: 150px;
-}
-
-.generated-slots-table th:nth-child(8),
-.generated-slots-table td:nth-child(8) {
-  width: 210px;
+  width: 160px;
 }
 
 .generated-slots-table tbody tr {
@@ -492,6 +504,11 @@
   color: #007a49 !important;
 }
 
+.slot-status--booked {
+  background-color: #c7f8dd;
+  color: #007a49 !important;
+}
+
 .slot-status--expired {
   background-color: #f0eeec;
   color: #4b5563 !important;
@@ -500,6 +517,11 @@
 .slot-status--cancelled {
   background-color: #f0eeec;
   color: #4b5563 !important;
+}
+
+.slot-status--no_show {
+  background-color: #fef3c7;
+  color: #9a6700 !important;
 }
 
 /* Fila */

@@ -30,6 +30,30 @@
   padding: 26px 28px;
 }
 
+.vacancy-details-alert {
+  min-height: 44px;
+  margin-bottom: 18px;
+  padding: 0 16px;
+  border: 1px solid #ffd8d8;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff3f3 0%, #fffafa 100%);
+  color: #b42318;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vacancy-details-alert svg {
+  stroke: #e11d48;
+  flex-shrink: 0;
+}
+
+.vacancy-details-alert span {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+}
+
 .vacancy-details-card--empty {
   max-width: 720px;
 }
@@ -111,15 +135,25 @@
   color: #0369a1;
 }
 
-.vacancy-details-badge--waiting-acceptance {
-  background-color: #fff3cd;
-  color: #9a6700;
+.vacancy-details-badge--booked {
+  background-color: #c7f8dd;
+  color: #007a49;
 }
 
 .vacancy-details-badge--expired,
 .vacancy-details-badge--cancelled {
   background-color: #f0eeec;
   color: #4b5563;
+}
+
+.vacancy-details-badge--no_show {
+  background-color: #fef3c7;
+  color: #9a6700;
+}
+
+.vacancy-details-badge--info {
+  background-color: #eef2f7;
+  color: #475467;
 }
 
 .vacancy-highlight {
@@ -189,32 +223,6 @@
   font-size: 14px;
   line-height: 21px;
   color: #4b5563;
-}
-
-.vacancy-details-acceptance {
-  margin-top: 16px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid #ece7e3;
-  background-color: #fbf9f7;
-}
-
-.vacancy-details-acceptance span {
-  display: block;
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 900;
-  letter-spacing: 0.7px;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.vacancy-details-acceptance strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 16px;
-  line-height: 22px;
-  color: #202124;
 }
 
 .vacancy-details-grid {
@@ -332,6 +340,12 @@
   margin-top: 24px;
 }
 
+.vacancy-details-footer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .vacancy-details-primary-button {
   min-height: 42px;
   padding: 0 18px;
@@ -347,6 +361,39 @@
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.vacancy-details-secondary-button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #d8ebe1;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #008256;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.vacancy-details-secondary-button--danger {
+  border-color: #ffd1d1;
+  color: #d92d20;
+}
+
+.vacancy-details-secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.vacancy-details-footer__helper {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: #5f6368;
 }
 
 @media (max-width: 920px) {
@@ -380,5 +427,9 @@
 
   .vacancy-highlight {
     padding: 18px;
+  }
+
+  .vacancy-details-footer__actions {
+    flex-direction: column;
   }
 }

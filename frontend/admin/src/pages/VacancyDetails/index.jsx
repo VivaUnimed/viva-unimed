@@ -1,28 +1,32 @@
+import { useEffect, useState } from 'react';
 import {
+  LuBadgeAlert,
   LuCalendarCheck,
   LuChevronLeft,
   LuCircleCheck,
-  LuCircleX,
   LuClock3,
   LuHistory,
-  LuSend,
+  LuTrash2,
   LuUsers,
 } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useVacancies } from '../../context/vacancyContext/vacancyContext';
 import {
-  findVacancyById,
-  getVacancyFinalDescription,
+  canDeleteVacancy,
+  getVacancyStatusDescription,
 } from '../../data/vacancies';
 import './styles.css';
 
 function getPageCopy(vacancy) {
-  if (vacancy.vacancyStatus === 'confirmed') {
+  if (vacancy.vacancyStatus === 'booked') {
     return {
-      eyebrow: 'Confirmação registrada',
-      title: 'Paciente confirmado para a vaga',
-      description: 'A fila inteligente concluiu o aceite e a vaga está finalizada.',
-      highlightTitle: vacancy.confirmedPatient || 'Paciente confirmado',
-      highlightDescription: vacancy.acceptanceTimestamp || 'Aceite registrado no mock.',
+      eyebrow: 'Vaga reservada',
+      title: 'Reserva registrada no backend',
+      description:
+        'A vaga foi marcada como reservada. Esta consulta não expõe o paciente confirmado pelas rotas atuais.',
+      highlightTitle: 'Paciente confirmado não exposto',
+      highlightDescription:
+        'O backend atual marca a vaga como booked, mas não retorna nesta tela qual paciente aceitou a oferta.',
       highlightModifier: 'confirmed',
     };
   }
@@ -30,10 +34,11 @@ function getPageCopy(vacancy) {
   if (vacancy.vacancyStatus === 'expired') {
     return {
       eyebrow: 'Vaga encerrada',
-      title: 'A vaga expirou sem aceite',
-      description: 'Os dados finais permanecem disponíveis para consulta do admin.',
-      highlightTitle: 'Motivo do encerramento',
-      highlightDescription: getVacancyFinalDescription(vacancy),
+      title: 'A vaga expirou',
+      description:
+        'O registro continua disponível para consulta administrativa mesmo após a expiração.',
+      highlightTitle: 'Expiração registrada',
+      highlightDescription: getVacancyStatusDescription(vacancy.vacancyStatus),
       highlightModifier: 'ended',
     };
   }
@@ -41,10 +46,23 @@ function getPageCopy(vacancy) {
   if (vacancy.vacancyStatus === 'cancelled') {
     return {
       eyebrow: 'Vaga encerrada',
-      title: 'A vaga foi cancelada pela unidade',
-      description: 'O histórico permanece disponível para acompanhamento da operação.',
-      highlightTitle: 'Motivo do encerramento',
-      highlightDescription: getVacancyFinalDescription(vacancy),
+      title: 'A vaga foi cancelada',
+      description:
+        'O backend mantém a vaga apenas para acompanhamento administrativo após o cancelamento.',
+      highlightTitle: 'Cancelamento registrado',
+      highlightDescription: getVacancyStatusDescription(vacancy.vacancyStatus),
+      highlightModifier: 'ended',
+    };
+  }
+
+  if (vacancy.vacancyStatus === 'no_show') {
+    return {
+      eyebrow: 'Histórico de atendimento',
+      title: 'A vaga registra no-show',
+      description:
+        'O fluxo atual do backend mantém esse registro apenas para consulta e histórico operacional.',
+      highlightTitle: 'No-show registrado',
+      highlightDescription: getVacancyStatusDescription(vacancy.vacancyStatus),
       highlightModifier: 'ended',
     };
   }
@@ -53,10 +71,10 @@ function getPageCopy(vacancy) {
     eyebrow: 'Gestão da vaga',
     title: `${vacancy.specialty} • ${vacancy.time}`,
     description:
-      'A fila inteligente segue automatizada após o cadastro. Esta tela serve para consulta e acompanhamento.',
-    highlightTitle: 'Acompanhamento ativo',
+      'A tela reflete apenas os dados expostos hoje pelas rotas de vagas e fila de espera.',
+    highlightTitle: 'Processamento automático',
     highlightDescription:
-      'Use os dados abaixo para acompanhar status, expiração, fila e histórico da vaga sem iniciar manualmente o processamento.',
+      'A fila inteligente continua sendo processada pelo backend. Aqui o admin acompanha apenas os dados disponíveis nessas rotas.',
     highlightModifier: 'active',
   };
 }
@@ -72,35 +90,35 @@ function getDetailsFields(vacancy) {
       value: vacancy.professional,
     },
     {
-      label: 'Data e horário',
-      value: `${vacancy.date} às ${vacancy.time}`,
+      label: 'Data da vaga',
+      value: vacancy.date,
+      icon: LuCalendarCheck,
     },
     {
-      label: 'Pacientes na fila',
-      value: `${vacancy.queuePatients} ${vacancy.queuePatients === 1 ? 'paciente' : 'pacientes'}`,
-      icon: LuUsers,
+      label: 'Horário',
+      value: vacancy.time,
+      icon: LuClock3,
     },
     {
       label: 'Status da vaga',
       value: vacancy.vacancyStatusText,
       badgeModifier: vacancy.vacancyStatus,
-      icon: vacancy.vacancyStatus === 'confirmed' ? LuCircleCheck : LuClock3,
+      icon: vacancy.vacancyStatus === 'booked' ? LuCircleCheck : LuClock3,
     },
     {
-      label: 'Status do disparo',
-      value: vacancy.dispatchStatusText,
-      badgeModifier: vacancy.dispatchStatus,
-      icon: LuSend,
+      label: 'Fila compatível atual',
+      value: `${vacancy.queuePatients} ${vacancy.queuePatients === 1 ? 'paciente' : 'pacientes'}`,
+      icon: LuUsers,
     },
     {
-      label: 'Tempo de expiração',
-      value: vacancy.expiration,
-      icon: LuCalendarCheck,
+      label: 'ID da vaga',
+      value: String(vacancy.id),
     },
     {
-      label: 'Paciente confirmado',
-      value: vacancy.confirmedPatient || 'Nenhum paciente confirmado',
-      icon: vacancy.confirmedPatient ? LuCircleCheck : LuCircleX,
+      label: 'Cadastro administrativo',
+      value: vacancy.createdByEmail
+        ? `${vacancy.createdByName} • ${vacancy.createdByEmail}`
+        : vacancy.createdByName,
     },
   ];
 }
@@ -108,9 +126,99 @@ function getDetailsFields(vacancy) {
 export default function VacancyDetails() {
   const navigate = useNavigate();
   const { vacancyId } = useParams();
-  const vacancy = findVacancyById(vacancyId);
+  const { getVacancyById, deleteVacancy } = useVacancies();
+  const [vacancy, setVacancy] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isNotFound, setIsNotFound] = useState(false);
+  const [pageError, setPageError] = useState('');
 
-  if (!vacancy) {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadVacancy = async () => {
+      setIsLoading(true);
+      setPageError('');
+      setIsNotFound(false);
+
+      try {
+        const loadedVacancy = await getVacancyById(vacancyId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setVacancy(loadedVacancy);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error?.message === 'NotFound') {
+          setIsNotFound(true);
+          setVacancy(null);
+          return;
+        }
+
+        setPageError(error?.message || 'Não foi possível carregar a vaga.');
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadVacancy();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [vacancyId]);
+
+  const handleDelete = async () => {
+    if (!vacancy) {
+      return;
+    }
+
+    const isConfirmed = window.confirm(
+      `Deseja excluir a vaga #${vacancy.id}? O backend atual pode bloquear a exclusão se houver reserva ou vínculos críticos.`,
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setPageError('');
+
+    try {
+      await deleteVacancy(vacancy.id);
+
+      navigate('/vacancies', {
+        state: {
+          successMessage: `Vaga #${vacancy.id} excluída com sucesso.`,
+        },
+      });
+    } catch (error) {
+      setPageError(error?.message || 'Não foi possível excluir a vaga.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <main className="vacancy-details-page">
+        <section className="vacancy-details-card vacancy-details-card--empty">
+          <span className="vacancy-details-eyebrow">Consulta de vaga</span>
+          <h1>Carregando vaga...</h1>
+          <p>Aguarde enquanto buscamos os dados atuais do backend.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (isNotFound) {
     return (
       <main className="vacancy-details-page">
         <section className="vacancy-details-header">
@@ -127,7 +235,7 @@ export default function VacancyDetails() {
         <section className="vacancy-details-card vacancy-details-card--empty">
           <span className="vacancy-details-eyebrow">Consulta de vaga</span>
           <h1>Vaga não encontrada.</h1>
-          <p>O identificador informado não existe nos dados disponíveis do admin.</p>
+          <p>O identificador informado não existe na base atual do backend.</p>
 
           <button
             type="button"
@@ -136,6 +244,18 @@ export default function VacancyDetails() {
           >
             Voltar para vagas
           </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (!vacancy) {
+    return (
+      <main className="vacancy-details-page">
+        <section className="vacancy-details-card vacancy-details-card--empty">
+          <span className="vacancy-details-eyebrow">Consulta de vaga</span>
+          <h1>Não foi possível carregar a vaga.</h1>
+          <p>{pageError || 'Tente novamente em instantes.'}</p>
         </section>
       </main>
     );
@@ -158,6 +278,13 @@ export default function VacancyDetails() {
       </section>
 
       <section className="vacancy-details-card">
+        {pageError ? (
+          <div className="vacancy-details-alert" role="alert">
+            <LuBadgeAlert size={18} />
+            <span>{pageError}</span>
+          </div>
+        ) : null}
+
         <header className="vacancy-details-card__header">
           <div>
             <span className="vacancy-details-eyebrow">{pageCopy.eyebrow}</span>
@@ -169,8 +296,8 @@ export default function VacancyDetails() {
             <span className={`vacancy-details-badge vacancy-details-badge--${vacancy.vacancyStatus}`}>
               {vacancy.vacancyStatusText}
             </span>
-            <span className={`vacancy-details-badge vacancy-details-badge--${vacancy.dispatchStatus}`}>
-              {vacancy.dispatchStatusText}
+            <span className="vacancy-details-badge vacancy-details-badge--info">
+              Fila atual: {vacancy.queuePatients}
             </span>
           </div>
         </header>
@@ -179,24 +306,17 @@ export default function VacancyDetails() {
           className={`vacancy-highlight vacancy-highlight--${pageCopy.highlightModifier}`}
         >
           <div className="vacancy-highlight__icon">
-            {vacancy.vacancyStatus === 'confirmed' ? <LuCircleCheck size={22} /> : <LuHistory size={22} />}
+            {vacancy.vacancyStatus === 'booked'
+              ? <LuCircleCheck size={22} />
+              : <LuHistory size={22} />}
           </div>
 
           <div>
-            <span className="vacancy-highlight__label">
-              {vacancy.vacancyStatus === 'confirmed' ? 'Confirmação' : 'Resumo'}
-            </span>
+            <span className="vacancy-highlight__label">Resumo</span>
             <strong>{pageCopy.highlightTitle}</strong>
             <p>{pageCopy.highlightDescription}</p>
           </div>
         </section>
-
-        {vacancy.acceptanceTimestamp && (
-          <section className="vacancy-details-acceptance">
-            <span>Data/hora do aceite</span>
-            <strong>{vacancy.acceptanceTimestamp}</strong>
-          </section>
-        )}
 
         <section className="vacancy-details-grid">
           {detailFields.map((field) => {
@@ -224,32 +344,70 @@ export default function VacancyDetails() {
 
         <section className="vacancy-history">
           <div className="vacancy-history__header">
-            <LuHistory size={18} />
+            <LuUsers size={18} />
             <div>
-              <h2>Histórico resumido da vaga</h2>
-              <p>Eventos principais registrados no mock desta operação.</p>
+              <h2>Fila compatível no backend</h2>
+              <p>
+                Solicitações waiting compatíveis com a vaga pelas rotas atuais.
+              </p>
             </div>
           </div>
 
           <div className="vacancy-history__list">
-            {vacancy.history.map((historyItem) => (
-              <article key={historyItem.id} className="vacancy-history__item">
-                <span>{historyItem.timestamp}</span>
-                <strong>{historyItem.title}</strong>
-                <p>{historyItem.description}</p>
+            {vacancy.queueRequests.length > 0 ? (
+              vacancy.queueRequests.map((queueRequest) => (
+                <article key={queueRequest.id} className="vacancy-history__item">
+                  <span>{queueRequest.requestedDateTime}</span>
+                  <strong>{queueRequest.patientName}</strong>
+                  <p>
+                    {queueRequest.doctorScopeLabel}. Tentativas: {queueRequest.attempts}.{' '}
+                    {queueRequest.cooldownLabel}.
+                  </p>
+                </article>
+              ))
+            ) : (
+              <article className="vacancy-history__item">
+                <span>Fila atual</span>
+                <strong>Nenhum paciente compatível no momento</strong>
+                <p>
+                  O backend atual não retorna solicitações waiting compatíveis para esta vaga.
+                </p>
               </article>
-            ))}
+            )}
           </div>
         </section>
 
         <footer className="vacancy-details-footer">
-          <button
-            type="button"
-            className="vacancy-details-primary-button"
-            onClick={() => navigate('/vacancies')}
-          >
-            Voltar para vagas
-          </button>
+          <div className="vacancy-details-footer__actions">
+            <button
+              type="button"
+              className="vacancy-details-primary-button"
+              onClick={() => navigate('/vacancies')}
+            >
+              Voltar para vagas
+            </button>
+
+            <button
+              type="button"
+              className="vacancy-details-secondary-button vacancy-details-secondary-button--danger"
+              onClick={handleDelete}
+              disabled={isDeleting || !canDeleteVacancy(vacancy)}
+              title={
+                canDeleteVacancy(vacancy)
+                  ? 'Excluir vaga'
+                  : 'O backend atual não permite excluir vagas reservadas ou com no-show.'
+              }
+            >
+              <LuTrash2 size={16} />
+              {isDeleting ? 'Excluindo...' : 'Excluir vaga'}
+            </button>
+          </div>
+
+          {!canDeleteVacancy(vacancy) ? (
+            <p className="vacancy-details-footer__helper">
+              O backend atual bloqueia a exclusão de vagas reservadas ou com no-show.
+            </p>
+          ) : null}
         </footer>
       </section>
     </main>

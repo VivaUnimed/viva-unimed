@@ -7,6 +7,7 @@ import AuthProvider from './context/authContext/authProvider.jsx';
 import ProfessionalProvider from './context/professionalContext/professionalProvider.jsx';
 import PatientProvider from './context/patientContext/patientProvider.jsx';
 import SpecialtyProvider from './context/specialtyContext/specialtyProvider.jsx';
+import VacancyProvider from './context/vacancyContext/vacancyProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
@@ -14,9 +15,11 @@ createRoot(document.getElementById('root')).render(
       <ProfessionalProvider>
         <PatientProvider>
           <SpecialtyProvider>
-            <StrictMode>
-              <App />
-            </StrictMode>
+            <VacancyProvider>
+              <StrictMode>
+                <App />
+              </StrictMode>
+            </VacancyProvider>
           </SpecialtyProvider>
         </PatientProvider>
       </ProfessionalProvider>
