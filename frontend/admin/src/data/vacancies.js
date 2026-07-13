@@ -235,3 +235,8 @@ export const buildVacancyQueueItems = (
 export const canDeleteVacancy = (vacancy) => {
   return vacancy?.vacancyStatus !== 'booked' && vacancy?.vacancyStatus !== 'no_show';
 };
+
+export const vacancyEditUnavailableMessage =
+  'O backend atual não permite editar vagas por rota administrativa.';
+
+export const canEditVacancy = () => false;

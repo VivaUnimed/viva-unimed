@@ -409,7 +409,7 @@
 
 .generated-slots-table th:nth-child(6),
 .generated-slots-table td:nth-child(6) {
-  width: 160px;
+  width: 210px;
 }
 
 .generated-slots-table tbody tr {
@@ -632,12 +632,29 @@
   color: #007a49;
 }
 
+.slot-action--danger {
+  background-color: #ffffff;
+  border-color: #ffd1d1;
+  color: #d92d20;
+}
+
 .slot-action--disabled {
   background-color: #ece7e3;
   border-color: #ece7e3;
   color: #9ca3af;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.slot-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slot-actions-group .slot-action {
+  width: 100%;
+  min-width: 0;
 }
 
 /* Mantém oculto o antigo botão flutuante */

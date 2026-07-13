@@ -12,8 +12,10 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useVacancies } from '../../context/vacancyContext/vacancyContext';
 import {
+  canEditVacancy,
   canDeleteVacancy,
   getVacancyStatusDescription,
+  vacancyEditUnavailableMessage,
 } from '../../data/vacancies';
 import './styles.css';
 
@@ -389,6 +391,15 @@ export default function VacancyDetails() {
 
             <button
               type="button"
+              className="vacancy-details-secondary-button"
+              disabled={!canEditVacancy(vacancy)}
+              title={vacancyEditUnavailableMessage}
+            >
+              Editar indisponível
+            </button>
+
+            <button
+              type="button"
               className="vacancy-details-secondary-button vacancy-details-secondary-button--danger"
               onClick={handleDelete}
               disabled={isDeleting || !canDeleteVacancy(vacancy)}
@@ -402,6 +413,10 @@ export default function VacancyDetails() {
               {isDeleting ? 'Excluindo...' : 'Excluir vaga'}
             </button>
           </div>
+
+          <p className="vacancy-details-footer__helper">
+            {vacancyEditUnavailableMessage}
+          </p>
 
           {!canDeleteVacancy(vacancy) ? (
             <p className="vacancy-details-footer__helper">

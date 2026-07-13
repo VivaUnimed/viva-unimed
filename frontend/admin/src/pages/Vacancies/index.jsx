@@ -18,7 +18,10 @@ import {
 
 import { useVacancies } from '../../context/vacancyContext/vacancyContext';
 import {
+  canDeleteVacancy,
+  canEditVacancy,
   normalizeText,
+  vacancyEditUnavailableMessage,
   vacancyStatusOptions,
 } from '../../data/vacancies';
 
@@ -74,7 +77,7 @@ const formatSummaryValue = (value) => String(value).padStart(2, '0');
 export default function Vacancies() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { vacancyState, getVacancies } = useVacancies();
+  const { vacancyState, getVacancies, deleteVacancy } = useVacancies();
   const { vacancies, isLoading, error } = vacancyState;
   const [feedbackMessage, setFeedbackMessage] = useState(
     () => location.state?.successMessage ?? '',
@@ -82,6 +85,7 @@ export default function Vacancies() {
   const [searchTerm, setSearchTerm] = useState('');
   const [vacancyStatusFilter, setVacancyStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [deletingVacancyId, setDeletingVacancyId] = useState(null);
   const hasLoadedVacanciesRef = useRef(false);
 
   useEffect(() => {
@@ -163,6 +167,27 @@ export default function Vacancies() {
       await getVacancies();
     } catch {
       // O erro de atualização permanece disponível em vacancyState.error.
+    }
+  };
+
+  const handleDeleteVacancy = async (vacancy) => {
+    const isConfirmed = window.confirm(
+      `Deseja excluir a vaga #${vacancy.id}? O backend atual pode bloquear a exclusão se houver reserva ou vínculos críticos.`,
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    setDeletingVacancyId(vacancy.id);
+
+    try {
+      await deleteVacancy(vacancy.id);
+      setFeedbackMessage(`Vaga #${vacancy.id} excluída com sucesso.`);
+    } catch {
+      // A falha já é refletida em vacancyState.error pelo contexto.
+    } finally {
+      setDeletingVacancyId(null);
     }
   };
 
@@ -364,13 +389,38 @@ export default function Vacancies() {
                         </td>
 
                         <td>
-                          <button
-                            type="button"
-                            className="slot-action slot-action--primary"
-                            onClick={() => navigate(`/vacancies/${vacancy.id}`)}
-                          >
-                            Detalhes
-                          </button>
+                          <div className="slot-actions-group">
+                            <button
+                              type="button"
+                              className="slot-action slot-action--primary"
+                              onClick={() => navigate(`/vacancies/${vacancy.id}`)}
+                            >
+                              Detalhes
+                            </button>
+
+                            <button
+                              type="button"
+                              className="slot-action slot-action--disabled"
+                              disabled={!canEditVacancy(vacancy)}
+                              title={vacancyEditUnavailableMessage}
+                            >
+                              Editar indisponível
+                            </button>
+
+                            <button
+                              type="button"
+                              className="slot-action slot-action--danger"
+                              disabled={deletingVacancyId === vacancy.id || !canDeleteVacancy(vacancy)}
+                              title={
+                                canDeleteVacancy(vacancy)
+                                  ? 'Excluir vaga'
+                                  : 'O backend atual não permite excluir vagas reservadas ou com no-show.'
+                              }
+                              onClick={() => handleDeleteVacancy(vacancy)}
+                            >
+                              {deletingVacancyId === vacancy.id ? 'Excluindo...' : 'Excluir'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
