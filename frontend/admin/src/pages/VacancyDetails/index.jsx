@@ -380,9 +380,9 @@ export default function VacancyDetails() {
           <div className="vacancy-history__header">
             <LuUsers size={18} />
             <div>
-              <h2>Fila compatível</h2>
+              <h2>Pacientes para esta vaga</h2>
               <p>
-                Pacientes compatíveis com esta vaga neste momento.
+                Veja quem pode ser atendido nesta vaga neste momento.
               </p>
             </div>
           </div>
@@ -401,10 +401,10 @@ export default function VacancyDetails() {
               ))
             ) : (
               <article className="vacancy-history__item">
-                <span>Fila compatível</span>
-                <strong>Nenhum paciente compatível no momento</strong>
+                <span>Pacientes para esta vaga</span>
+                <strong>Nenhum paciente para esta vaga no momento</strong>
                 <p>
-                  Quando houver pacientes elegíveis para esta vaga, eles aparecerão aqui.
+                  Quando houver pacientes disponíveis para esta vaga, eles aparecerão aqui.
                 </p>
               </article>
             )}
