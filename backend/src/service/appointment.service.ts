@@ -259,7 +259,22 @@ export class AppointmentService {
 
   /** Busca agendamento por ID */
   async getById(id: number): Promise<IAppointment> {
-    const model = await AppointmentModel.findByPk(id);
+    const model = await AppointmentModel.findByPk(id, {
+      include: [
+        {
+          association: 'doctor',
+          attributes: ['crm', 'enabled', 'userId']
+        },
+        {
+          association: 'speciality',
+          attributes: ['id', 'name']
+        },
+        {
+          association: 'user',
+          attributes: ['id', 'name', 'email', 'cpf', 'phone']
+        }
+      ]
+    });
     if (!model) {
       throw new NotFound();
     }
@@ -268,7 +283,22 @@ export class AppointmentService {
 
   /** Lista todos os agendamentos */
   async list(): Promise<IAppointment[]> {
-    const list = await AppointmentModel.findAll();
+    const list = await AppointmentModel.findAll({
+      include: [
+        {
+          association: 'doctor',
+          attributes: ['crm', 'enabled', 'userId']
+        },
+        {
+          association: 'speciality',
+          attributes: ['id', 'name']
+        },
+        {
+          association: 'user',
+          attributes: ['id', 'name', 'email', 'cpf', 'phone']
+        }
+      ]
+    });
     return list.map((model) => model.get({ plain: true }));
   }
 
