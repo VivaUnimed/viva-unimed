@@ -31,8 +31,8 @@ export default class AppointmentModel extends Model<IAppointment, IAppointmentCr
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare createdBy: number;
 
-  @BelongsTo(() => UserModel)
-  declare createdByUser: UserModel;
+  @BelongsTo(() => UserModel, { as: 'user' })
+  declare user: UserModel;
 
   @Column({ type: DataType.STRING(20), allowNull: false })
   declare status: AppointmentStatus;
