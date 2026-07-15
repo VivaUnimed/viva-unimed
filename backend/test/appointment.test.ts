@@ -72,7 +72,7 @@ describe('cria vaga de consulta', () => {
     expect(primeiraVaga).toHaveProperty('specialityId');
     expect(primeiraVaga).toHaveProperty('createdBy');
     expect(primeiraVaga).toHaveProperty('status');
-    expect(primeiraVaga).toHaveProperty('createAt');
+    expect(primeiraVaga).toHaveProperty('createdAt');
     expect(primeiraVaga).toHaveProperty('updatedAt');
 
     // objetos aninhados (joins)
