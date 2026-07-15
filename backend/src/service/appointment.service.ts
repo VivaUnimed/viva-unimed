@@ -27,7 +27,7 @@ export class AppointmentService {
 
     const allowed = this.ALLOWED_TRANSITIONS[current];
     if (!allowed || !allowed.includes(next)) {
-      console.error(`[AUDIT] Tentativa inválida de transição de status: de "${current}" para "${next}"`);
+      console.error(`Tentativa inválida de transição de status: de "${current}" para "${next}"`);
       throw new BadRequest(`Transição de status inválida: não é permitido alterar de "${current}" para "${next}".`);
     }
   }
@@ -360,9 +360,6 @@ export class AppointmentService {
           transaction: t
         }
       );
-
-      console.log(`[AUDIT] Exclusão segura executada para o Appointment ID: ${id}. Matches pendentes foram cancelados.`);
-
       await model.destroy({ transaction: t });
 
       await t.commit();
