@@ -140,6 +140,7 @@ export class DoctorService {
         },
         {
           model: SpecialityModel,
+          as: 'specialities',
         }
       ],
       where,
@@ -157,6 +158,7 @@ export class DoctorService {
       id: model.user.id,
       email: model.user.email,
       name: model.user.name,
+      cpf: model.user.cpf,
       phone: model.user.phone,
       specialities: model?.specialities.map(s => ({
         id: s.id,
