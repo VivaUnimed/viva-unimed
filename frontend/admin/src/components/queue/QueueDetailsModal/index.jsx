@@ -1,9 +1,11 @@
+import { LuPencilLine, LuTrash2 } from 'react-icons/lu';
 import QueueModalShell from '../QueueModalShell';
 
 export default function QueueDetailsModal({
   queueRequest,
   onClose,
   onEdit,
+  onRemove,
 }) {
   if (!queueRequest) {
     return null;
@@ -24,9 +26,31 @@ export default function QueueDetailsModal({
             <p>{queueRequest.specialtyName}</p>
           </div>
 
-          <span className={`queue-status-badge queue-status-badge--${queueRequest.status}`}>
-            {queueRequest.statusLabel}
-          </span>
+          <div className="queue-details__hero-actions">
+            <span className={`queue-status-badge queue-status-badge--${queueRequest.status}`}>
+              {queueRequest.statusLabel}
+            </span>
+
+            <div className="queue-details__header-actions">
+              <button
+                type="button"
+                className="queue-details__header-button queue-details__header-button--primary"
+                onClick={onEdit}
+              >
+                <LuPencilLine size={16} />
+                Editar solicitação
+              </button>
+
+              <button
+                type="button"
+                className="queue-details__header-button queue-details__header-button--danger"
+                onClick={onRemove}
+              >
+                <LuTrash2 size={16} />
+                Remover da fila
+              </button>
+            </div>
+          </div>
         </header>
 
         <section className="queue-details__grid">
@@ -126,14 +150,6 @@ export default function QueueDetailsModal({
             onClick={onClose}
           >
             Fechar
-          </button>
-
-          <button
-            type="button"
-            className="queue-details__primary-button"
-            onClick={onEdit}
-          >
-            Editar solicitação
           </button>
         </footer>
       </div>

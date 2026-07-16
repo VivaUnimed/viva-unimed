@@ -424,31 +424,13 @@ export default function Queue() {
                     </td>
 
                     <td>
-                      <div className="queue-table__actions">
-                        <button
-                          type="button"
-                          className="queue-table__action queue-table__action--primary"
-                          onClick={() => setRequestDetailsId(queueRequest.id)}
-                        >
-                          Detalhes
-                        </button>
-
-                        <button
-                          type="button"
-                          className="queue-table__action queue-table__action--secondary"
-                          onClick={() => openEditModal(queueRequest.id)}
-                        >
-                          Editar
-                        </button>
-
-                        <button
-                          type="button"
-                          className="queue-table__action queue-table__action--danger"
-                          onClick={() => setRequestPendingRemoveId(queueRequest.id)}
-                        >
-                          Remover
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className="queue-table__action queue-table__action--primary"
+                        onClick={() => setRequestDetailsId(queueRequest.id)}
+                      >
+                        Detalhes
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -489,6 +471,10 @@ export default function Queue() {
           onEdit={() => {
             closeDetailsModal();
             openEditModal(detailsQueueRequest.id);
+          }}
+          onRemove={() => {
+            closeDetailsModal();
+            setRequestPendingRemoveId(detailsQueueRequest.id);
           }}
         />
       ) : null}
