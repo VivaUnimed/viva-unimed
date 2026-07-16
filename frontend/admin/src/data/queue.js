@@ -103,8 +103,12 @@ export const queueStatusOptions = [
   { value: 'waiting', label: queueStatusLabels.waiting },
   { value: 'approved', label: queueStatusLabels.approved },
   { value: 'cancelled', label: queueStatusLabels.cancelled },
-  { value: 'expired', label: queueStatusLabels.expired },
-  { value: 'rejected', label: queueStatusLabels.rejected },
+];
+
+export const queueEditableStatusOptions = [
+  { value: 'waiting', label: queueStatusLabels.waiting },
+  { value: 'approved', label: queueStatusLabels.approved },
+  { value: 'cancelled', label: queueStatusLabels.cancelled },
 ];
 
 export const getEligibleProfessionalsForSpecialty = (
@@ -148,7 +152,7 @@ export const getCompatibleVacancies = (request, vacancies = []) => {
   });
 };
 
-export const buildCompatibleVacancyList = (
+export const buildCompatibleAppointmentList = (
   request,
   {
     vacancies = [],
@@ -160,10 +164,10 @@ export const buildCompatibleVacancyList = (
     id: normalizeId(vacancy.id),
     specialty:
       specialtiesById.get(normalizeId(vacancy.specialityId))?.name
-      ?? `Especialidade #${vacancy.specialityId}`,
+      ?? 'Especialidade não encontrada',
     professional:
       professionalsById.get(normalizeId(vacancy.doctorId))?.name
-      ?? `Profissional #${vacancy.doctorId}`,
+      ?? 'Profissional não encontrado',
     date: formatQueueDate(vacancy.date),
     time: formatQueueTime(vacancy.date),
     dateTime: formatQueueDateTime(vacancy.date),
@@ -171,6 +175,8 @@ export const buildCompatibleVacancyList = (
     statusLabel: getVacancyStatusLabel(vacancy.status),
   }));
 };
+
+export const buildCompatibleVacancyList = buildCompatibleAppointmentList;
 
 export const buildQueueRequestItem = (
   request,
@@ -181,37 +187,62 @@ export const buildQueueRequestItem = (
     vacancies = [],
   } = {},
 ) => {
-  const patient = patientsById.get(normalizeId(request.patientId));
-  const specialty = specialtiesById.get(normalizeId(request.specialityId));
+  const requestPatientId = normalizeId(request.patientId);
+  const requestSpecialityId = normalizeId(
+    request.specialityId ?? request.specialtyId,
+  );
+  const requestDoctorId = request.doctorId ? normalizeId(request.doctorId) : null;
+  const patient = request.patient ?? patientsById.get(requestPatientId);
+  const specialty =
+    request.speciality
+    ?? request.specialitie
+    ?? request.specialty
+    ?? specialtiesById.get(requestSpecialityId);
   const preferredProfessional = request.doctorId
-    ? professionalsById.get(normalizeId(request.doctorId))
+    ? request.doctor ?? professionalsById.get(requestDoctorId)
     : null;
-  const compatibleVacancies = buildCompatibleVacancyList(request, {
+  const compatibleAppointments = buildCompatibleAppointmentList(request, {
     vacancies,
     professionalsById,
     specialtiesById,
   });
-  const compatibleVacanciesCount = compatibleVacancies.length;
+  const compatibleAppointmentsCount = compatibleAppointments.length;
+  const queueEntryValue = request.date ?? request.createdAt;
 
   return {
     ...request,
-    patientName: patient?.name ?? `Paciente #${request.patientId}`,
+    requestId: normalizeId(request.id),
+    patientId: requestPatientId,
+    specialityId: requestSpecialityId,
+    doctorId: requestDoctorId,
+    patientName: patient?.name ?? 'Paciente não encontrado',
     patientCpf: patient?.cpf ?? '',
     patientCpfFormatted: formatCpf(patient?.cpf ?? ''),
     patientPhone: patient?.phone ?? '',
     patientPhoneFormatted: formatPhone(patient?.phone ?? ''),
     patientEmail: patient?.email ?? 'Não informado',
-    specialtyName: specialty?.name ?? `Especialidade #${request.specialityId}`,
+    specialityName: specialty?.name ?? 'Especialidade não encontrada',
+    specialtyName: specialty?.name ?? 'Especialidade não encontrada',
+    doctorName: preferredProfessional?.name ?? 'Qualquer profissional',
     professionalName: preferredProfessional?.name ?? 'Qualquer profissional',
     statusLabel: getQueueStatusLabel(request.status),
+    queueEntryDate: formatQueueDate(queueEntryValue),
+    queueEntryTime: formatQueueTime(queueEntryValue),
+    queueEntryDateTime: formatQueueDateTime(queueEntryValue),
     createdAtDate: formatQueueDate(request.createdAt),
     createdAtTime: formatQueueTime(request.createdAt),
     createdAtDateTime: formatQueueDateTime(request.createdAt),
     updatedAtDateTime: formatQueueDateTime(request.updatedAt),
-    compatibleVacancies,
-    compatibleVacanciesCount,
+    compatibleAppointments,
+    compatibleAppointmentsCount,
+    compatibleAppointmentsText:
+      compatibleAppointmentsCount === 1
+        ? 'vaga compatível'
+        : 'vagas compatíveis',
+    compatibleVacancies: compatibleAppointments,
+    compatibleVacanciesCount: compatibleAppointmentsCount,
     compatibleVacanciesText:
-      compatibleVacanciesCount === 1
+      compatibleAppointmentsCount === 1
         ? 'vaga compatível'
         : 'vagas compatíveis',
   };
@@ -239,14 +270,18 @@ export const buildQueueRequestList = (requests = [], relationships = {}) => {
     });
 };
 
+export const buildAdminAppointmentRequest = buildQueueRequestItem;
+
+export const buildAdminAppointmentRequests = buildQueueRequestList;
+
 export const buildQueueSummary = (queueRequests = []) => ({
   total: queueRequests.length,
   waiting: queueRequests.filter((request) => request.status === 'waiting').length,
   withCompatibleVacancy: queueRequests.filter(
-    (request) => request.compatibleVacanciesCount > 0,
+    (request) => request.status === 'waiting' && request.compatibleVacanciesCount > 0,
   ).length,
   withoutCompatibleVacancy: queueRequests.filter(
-    (request) => request.compatibleVacanciesCount === 0,
+    (request) => request.status === 'waiting' && request.compatibleVacanciesCount === 0,
   ).length,
   cancelled: queueRequests.filter((request) => request.status === 'cancelled').length,
 });

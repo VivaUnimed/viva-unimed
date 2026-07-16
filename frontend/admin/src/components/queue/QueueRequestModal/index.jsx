@@ -1,20 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { LuChevronDown } from 'react-icons/lu';
 import QueueModalShell from '../QueueModalShell';
 import {
   formatQueueDateTime,
   getEligibleProfessionalsForSpecialty,
   getQueueStatusLabel,
-  queueStatusOptions,
+  queueEditableStatusOptions,
 } from '../../../data/queue';
 
-const getCreateInitialState = (createdAtPreview) => ({
+const getCreateInitialState = (requestDatePreview) => ({
   patientId: '',
   specialityId: '',
   doctorId: '',
   status: 'waiting',
-  createdAt: createdAtPreview,
+  date: requestDatePreview,
 });
+
+const getEditInitialState = (queueRequest, requestDatePreview) => ({
+  patientId: String(queueRequest.patientId),
+  specialityId: String(queueRequest.specialityId),
+  doctorId: queueRequest.doctorId ? String(queueRequest.doctorId) : '',
+  status: queueRequest.status,
+  date: queueRequest.date ?? queueRequest.createdAt ?? requestDatePreview,
+});
+
+const getInitialFormState = ({
+  isEditing,
+  queueRequest,
+  requestDatePreview,
+}) => (
+  isEditing && queueRequest
+    ? getEditInitialState(queueRequest, requestDatePreview)
+    : getCreateInitialState(requestDatePreview)
+);
 
 export default function QueueRequestModal({
   mode = 'create',
@@ -22,54 +40,28 @@ export default function QueueRequestModal({
   patients = [],
   specialties = [],
   professionals = [],
-  createdAtPreview = '',
+  requestDatePreview = '',
+  isSubmitting = false,
   onClose,
   onSave,
 }) {
   const isEditing = mode === 'edit';
-  const [formData, setFormData] = useState(() => getCreateInitialState(createdAtPreview));
+  const [formData, setFormData] = useState(() => getInitialFormState({
+    isEditing,
+    queueRequest,
+    requestDatePreview,
+  }));
   const [formError, setFormError] = useState('');
-
-  useEffect(() => {
-    if (isEditing && queueRequest) {
-      setFormData({
-        patientId: String(queueRequest.patientId),
-        specialityId: String(queueRequest.specialityId),
-        doctorId: queueRequest.doctorId ? String(queueRequest.doctorId) : '',
-        status: queueRequest.status,
-        createdAt: queueRequest.createdAt,
-      });
-      setFormError('');
-      return;
-    }
-
-    setFormData(getCreateInitialState(createdAtPreview));
-    setFormError('');
-  }, [createdAtPreview, isEditing, queueRequest]);
 
   const eligibleProfessionals = getEligibleProfessionalsForSpecialty(
     formData.specialityId,
     professionals,
   );
-
-  useEffect(() => {
-    if (!formData.doctorId) {
-      return;
-    }
-
-    const professionalStillAvailable = eligibleProfessionals.some(
-      (professional) => String(professional.id) === String(formData.doctorId),
-    );
-
-    if (professionalStillAvailable) {
-      return;
-    }
-
-    setFormData((currentFormData) => ({
-      ...currentFormData,
-      doctorId: '',
-    }));
-  }, [eligibleProfessionals, formData.doctorId]);
+  const selectedDoctorId = eligibleProfessionals.some(
+    (professional) => String(professional.id) === String(formData.doctorId),
+  )
+    ? formData.doctorId
+    : '';
 
   const handleChange = (fieldName) => (event) => {
     const nextValue = event.target.value;
@@ -84,7 +76,7 @@ export default function QueueRequestModal({
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!formData.patientId || !formData.specialityId) {
@@ -92,13 +84,24 @@ export default function QueueRequestModal({
       return;
     }
 
-    onSave({
-      patientId: Number(formData.patientId),
-      specialityId: Number(formData.specialityId),
-      doctorId: formData.doctorId ? Number(formData.doctorId) : null,
-      status: isEditing ? formData.status : 'waiting',
-      createdAt: formData.createdAt,
-    });
+    if (!formData.date) {
+      setFormError('A entrada na fila precisa ter uma data válida.');
+      return;
+    }
+
+    try {
+      await onSave({
+        patientId: Number(formData.patientId),
+        specialityId: Number(formData.specialityId),
+        doctorId: selectedDoctorId ? Number(selectedDoctorId) : null,
+        status: isEditing ? formData.status : 'waiting',
+        date: formData.date,
+      });
+    } catch (error) {
+      setFormError(
+        error?.message || 'Não foi possível salvar a solicitação da fila.',
+      );
+    }
   };
 
   return (
@@ -135,7 +138,12 @@ export default function QueueRequestModal({
             <label className="queue-form__field">
               <span>Paciente</span>
               <div className="queue-form__select">
-                <select value={formData.patientId} onChange={handleChange('patientId')} required>
+                <select
+                  value={formData.patientId}
+                  onChange={handleChange('patientId')}
+                  disabled={isSubmitting}
+                  required
+                >
                   <option value="">Selecione um paciente</option>
                   {patients.map((patient) => (
                     <option key={patient.id} value={patient.id}>
@@ -154,6 +162,7 @@ export default function QueueRequestModal({
               <select
                 value={formData.specialityId}
                 onChange={handleChange('specialityId')}
+                disabled={isSubmitting}
                 required
               >
                 <option value="">Selecione uma especialidade</option>
@@ -170,7 +179,11 @@ export default function QueueRequestModal({
           <label className="queue-form__field">
             <span>Profissional preferido</span>
             <div className="queue-form__select">
-              <select value={formData.doctorId} onChange={handleChange('doctorId')}>
+              <select
+                value={selectedDoctorId}
+                onChange={handleChange('doctorId')}
+                disabled={isSubmitting}
+              >
                 <option value="">Qualquer profissional</option>
                 {eligibleProfessionals.map((professional) => (
                   <option key={professional.id} value={professional.id}>
@@ -186,7 +199,7 @@ export default function QueueRequestModal({
             <span>Entrada na fila</span>
             <input
               type="text"
-              value={formatQueueDateTime(formData.createdAt)}
+              value={formatQueueDateTime(formData.date)}
               readOnly
             />
           </label>
@@ -195,14 +208,16 @@ export default function QueueRequestModal({
             <label className="queue-form__field">
               <span>Status</span>
               <div className="queue-form__select">
-                <select value={formData.status} onChange={handleChange('status')}>
-                  {queueStatusOptions
-                    .filter((option) => option.value)
-                    .map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
+                <select
+                  value={formData.status}
+                  onChange={handleChange('status')}
+                  disabled={isSubmitting}
+                >
+                  {queueEditableStatusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
                 <LuChevronDown size={18} />
               </div>
@@ -220,12 +235,17 @@ export default function QueueRequestModal({
             type="button"
             className="queue-form__cancel"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             Cancelar
           </button>
 
-          <button type="submit" className="queue-form__submit">
-            {isEditing ? 'Salvar alterações' : 'Salvar na fila'}
+          <button type="submit" className="queue-form__submit" disabled={isSubmitting}>
+            {isSubmitting
+              ? 'Salvando...'
+              : isEditing
+                ? 'Salvar alterações'
+                : 'Salvar na fila'}
           </button>
         </div>
       </form>

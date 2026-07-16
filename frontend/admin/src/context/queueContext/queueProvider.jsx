@@ -1,119 +1,262 @@
-import { useState } from 'react';
-import { queueContext } from './queueContext';
+import { useReducer } from 'react';
+import { queueContext as QueueContext } from './queueContext';
+import { queueInitialState } from './queueInitialState';
+import { queueReducer } from './queueReducer';
+import { queueTypes } from './queueTypes';
 import {
-  buildQueueRequestList,
+  createAppointmentRequest,
+  deleteAppointmentRequest,
+  getAllAppointmentRequests,
+  updateAppointmentRequest,
+} from '../../api/appointmentRequestApi';
+import { getAllAppointments } from '../../api/appointmentApi';
+import { getAllDoctors } from '../../api/doctorApi';
+import { getAllPatients } from '../../api/patientApi';
+import { getAllSpecialties } from '../../api/specialityApi';
+import {
+  buildAdminAppointmentRequests,
   buildQueueSummary,
   createLookupById,
 } from '../../data/queue';
-import {
-  createInitialQueueRequests,
-  queuePatientsMock,
-  queueProfessionalsMock,
-  queueSpecialtiesMock,
-  queueVacanciesMock,
-} from '../../mocks/queueMock';
 
-export default function QueueProvider({ children }) {
-  const [queueRequests, setQueueRequests] = useState(() => createInitialQueueRequests());
+const auxiliaryResourceLabels = {
+  patients: 'pacientes',
+  professionals: 'profissionais',
+  specialties: 'especialidades',
+  appointments: 'vagas',
+};
 
-  const patients = queuePatientsMock;
-  const specialties = queueSpecialtiesMock;
-  const professionals = queueProfessionalsMock;
-  const vacancies = queueVacanciesMock;
+const createAuxiliaryFallback = (error) => ({
+  data: [],
+  error,
+});
 
-  const patientsById = createLookupById(patients);
-  const professionalsById = createLookupById(professionals);
-  const specialtiesById = createLookupById(specialties);
+const createAuxiliarySuccess = (data) => ({
+  data,
+  error: null,
+});
 
-  const queueRequestItems = buildQueueRequestList(queueRequests, {
+const formatResourceList = (resourceKeys = []) => {
+  const labels = resourceKeys
+    .map((resourceKey) => auxiliaryResourceLabels[resourceKey])
+    .filter(Boolean);
+
+  if (!labels.length) {
+    return '';
+  }
+
+  if (labels.length === 1) {
+    return labels[0];
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} e ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(', ')} e ${labels.at(-1)}`;
+};
+
+const buildAuxiliaryWarning = (failedResources = []) => {
+  if (!failedResources.length) {
+    return null;
+  }
+
+  return `Alguns dados auxiliares não puderam ser carregados (${formatResourceList(failedResources)}). A tela segue com informações parciais.`;
+};
+
+const loadAuxiliaryResources = async () => {
+  const [
+    patientsResult,
+    professionalsResult,
+    specialtiesResult,
+    appointmentsResult,
+  ] = await Promise.all([
+    getAllPatients()
+      .then((patients) => createAuxiliarySuccess(patients))
+      .catch((error) => createAuxiliaryFallback(error)),
+    getAllDoctors()
+      .then((professionals) => createAuxiliarySuccess(professionals))
+      .catch((error) => createAuxiliaryFallback(error)),
+    getAllSpecialties()
+      .then((specialties) => createAuxiliarySuccess(specialties))
+      .catch((error) => createAuxiliaryFallback(error)),
+    getAllAppointments()
+      .then((appointments) => createAuxiliarySuccess(appointments))
+      .catch((error) => createAuxiliaryFallback(error)),
+  ]);
+
+  const failedResources = [
+    patientsResult.error ? 'patients' : null,
+    professionalsResult.error ? 'professionals' : null,
+    specialtiesResult.error ? 'specialties' : null,
+    appointmentsResult.error ? 'appointments' : null,
+  ].filter(Boolean);
+
+  return {
+    patients: patientsResult.data,
+    professionals: professionalsResult.data,
+    specialties: specialtiesResult.data,
+    appointments: appointmentsResult.data,
+    warning: buildAuxiliaryWarning(failedResources),
+  };
+};
+
+const buildQueueStatePayload = async () => {
+  const appointmentRequests = await getAllAppointmentRequests();
+  const auxiliaryResources = await loadAuxiliaryResources();
+  const patientsById = createLookupById(auxiliaryResources.patients);
+  const professionalsById = createLookupById(auxiliaryResources.professionals);
+  const specialtiesById = createLookupById(auxiliaryResources.specialties);
+  const adminAppointmentRequests = buildAdminAppointmentRequests(appointmentRequests, {
     patientsById,
     professionalsById,
     specialtiesById,
-    vacancies,
+    vacancies: auxiliaryResources.appointments,
   });
-  const summary = buildQueueSummary(queueRequestItems);
 
-  const createQueueRequest = (formValues) => {
-    const requestTimestamp = formValues.createdAt || new Date().toISOString();
-    const currentHighestId = queueRequests.reduce(
-      (highestId, queueRequest) => Math.max(highestId, Number(queueRequest.id) || 0),
-      0,
-    );
-    const nextQueueRequest = {
-      id: currentHighestId + 1,
-      patientId: formValues.patientId,
-      specialityId: formValues.specialityId,
-      doctorId: formValues.doctorId,
-      status: 'waiting',
-      createdAt: requestTimestamp,
-      updatedAt: requestTimestamp,
-    };
+  return {
+    appointmentRequests,
+    adminAppointmentRequests,
+    patients: auxiliaryResources.patients,
+    professionals: auxiliaryResources.professionals,
+    specialties: auxiliaryResources.specialties,
+    appointments: auxiliaryResources.appointments,
+    warning: auxiliaryResources.warning,
+  };
+};
 
-    setQueueRequests((currentQueueRequests) => [
-      nextQueueRequest,
-      ...currentQueueRequests,
-    ]);
+export default function QueueProvider({ children }) {
+  const [queueState, queueDispatch] = useReducer(queueReducer, queueInitialState);
 
-    return nextQueueRequest;
+  const getQueueRequests = async () => {
+    queueDispatch({
+      type: queueTypes.GET_QUEUE_REQUESTS_REQUEST,
+    });
+
+    try {
+      const payload = await buildQueueStatePayload();
+
+      queueDispatch({
+        type: queueTypes.GET_QUEUE_REQUESTS_SUCCESS,
+        payload,
+      });
+
+      return payload.adminAppointmentRequests;
+    } catch (error) {
+      queueDispatch({
+        type: queueTypes.GET_QUEUE_REQUESTS_FAILURE,
+        payload: { error: error.message },
+      });
+
+      throw error;
+    }
   };
 
-  const updateQueueRequest = (queueRequestId, formValues) => {
-    const normalizedQueueRequestId = Number(queueRequestId);
+  const createQueueRequest = async (requestData) => {
+    queueDispatch({
+      type: queueTypes.CREATE_QUEUE_REQUEST_REQUEST,
+    });
 
-    setQueueRequests((currentQueueRequests) => (
-      currentQueueRequests.map((queueRequest) => (
-        Number(queueRequest.id) === normalizedQueueRequestId
-          ? {
-            ...queueRequest,
-            specialityId: formValues.specialityId,
-            doctorId: formValues.doctorId,
-            status: formValues.status,
-            updatedAt: new Date().toISOString(),
-          }
-          : queueRequest
-      ))
-    ));
+    try {
+      await createAppointmentRequest(requestData);
+      const payload = await buildQueueStatePayload();
+
+      queueDispatch({
+        type: queueTypes.CREATE_QUEUE_REQUEST_SUCCESS,
+        payload,
+      });
+
+      return payload.adminAppointmentRequests;
+    } catch (error) {
+      queueDispatch({
+        type: queueTypes.CREATE_QUEUE_REQUEST_FAILURE,
+        payload: { error: error.message },
+      });
+
+      throw error;
+    }
   };
 
-  const cancelQueueRequest = (queueRequestId) => {
-    const normalizedQueueRequestId = Number(queueRequestId);
+  const updateQueueRequest = async (queueRequestId, requestData) => {
+    queueDispatch({
+      type: queueTypes.UPDATE_QUEUE_REQUEST_REQUEST,
+    });
 
-    setQueueRequests((currentQueueRequests) => (
-      currentQueueRequests.map((queueRequest) => (
-        Number(queueRequest.id) === normalizedQueueRequestId
-          ? {
-            ...queueRequest,
-            status: 'cancelled',
-            updatedAt: new Date().toISOString(),
-          }
-          : queueRequest
-      ))
-    ));
+    try {
+      await updateAppointmentRequest(queueRequestId, requestData);
+      const payload = await buildQueueStatePayload();
+
+      queueDispatch({
+        type: queueTypes.UPDATE_QUEUE_REQUEST_SUCCESS,
+        payload,
+      });
+
+      return payload.adminAppointmentRequests;
+    } catch (error) {
+      queueDispatch({
+        type: queueTypes.UPDATE_QUEUE_REQUEST_FAILURE,
+        payload: { error: error.message },
+      });
+
+      throw error;
+    }
+  };
+
+  const removeQueueRequest = async (queueRequestId) => {
+    queueDispatch({
+      type: queueTypes.DELETE_QUEUE_REQUEST_REQUEST,
+    });
+
+    try {
+      await deleteAppointmentRequest(queueRequestId);
+      const payload = await buildQueueStatePayload();
+
+      queueDispatch({
+        type: queueTypes.DELETE_QUEUE_REQUEST_SUCCESS,
+        payload,
+      });
+
+      return payload.adminAppointmentRequests;
+    } catch (error) {
+      queueDispatch({
+        type: queueTypes.DELETE_QUEUE_REQUEST_FAILURE,
+        payload: { error: error.message },
+      });
+
+      throw error;
+    }
   };
 
   const getQueueRequestById = (queueRequestId) => (
-    queueRequestItems.find(
+    queueState.adminAppointmentRequests.find(
       (queueRequest) => Number(queueRequest.id) === Number(queueRequestId),
     ) ?? null
   );
 
+  const summary = buildQueueSummary(queueState.adminAppointmentRequests);
+
   return (
-    <queueContext.Provider
+    <QueueContext.Provider
       value={{
-        queueRequests,
-        queueRequestItems,
+        queueState,
+        appointmentRequests: queueState.appointmentRequests,
+        adminAppointmentRequests: queueState.adminAppointmentRequests,
+        queueRequests: queueState.appointmentRequests,
+        queueRequestItems: queueState.adminAppointmentRequests,
+        patients: queueState.patients,
+        specialties: queueState.specialties,
+        professionals: queueState.professionals,
+        appointments: queueState.appointments,
         summary,
-        patients,
-        specialties,
-        professionals,
-        vacancies,
+        getQueueRequests,
         createQueueRequest,
         updateQueueRequest,
-        cancelQueueRequest,
+        deleteQueueRequest: removeQueueRequest,
+        cancelQueueRequest: removeQueueRequest,
         getQueueRequestById,
       }}
     >
       {children}
-    </queueContext.Provider>
+    </QueueContext.Provider>
   );
 }

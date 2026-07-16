@@ -2,6 +2,8 @@ import QueueModalShell from '../QueueModalShell';
 
 export default function QueueConfirmRemoveModal({
   queueRequest,
+  errorMessage = '',
+  isSubmitting = false,
   onClose,
   onConfirm,
 }) {
@@ -17,6 +19,12 @@ export default function QueueConfirmRemoveModal({
       onClose={onClose}
     >
       <div className="queue-confirm-remove">
+        {errorMessage ? (
+          <div className="queue-form__error" role="alert">
+            <span>{errorMessage}</span>
+          </div>
+        ) : null}
+
         <p>
           Tem certeza que deseja remover este paciente da fila?
         </p>
@@ -28,6 +36,7 @@ export default function QueueConfirmRemoveModal({
             type="button"
             className="queue-confirm-remove__cancel"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             Cancelar
           </button>
@@ -36,8 +45,9 @@ export default function QueueConfirmRemoveModal({
             type="button"
             className="queue-confirm-remove__submit"
             onClick={onConfirm}
+            disabled={isSubmitting}
           >
-            Remover da fila
+            {isSubmitting ? 'Removendo...' : 'Remover da fila'}
           </button>
         </div>
       </div>

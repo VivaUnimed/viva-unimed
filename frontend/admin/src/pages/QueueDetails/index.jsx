@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  LuBadgeAlert,
   LuBadgeCheck,
   LuCalendarCheck,
   LuChevronLeft,
@@ -65,14 +66,14 @@ function getPageCopy(queueRequest) {
     eyebrow: 'Fila Inteligente',
     description: 'Acompanhe as informações principais do paciente e as vagas compatíveis encontradas.',
     highlightTitle:
-      queueRequest.compatibleVacanciesCount > 0
+      queueRequest.compatibleAppointmentsCount > 0
         ? 'Vagas compatíveis disponíveis'
         : 'Aguardando vaga compatível',
     highlightDescription:
-      queueRequest.compatibleVacanciesCount > 0
-        ? queueRequest.compatibleVacanciesCount === 1
+      queueRequest.compatibleAppointmentsCount > 0
+        ? queueRequest.compatibleAppointmentsCount === 1
           ? 'Existe 1 vaga aberta compatível com esta solicitação.'
-          : `Existem ${queueRequest.compatibleVacanciesCount} vagas abertas compatíveis com esta solicitação.`
+          : `Existem ${queueRequest.compatibleAppointmentsCount} vagas abertas compatíveis com esta solicitação.`
         : 'No momento, não há vagas abertas compatíveis com esta solicitação.',
     highlightModifier: 'active',
   };
@@ -112,7 +113,7 @@ function getDetailsFields(queueRequest) {
     },
     {
       label: 'Entrada na fila',
-      value: queueRequest.createdAtDateTime,
+      value: queueRequest.queueEntryDateTime,
       icon: LuCalendarCheck,
     },
     {
@@ -127,19 +128,67 @@ export default function QueueDetails() {
   const navigate = useNavigate();
   const { queueRequestId } = useParams();
   const {
+    queueState,
+    getQueueRequests,
     getQueueRequestById,
     updateQueueRequest,
-    cancelQueueRequest,
+    deleteQueueRequest,
     specialties,
     professionals,
   } = useQueue();
+  const {
+    isLoading,
+    isSubmitting,
+    hasLoaded,
+    error,
+    warning,
+  } = queueState;
   const [pageMessage, setPageMessage] = useState('');
+  const [removeErrorMessage, setRemoveErrorMessage] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const hasRequestedQueueRef = useRef(false);
+
+  useEffect(() => {
+    if (hasLoaded || hasRequestedQueueRef.current) {
+      return;
+    }
+
+    hasRequestedQueueRef.current = true;
+
+    const loadQueueRequests = async () => {
+      try {
+        await getQueueRequests();
+      } catch {
+        // O erro permanece disponível em queueState.error.
+      }
+    };
+
+    loadQueueRequests();
+  }, [getQueueRequests, hasLoaded]);
 
   const queueRequest = getQueueRequestById(queueRequestId);
 
+  const handleReloadQueue = async () => {
+    try {
+      await getQueueRequests();
+    } catch {
+      // O erro permanece disponível em queueState.error.
+    }
+  };
+
   if (!queueRequest) {
+    const title = isLoading
+      ? 'Carregando solicitação...'
+      : error
+        ? 'Não foi possível carregar a solicitação.'
+        : 'Solicitação não encontrada.';
+    const description = isLoading
+      ? 'Buscando os dados atuais da fila inteligente.'
+      : error
+        ? error
+        : 'A solicitação informada não foi localizada na fila atual.';
+
     return (
       <main className="queue-request-details-page">
         <section className="queue-request-details-header">
@@ -155,16 +204,30 @@ export default function QueueDetails() {
 
         <section className="queue-request-details-card queue-request-details-card--empty">
           <span className="queue-request-details-eyebrow">Fila Inteligente</span>
-          <h1>Solicitação não encontrada.</h1>
-          <p>A solicitação informada não foi localizada na fila atual.</p>
+          <h1>{title}</h1>
+          <p>{description}</p>
 
-          <button
-            type="button"
-            className="queue-request-details-primary-button"
-            onClick={() => navigate('/queue')}
-          >
-            Voltar para fila
-          </button>
+          {warning ? (
+            <div
+              className="queue-request-details-alert queue-request-details-alert--warning"
+              role="status"
+            >
+              <LuBadgeAlert size={18} />
+              <span>{warning}</span>
+            </div>
+          ) : null}
+
+          <div className="queue-request-details-empty-actions">
+            {!isLoading ? (
+              <button
+                type="button"
+                className="queue-request-details-primary-button"
+                onClick={error ? handleReloadQueue : () => navigate('/queue')}
+              >
+                {error ? 'Tentar novamente' : 'Voltar para fila'}
+              </button>
+            ) : null}
+          </div>
         </section>
       </main>
     );
@@ -173,21 +236,34 @@ export default function QueueDetails() {
   const pageCopy = getPageCopy(queueRequest);
   const detailFields = getDetailsFields(queueRequest);
 
-  const handleEditSave = (formValues) => {
-    updateQueueRequest(queueRequest.id, formValues);
+  const handleEditSave = async (formValues) => {
+    await updateQueueRequest(queueRequest.id, {
+      patientId: queueRequest.patientId,
+      specialityId: formValues.specialityId,
+      doctorId: formValues.doctorId,
+      status: formValues.status,
+      date: formValues.date ?? queueRequest.date ?? queueRequest.createdAt,
+    });
     setPageMessage('Solicitação atualizada com sucesso.');
     setIsEditModalOpen(false);
   };
 
-  const handleConfirmRemove = () => {
-    cancelQueueRequest(queueRequest.id);
-    setIsRemoveModalOpen(false);
+  const handleConfirmRemove = async () => {
+    try {
+      setRemoveErrorMessage('');
+      await deleteQueueRequest(queueRequest.id);
+      setIsRemoveModalOpen(false);
 
-    navigate('/queue', {
-      state: {
-        successMessage: 'Solicitação cancelada e mantida no histórico da fila.',
-      },
-    });
+      navigate('/queue', {
+        state: {
+          successMessage: 'Solicitação cancelada e mantida no histórico da fila.',
+        },
+      });
+    } catch (removeError) {
+      setRemoveErrorMessage(
+        removeError?.message || 'Não foi possível remover esta solicitação da fila.',
+      );
+    }
   };
 
   return (
@@ -211,6 +287,26 @@ export default function QueueDetails() {
           </div>
         ) : null}
 
+        {warning ? (
+          <div
+            className="queue-request-details-alert queue-request-details-alert--warning"
+            role="status"
+          >
+            <LuBadgeAlert size={18} />
+            <span>{warning}</span>
+          </div>
+        ) : null}
+
+        {error ? (
+          <div
+            className="queue-request-details-alert queue-request-details-alert--error"
+            role="alert"
+          >
+            <LuBadgeAlert size={18} />
+            <span>{error}</span>
+          </div>
+        ) : null}
+
         <header className="queue-request-details-card__header">
           <div className="queue-request-details-identity">
             <div>
@@ -224,9 +320,9 @@ export default function QueueDetails() {
                 </span>
                 <span className="queue-request-details-badge queue-request-details-badge--info">
                   <LuUsers size={14} />
-                  {queueRequest.compatibleVacanciesCount === 1
+                  {queueRequest.compatibleAppointmentsCount === 1
                     ? '1 vaga compatível'
-                    : `${queueRequest.compatibleVacanciesCount} vagas compatíveis`}
+                    : `${queueRequest.compatibleAppointmentsCount} vagas compatíveis`}
                 </span>
               </div>
             </div>
@@ -237,6 +333,7 @@ export default function QueueDetails() {
               type="button"
               className="queue-request-details-edit-button"
               onClick={() => setIsEditModalOpen(true)}
+              disabled={isSubmitting}
             >
               <LuPencilLine size={16} />
               Editar solicitação
@@ -246,6 +343,7 @@ export default function QueueDetails() {
               type="button"
               className="queue-request-details-delete-button"
               onClick={() => setIsRemoveModalOpen(true)}
+              disabled={isSubmitting}
             >
               <LuTrash2 size={16} />
               Remover da fila
@@ -303,8 +401,9 @@ export default function QueueDetails() {
           </div>
 
           <div className="queue-request-details-matches__list">
-            {queueRequest.compatibleVacancies.length > 0 ? (
-              queueRequest.compatibleVacancies.map((vacancy) => (
+            {/* TODO: a oferta, confirmação e recusa de vagas dependem do fluxo de match do backend. */}
+            {queueRequest.compatibleAppointments.length > 0 ? (
+              queueRequest.compatibleAppointments.map((vacancy) => (
                 <article key={vacancy.id} className="queue-request-details-match-card">
                   <div>
                     <strong>{vacancy.specialty}</strong>
@@ -349,6 +448,8 @@ export default function QueueDetails() {
           patients={[]}
           specialties={specialties}
           professionals={professionals}
+          requestDatePreview={queueRequest.date ?? queueRequest.createdAt ?? ''}
+          isSubmitting={isSubmitting}
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleEditSave}
         />
@@ -357,7 +458,12 @@ export default function QueueDetails() {
       {isRemoveModalOpen ? (
         <QueueConfirmRemoveModal
           queueRequest={queueRequest}
-          onClose={() => setIsRemoveModalOpen(false)}
+          errorMessage={removeErrorMessage}
+          isSubmitting={isSubmitting}
+          onClose={() => {
+            setRemoveErrorMessage('');
+            setIsRemoveModalOpen(false);
+          }}
           onConfirm={handleConfirmRemove}
         />
       ) : null}

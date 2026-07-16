@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LuBadgeAlert,
   LuBadgeCheck,
@@ -64,22 +64,31 @@ export default function Queue() {
   const location = useLocation();
   const navigate = useNavigate();
   const {
-    queueRequestItems,
+    queueState,
     summary,
     patients,
     specialties,
     professionals,
+    getQueueRequests,
     createQueueRequest,
   } = useQueue();
+  const {
+    adminAppointmentRequests,
+    isLoading,
+    isSubmitting,
+    error,
+    warning,
+  } = queueState;
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [professionalFilter, setProfessionalFilter] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState(
-    () => location.state?.successMessage ?? '',
-  );
+  const [localFeedbackMessage, setLocalFeedbackMessage] = useState('');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [createdAtPreview, setCreatedAtPreview] = useState(() => new Date().toISOString());
+  const [requestDatePreview, setRequestDatePreview] = useState(() => new Date().toISOString());
+  const hasLoadedQueueRef = useRef(false);
+  const routeFeedbackMessage = location.state?.successMessage ?? '';
+  const feedbackMessage = localFeedbackMessage || routeFeedbackMessage;
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
   const hasActiveFilters = Boolean(
     normalizedSearchTerm
@@ -88,7 +97,25 @@ export default function Queue() {
     || professionalFilter,
   );
 
-  const filteredQueueRequests = queueRequestItems.filter((queueRequest) => {
+  useEffect(() => {
+    if (hasLoadedQueueRef.current) {
+      return;
+    }
+
+    hasLoadedQueueRef.current = true;
+
+    const loadQueueRequests = async () => {
+      try {
+        await getQueueRequests();
+      } catch {
+        // O erro de carregamento permanece disponível em queueState.error.
+      }
+    };
+
+    loadQueueRequests();
+  }, [getQueueRequests]);
+
+  const filteredQueueRequests = adminAppointmentRequests.filter((queueRequest) => {
     const matchesSearch = !normalizedSearchTerm || [
       queueRequest.patientName,
       queueRequest.patientCpf,
@@ -112,7 +139,7 @@ export default function Queue() {
   });
 
   const openCreateModal = () => {
-    setCreatedAtPreview(new Date().toISOString());
+    setRequestDatePreview(new Date().toISOString());
     setIsRequestModalOpen(true);
   };
 
@@ -120,9 +147,9 @@ export default function Queue() {
     setIsRequestModalOpen(false);
   };
 
-  const handleSaveRequest = (formValues) => {
-    createQueueRequest(formValues);
-    setFeedbackMessage('Paciente adicionado à fila com sucesso.');
+  const handleSaveRequest = async (formValues) => {
+    await createQueueRequest(formValues);
+    setLocalFeedbackMessage('Paciente adicionado à fila com sucesso.');
     closeRequestModal();
   };
 
@@ -134,13 +161,9 @@ export default function Queue() {
   };
 
   useEffect(() => {
-    const routeFeedbackMessage = location.state?.successMessage;
-
     if (!routeFeedbackMessage) {
       return;
     }
-
-    setFeedbackMessage(routeFeedbackMessage);
     navigate(
       {
         pathname: location.pathname,
@@ -152,7 +175,15 @@ export default function Queue() {
         state: null,
       },
     );
-  }, [location.hash, location.pathname, location.search, location.state, navigate]);
+  }, [location.hash, location.pathname, location.search, navigate, routeFeedbackMessage]);
+
+  const emptyMessage = isLoading
+    ? 'Carregando solicitações da fila...'
+    : error
+      ? 'Não foi possível carregar as solicitações da fila no momento.'
+      : hasActiveFilters
+        ? 'Nenhuma solicitação encontrada com os filtros atuais.'
+        : 'Nenhuma solicitação cadastrada até o momento.';
 
   return (
     <main className="queue-page">
@@ -179,6 +210,26 @@ export default function Queue() {
         <div className="queue-feedback-banner" role="status">
           <LuBadgeCheck size={18} />
           <span>{feedbackMessage}</span>
+        </div>
+      ) : null}
+
+      {warning ? (
+        <div
+          className="queue-feedback-banner queue-feedback-banner--warning"
+          role="status"
+        >
+          <LuBadgeAlert size={18} />
+          <span>{warning}</span>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div
+          className="queue-feedback-banner queue-feedback-banner--error"
+          role="alert"
+        >
+          <LuBadgeAlert size={18} />
+          <span>{error}</span>
         </div>
       ) : null}
 
@@ -282,9 +333,9 @@ export default function Queue() {
             <div>
               <h2>Solicitações da fila</h2>
               <p>
-                {queueRequestItems.length === 1
+                {adminAppointmentRequests.length === 1
                   ? '1 solicitação visível nesta etapa do fluxo.'
-                  : `${queueRequestItems.length} solicitações visíveis nesta etapa do fluxo.`}
+                  : `${adminAppointmentRequests.length} solicitações visíveis nesta etapa do fluxo.`}
               </p>
             </div>
           </div>
@@ -354,11 +405,7 @@ export default function Queue() {
                 <tr>
                   <td colSpan="6" className="queue-table__empty">
                     <strong>Nenhuma solicitação encontrada</strong>
-                    <span>
-                      {hasActiveFilters
-                        ? 'Ajuste os filtros para visualizar outras solicitações.'
-                        : 'Adicione uma nova solicitação para visualizar o fluxo da fila.'}
-                    </span>
+                    <span>{emptyMessage}</span>
                   </td>
                 </tr>
               )}
@@ -374,7 +421,8 @@ export default function Queue() {
           patients={patients}
           specialties={specialties}
           professionals={professionals}
-          createdAtPreview={createdAtPreview}
+          requestDatePreview={requestDatePreview}
+          isSubmitting={isSubmitting}
           onClose={closeRequestModal}
           onSave={handleSaveRequest}
         />
