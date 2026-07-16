@@ -620,8 +620,7 @@
   background: linear-gradient(180deg, #faf8f7 0%, #ffffff 100%);
 }
 
-.queue-form__readonly-card span,
-.queue-form__status-preview span {
+.queue-form__readonly-card span {
   display: block;
   font-size: 11px;
   line-height: 14px;
@@ -631,8 +630,7 @@
   color: #5f6368;
 }
 
-.queue-form__readonly-card strong,
-.queue-form__status-preview strong {
+.queue-form__readonly-card strong {
   display: block;
   margin-top: 10px;
   font-size: 18px;
@@ -704,11 +702,18 @@
   color: #5f6368;
 }
 
-.queue-form__status-preview {
-  padding: 18px 20px;
+.queue-form__readonly-value {
+  min-height: 48px;
+  padding: 0 16px;
   border: 1px solid #ece7e3;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #faf8f7 0%, #ffffff 100%);
+  border-radius: 14px;
+  background-color: #faf8f7;
+  display: flex;
+  align-items: center;
+}
+
+.queue-form__readonly-value--status {
+  justify-content: flex-start;
 }
 
 .queue-form__actions {

@@ -5,7 +5,6 @@ import {
   formatQueueDateTime,
   getEligibleProfessionalsForSpecialty,
   getQueueStatusLabel,
-  queueEditableStatusOptions,
 } from '../../../data/queue';
 
 const getCreateInitialState = (requestDatePreview) => ({
@@ -109,7 +108,7 @@ export default function QueueRequestModal({
       title={isEditing ? 'Editar solicitação da fila' : 'Adicionar à fila'}
       description={
         isEditing
-          ? 'Atualize a especialidade, o profissional preferido e o status desta solicitação.'
+          ? 'Atualize a especialidade e o profissional preferido desta solicitação.'
           : 'Cadastre uma nova solicitação para acompanhamento da fila inteligente.'
       }
       className="queue-modal--form"
@@ -204,30 +203,16 @@ export default function QueueRequestModal({
             />
           </label>
 
-          {isEditing ? (
-            <label className="queue-form__field">
-              <span>Status</span>
-              <div className="queue-form__select">
-                <select
-                  value={formData.status}
-                  onChange={handleChange('status')}
-                  disabled={isSubmitting}
-                >
-                  {queueEditableStatusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <LuChevronDown size={18} />
-              </div>
-            </label>
-          ) : (
-            <div className="queue-form__status-preview">
-              <span>Status inicial</span>
-              <strong>{getQueueStatusLabel('waiting')}</strong>
+          <label className="queue-form__field">
+            <span>{isEditing ? 'Status atual' : 'Status inicial'}</span>
+            <div className="queue-form__readonly-value queue-form__readonly-value--status">
+              <span
+                className={`queue-status-badge queue-status-badge--${isEditing ? formData.status : 'waiting'}`}
+              >
+                {getQueueStatusLabel(isEditing ? formData.status : 'waiting')}
+              </span>
             </div>
-          )}
+          </label>
         </div>
 
         <div className="queue-form__actions">
