@@ -212,8 +212,8 @@ export const buildQueueRequestItem = (
     compatibleVacanciesCount,
     compatibleVacanciesText:
       compatibleVacanciesCount === 1
-        ? '1 vaga compatível'
-        : `${compatibleVacanciesCount} vagas compatíveis`,
+        ? 'vaga compatível'
+        : 'vagas compatíveis',
   };
 };
 
