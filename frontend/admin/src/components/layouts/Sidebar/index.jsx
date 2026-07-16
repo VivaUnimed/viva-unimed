@@ -8,6 +8,7 @@ import {
   LuLogOut,
   LuCalendarPlus,
   LuClipboardList,
+  LuClock3,
 } from 'react-icons/lu';
 import { FaUserDoctor } from 'react-icons/fa6';
 import { useAuth } from '../../../context/authContext/authContext';
@@ -56,6 +57,11 @@ export default function Sidebar({ isHidden = false }) {
           <NavLink to="/vacancies" className="sidebar__link">
             <LuCalendarPlus className="sidebar__icon" />
             <span>Vagas</span>
+          </NavLink>
+
+          <NavLink to="/queue" className="sidebar__link">
+            <LuClock3 className="sidebar__icon" />
+            <span>Fila Inteligente</span>
           </NavLink>
 
           <NavLink to="/patients" className="sidebar__link">
