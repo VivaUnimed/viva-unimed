@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LuBadgeAlert,
   LuBadgeCheck,
@@ -11,24 +11,13 @@ import {
   LuSlidersHorizontal,
   LuUsers,
 } from 'react-icons/lu';
-import QueueConfirmRemoveModal from '../../components/queue/QueueConfirmRemoveModal';
-import QueueDetailsModal from '../../components/queue/QueueDetailsModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 import QueueRequestModal from '../../components/queue/QueueRequestModal';
 import {
-  buildQueueRequestList,
-  buildQueueSummary,
-  createLookupById,
   normalizeText,
   queueStatusOptions,
 } from '../../data/queue';
-import {
-  createInitialQueueRequests,
-  queuePatientsMock,
-  queueProfessionalsMock,
-  queueRequestsMock,
-  queueSpecialtiesMock,
-  queueVacanciesMock,
-} from '../../mocks/queueMock';
+import { useQueue } from '../../context/queueContext/queueContext';
 import './styles.css';
 
 const summaryCards = [
@@ -72,30 +61,25 @@ const summaryCards = [
 const formatSummaryValue = (value) => String(value).padStart(2, '0');
 
 export default function Queue() {
-  const [queueRequests, setQueueRequests] = useState(() => createInitialQueueRequests());
+  const location = useLocation();
+  const navigate = useNavigate();
+  const {
+    queueRequestItems,
+    summary,
+    patients,
+    specialties,
+    professionals,
+    createQueueRequest,
+  } = useQueue();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [professionalFilter, setProfessionalFilter] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState(
+    () => location.state?.successMessage ?? '',
+  );
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [requestModalMode, setRequestModalMode] = useState('create');
-  const [requestEditingId, setRequestEditingId] = useState(null);
-  const [requestDetailsId, setRequestDetailsId] = useState(null);
-  const [requestPendingRemoveId, setRequestPendingRemoveId] = useState(null);
   const [createdAtPreview, setCreatedAtPreview] = useState(() => new Date().toISOString());
-
-  const patientsById = createLookupById(queuePatientsMock);
-  const professionalsById = createLookupById(queueProfessionalsMock);
-  const specialtiesById = createLookupById(queueSpecialtiesMock);
-
-  const queueRequestItems = buildQueueRequestList(queueRequests, {
-    patientsById,
-    professionalsById,
-    specialtiesById,
-    vacancies: queueVacanciesMock,
-  });
-  const summary = buildQueueSummary(queueRequestItems);
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
   const hasActiveFilters = Boolean(
     normalizedSearchTerm
@@ -127,108 +111,19 @@ export default function Queue() {
     );
   });
 
-  const editingQueueRequest = queueRequestItems.find(
-    (queueRequest) => queueRequest.id === requestEditingId,
-  ) ?? null;
-  const detailsQueueRequest = queueRequestItems.find(
-    (queueRequest) => queueRequest.id === requestDetailsId,
-  ) ?? null;
-  const queueRequestPendingRemove = queueRequestItems.find(
-    (queueRequest) => queueRequest.id === requestPendingRemoveId,
-  ) ?? null;
-
   const openCreateModal = () => {
     setCreatedAtPreview(new Date().toISOString());
-    setRequestModalMode('create');
-    setRequestEditingId(null);
-    setIsRequestModalOpen(true);
-  };
-
-  const openEditModal = (queueRequestId) => {
-    setRequestModalMode('edit');
-    setRequestEditingId(queueRequestId);
     setIsRequestModalOpen(true);
   };
 
   const closeRequestModal = () => {
     setIsRequestModalOpen(false);
-    setRequestEditingId(null);
-  };
-
-  const closeDetailsModal = () => {
-    setRequestDetailsId(null);
-  };
-
-  const closeRemoveModal = () => {
-    setRequestPendingRemoveId(null);
   };
 
   const handleSaveRequest = (formValues) => {
-    if (requestModalMode === 'edit' && requestEditingId) {
-      setQueueRequests((currentQueueRequests) => (
-        currentQueueRequests.map((queueRequest) => (
-          queueRequest.id === requestEditingId
-            ? {
-              ...queueRequest,
-              specialityId: formValues.specialityId,
-              doctorId: formValues.doctorId,
-              status: formValues.status,
-              updatedAt: new Date().toISOString(),
-            }
-            : queueRequest
-        ))
-      ));
-      setFeedbackMessage('Solicitação atualizada com sucesso.');
-      closeRequestModal();
-      closeDetailsModal();
-      return;
-    }
-
-    const nextId = queueRequestsMock.reduce(
-      (highestId, queueRequest) => Math.max(highestId, Number(queueRequest.id) || 0),
-      0,
-    );
-    const currentHighestId = queueRequests.reduce(
-      (highestId, queueRequest) => Math.max(highestId, Number(queueRequest.id) || 0),
-      nextId,
-    );
-    const requestTimestamp = formValues.createdAt || new Date().toISOString();
-
-    setQueueRequests((currentQueueRequests) => ([
-      {
-        id: currentHighestId + 1,
-        patientId: formValues.patientId,
-        specialityId: formValues.specialityId,
-        doctorId: formValues.doctorId,
-        status: 'waiting',
-        createdAt: requestTimestamp,
-        updatedAt: requestTimestamp,
-      },
-      ...currentQueueRequests,
-    ]));
+    createQueueRequest(formValues);
     setFeedbackMessage('Paciente adicionado à fila com sucesso.');
     closeRequestModal();
-  };
-
-  const handleConfirmRemove = () => {
-    if (!requestPendingRemoveId) {
-      return;
-    }
-
-    setQueueRequests((currentQueueRequests) => (
-      currentQueueRequests.map((queueRequest) => (
-        queueRequest.id === requestPendingRemoveId
-          ? {
-            ...queueRequest,
-            status: 'cancelled',
-            updatedAt: new Date().toISOString(),
-          }
-          : queueRequest
-      ))
-    ));
-    setFeedbackMessage('Solicitação cancelada e mantida no histórico da fila.');
-    closeRemoveModal();
-    closeDetailsModal();
   };
 
   const handleClearFilters = () => {
@@ -237,6 +132,27 @@ export default function Queue() {
     setSpecialtyFilter('');
     setProfessionalFilter('');
   };
+
+  useEffect(() => {
+    const routeFeedbackMessage = location.state?.successMessage;
+
+    if (!routeFeedbackMessage) {
+      return;
+    }
+
+    setFeedbackMessage(routeFeedbackMessage);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: null,
+      },
+    );
+  }, [location.hash, location.pathname, location.search, location.state, navigate]);
 
   return (
     <main className="queue-page">
@@ -323,7 +239,7 @@ export default function Queue() {
             aria-label="Filtrar por especialidade"
           >
             <option value="">Todas as especialidades</option>
-            {queueSpecialtiesMock.map((specialty) => (
+            {specialties.map((specialty) => (
               <option key={specialty.id} value={specialty.id}>
                 {specialty.name}
               </option>
@@ -340,7 +256,7 @@ export default function Queue() {
             aria-label="Filtrar por profissional"
           >
             <option value="">Todos os profissionais</option>
-            {queueProfessionalsMock.map((professional) => (
+            {professionals.map((professional) => (
               <option key={professional.id} value={professional.id}>
                 {professional.name}
               </option>
@@ -427,7 +343,7 @@ export default function Queue() {
                       <button
                         type="button"
                         className="queue-table__action queue-table__action--primary"
-                        onClick={() => setRequestDetailsId(queueRequest.id)}
+                        onClick={() => navigate(`/queue/${queueRequest.id}`)}
                       >
                         Detalhes
                       </button>
@@ -453,37 +369,14 @@ export default function Queue() {
 
       {isRequestModalOpen ? (
         <QueueRequestModal
-          mode={requestModalMode}
-          queueRequest={editingQueueRequest}
-          patients={queuePatientsMock}
-          specialties={queueSpecialtiesMock}
-          professionals={queueProfessionalsMock}
+          mode="create"
+          queueRequest={null}
+          patients={patients}
+          specialties={specialties}
+          professionals={professionals}
           createdAtPreview={createdAtPreview}
           onClose={closeRequestModal}
           onSave={handleSaveRequest}
-        />
-      ) : null}
-
-      {detailsQueueRequest ? (
-        <QueueDetailsModal
-          queueRequest={detailsQueueRequest}
-          onClose={closeDetailsModal}
-          onEdit={() => {
-            closeDetailsModal();
-            openEditModal(detailsQueueRequest.id);
-          }}
-          onRemove={() => {
-            closeDetailsModal();
-            setRequestPendingRemoveId(detailsQueueRequest.id);
-          }}
-        />
-      ) : null}
-
-      {queueRequestPendingRemove ? (
-        <QueueConfirmRemoveModal
-          queueRequest={queueRequestPendingRemove}
-          onClose={closeRemoveModal}
-          onConfirm={handleConfirmRemove}
         />
       ) : null}
     </main>
