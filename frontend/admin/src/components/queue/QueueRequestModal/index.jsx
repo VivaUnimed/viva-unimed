@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LuChevronDown } from 'react-icons/lu';
 import QueueModalShell from '../QueueModalShell';
 import {
   formatQueueDateTime,
@@ -133,43 +134,52 @@ export default function QueueRequestModal({
           {!isEditing ? (
             <label className="queue-form__field">
               <span>Paciente</span>
-              <select value={formData.patientId} onChange={handleChange('patientId')} required>
-                <option value="">Selecione um paciente</option>
-                {patients.map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.name}
-                  </option>
-                ))}
-              </select>
+              <div className="queue-form__select">
+                <select value={formData.patientId} onChange={handleChange('patientId')} required>
+                  <option value="">Selecione um paciente</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name}
+                    </option>
+                  ))}
+                </select>
+                <LuChevronDown size={18} />
+              </div>
             </label>
           ) : null}
 
           <label className="queue-form__field">
             <span>Especialidade de interesse</span>
-            <select
-              value={formData.specialityId}
-              onChange={handleChange('specialityId')}
-              required
-            >
-              <option value="">Selecione uma especialidade</option>
-              {specialties.map((specialty) => (
-                <option key={specialty.id} value={specialty.id}>
-                  {specialty.name}
-                </option>
-              ))}
-            </select>
+            <div className="queue-form__select">
+              <select
+                value={formData.specialityId}
+                onChange={handleChange('specialityId')}
+                required
+              >
+                <option value="">Selecione uma especialidade</option>
+                {specialties.map((specialty) => (
+                  <option key={specialty.id} value={specialty.id}>
+                    {specialty.name}
+                  </option>
+                ))}
+              </select>
+              <LuChevronDown size={18} />
+            </div>
           </label>
 
           <label className="queue-form__field">
             <span>Profissional preferido</span>
-            <select value={formData.doctorId} onChange={handleChange('doctorId')}>
-              <option value="">Qualquer profissional</option>
-              {eligibleProfessionals.map((professional) => (
-                <option key={professional.id} value={professional.id}>
-                  {professional.name}
-                </option>
-              ))}
-            </select>
+            <div className="queue-form__select">
+              <select value={formData.doctorId} onChange={handleChange('doctorId')}>
+                <option value="">Qualquer profissional</option>
+                {eligibleProfessionals.map((professional) => (
+                  <option key={professional.id} value={professional.id}>
+                    {professional.name}
+                  </option>
+                ))}
+              </select>
+              <LuChevronDown size={18} />
+            </div>
           </label>
 
           <label className="queue-form__field">
@@ -184,15 +194,18 @@ export default function QueueRequestModal({
           {isEditing ? (
             <label className="queue-form__field">
               <span>Status</span>
-              <select value={formData.status} onChange={handleChange('status')}>
-                {queueStatusOptions
-                  .filter((option) => option.value)
-                  .map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-              </select>
+              <div className="queue-form__select">
+                <select value={formData.status} onChange={handleChange('status')}>
+                  {queueStatusOptions
+                    .filter((option) => option.value)
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </select>
+                <LuChevronDown size={18} />
+              </div>
             </label>
           ) : (
             <div className="queue-form__status-preview">

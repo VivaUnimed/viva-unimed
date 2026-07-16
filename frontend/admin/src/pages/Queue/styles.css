@@ -653,6 +653,26 @@
   outline: none;
 }
 
+.queue-form__select {
+  position: relative;
+}
+
+.queue-form__select select {
+  width: 100%;
+  padding-right: 46px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.queue-form__select svg {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  stroke: #202124;
+  pointer-events: none;
+}
+
 .queue-form__field input[readonly] {
   background-color: #faf8f7;
   color: #5f6368;
