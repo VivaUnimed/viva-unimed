@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import {
   LuChevronLeft,
-  LuHeartPulse,
   LuPencilLine,
   LuSave,
   LuUserRoundPlus,
 } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
-import { usePatients } from '../../../context/patientContext/patientContext';
 import {
-  getPatientSpecialtyOptions,
   isPhoneValid,
-  patientStatusOptions,
-} from '../../../data/patients';
+} from '../../../utils/patients/patientFormatters';
 import '../../../pages/CreatePatient/styles.css';
 
 const defaultFormState = {
@@ -20,8 +16,7 @@ const defaultFormState = {
   cpf: '',
   phone: '',
   email: '',
-  interests: [],
-  status: 'Em fila',
+  birth: '',
 };
 
 const formContentByVariant = {
@@ -30,12 +25,9 @@ const formContentByVariant = {
     badgeLabel: 'Novo paciente',
     title: 'Cadastrar paciente',
     description:
-      'Preencha os dados do paciente e selecione as especialidades de interesse para participação na fila inteligente.',
-    statusLabel: 'Status inicial',
-    queueDescription:
-      'Defina o status inicial e as especialidades de interesse desse paciente.',
+      'Preencha os dados administrativos do paciente para concluir o cadastro no sistema.',
     notice:
-      'Após o cadastro, o paciente passa a aparecer imediatamente na gestão de pacientes e permanece salvo mesmo após atualizar a página.',
+      'Após o cadastro, o paciente passa a aparecer imediatamente na gestão de pacientes.',
     submitLabel: 'Salvar paciente',
   },
   edit: {
@@ -43,38 +35,30 @@ const formContentByVariant = {
     badgeLabel: 'Editar paciente',
     title: 'Editar paciente',
     description:
-      'Atualize os dados cadastrais e os interesses do paciente mantendo o mesmo padrão da fila inteligente.',
-    statusLabel: 'Status do paciente',
-    queueDescription:
-      'Revise o status atual e as especialidades de interesse vinculadas a esse cadastro.',
+      'Atualize os dados administrativos do paciente com base no cadastro já existente.',
     notice:
-      'As alterações ficam disponíveis imediatamente na gestão de pacientes e permanecem salvas mesmo após atualizar a página.',
+      'As alterações ficam disponíveis imediatamente na gestão de pacientes.',
     submitLabel: 'Salvar alterações',
   },
 };
 
 const isEmailValid = (value) => /\S+@\S+\.\S+/.test(value);
 
-const isMaskedCpfValue = (value) => /^\d{3}\.\*{3}\.\*{3}-\d{2}$/.test(value.trim());
-
 export default function PatientForm({
   variant = 'create',
   initialValues = defaultFormState,
   onSave,
+  isSubmitting = false,
+  submitError = '',
 }) {
   const navigate = useNavigate();
-  const { patientState } = usePatients();
   const [formData, setFormData] = useState(() => ({
     ...defaultFormState,
     ...initialValues,
-    interests: Array.isArray(initialValues.interests) ? initialValues.interests : [],
+    birth: initialValues.birth ?? '',
   }));
   const [errors, setErrors] = useState({});
   const content = formContentByVariant[variant] ?? formContentByVariant.create;
-  const specialtyOptions = getPatientSpecialtyOptions(
-    patientState.patients,
-    formData.interests,
-  );
   const BadgeIcon = content.badgeIcon;
 
   const handleChange = ({ target: { name, value } }) => {
@@ -94,29 +78,6 @@ export default function PatientForm({
     });
   };
 
-  const handleToggleInterest = (specialty) => {
-    const nextInterests = formData.interests.includes(specialty)
-      ? formData.interests.filter((currentSpecialty) => currentSpecialty !== specialty)
-      : [...formData.interests, specialty];
-
-    setFormData((currentFormData) => ({
-      ...currentFormData,
-      interests: nextInterests,
-    }));
-
-    if (nextInterests.length > 0) {
-      setErrors((currentErrors) => {
-        if (!currentErrors.interests) {
-          return currentErrors;
-        }
-
-        const nextErrors = { ...currentErrors };
-        delete nextErrors.interests;
-        return nextErrors;
-      });
-    }
-  };
-
   const validateForm = () => {
     const nextErrors = {};
     const trimmedCpf = formData.cpf.trim();
@@ -124,10 +85,9 @@ export default function PatientForm({
     const cpfDigits = trimmedCpf.replace(/\D/g, '');
     const isCpfValid =
       variant === 'edit'
-        ? isMaskedCpfValue(trimmedCpf) || cpfDigits.length === 11
+        ? !trimmedCpf || cpfDigits.length === 11
         : cpfDigits.length === 11;
-    const canKeepCurrentPhone =
-      variant === 'edit' && trimmedPhone === initialValues.phone?.trim();
+    const canKeepCurrentPhone = variant === 'edit' && trimmedPhone === initialValues.phone?.trim();
     const isPhoneFieldValid = canKeepCurrentPhone || isPhoneValid(trimmedPhone);
 
     if (!formData.name.trim()) {
@@ -150,14 +110,14 @@ export default function PatientForm({
       nextErrors.email = 'Informe um e-mail válido.';
     }
 
-    if (!formData.interests.length) {
-      nextErrors.interests = 'Selecione ao menos uma especialidade de interesse.';
+    if (!formData.birth) {
+      nextErrors.birth = 'Informe a data de nascimento do paciente.';
     }
 
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = validateForm();
@@ -167,14 +127,15 @@ export default function PatientForm({
       return;
     }
 
-    onSave?.({
-      ...formData,
+    const normalizedFormData = {
       name: formData.name.trim(),
       cpf: formData.cpf.trim(),
       phone: formData.phone.trim(),
       email: formData.email.trim(),
-      interests: formData.interests,
-    });
+      birth: formData.birth,
+    };
+
+    await onSave?.(normalizedFormData);
   };
 
   return (
@@ -257,78 +218,42 @@ export default function PatientForm({
                 />
                 {errors.email ? <small>{errors.email}</small> : null}
               </label>
-            </div>
-          </div>
 
-          <div className="create-patient-form__section">
-            <div className="create-patient-form__section-header">
-              <h2>Fila inteligente</h2>
-              <p>{content.queueDescription}</p>
-            </div>
-
-            <div className="create-patient-form__grid create-patient-form__grid--secondary">
               <label className="create-patient-field">
-                <span>{content.statusLabel}</span>
-                <select name="status" value={formData.status} onChange={handleChange}>
-                  {patientStatusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
+                <span>Data de nascimento</span>
+                <input
+                  type="date"
+                  name="birth"
+                  value={formData.birth}
+                  onChange={handleChange}
+                />
+                {errors.birth ? <small>{errors.birth}</small> : null}
               </label>
-
-              <div className="create-patient-field create-patient-field--full">
-                <span>Especialidades de interesse</span>
-                <div
-                  className={`create-patient-specialties${errors.interests ? ' create-patient-specialties--error' : ''}`}
-                  role="group"
-                  aria-label="Especialidades de interesse"
-                >
-                  {specialtyOptions.map((specialty) => {
-                    const isSelected = formData.interests.includes(specialty);
-
-                    return (
-                      <button
-                        key={specialty}
-                        type="button"
-                        className={`create-patient-specialty-option${isSelected ? ' create-patient-specialty-option--selected' : ''}`}
-                        onClick={() => handleToggleInterest(specialty)}
-                        aria-pressed={isSelected}
-                      >
-                        {specialty}
-                      </button>
-                    );
-                  })}
-                </div>
-                <small className="create-patient-field__hint">
-                  Selecione uma ou mais especialidades para inserir o paciente na fila
-                  inteligente.
-                </small>
-                {errors.interests ? <small>{errors.interests}</small> : null}
-              </div>
             </div>
           </div>
 
-          <aside className="create-patient-notice">
-            <LuHeartPulse size={18} />
-            <p>{content.notice}</p>
-          </aside>
+          {submitError ? (
+            <div className="create-patient-feedback create-patient-feedback--error" role="alert">
+              <p>{submitError}</p>
+            </div>
+          ) : null}
 
           <div className="create-patient-actions">
             <button
               type="button"
               className="create-patient-actions__button create-patient-actions__button--ghost"
               onClick={() => navigate('/patients')}
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="create-patient-actions__button create-patient-actions__button--primary"
+              disabled={isSubmitting}
             >
               <LuSave size={16} />
-              {content.submitLabel}
+              {isSubmitting ? 'Salvando...' : content.submitLabel}
             </button>
           </div>
         </form>

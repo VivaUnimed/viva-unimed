@@ -1,7 +1,5 @@
-import { defaultPatients } from '../../data/patients';
-
 export const patientInitialState = {
-  patients: defaultPatients,
+  patients: [],
   isLoading: false,
   error: null,
 };

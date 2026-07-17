@@ -17,7 +17,7 @@ export class DoctorService {
    * Verifica se já existe outro médico com o mesmo CRM.
    */
   async create(data: IDoctorCreate): Promise<IDoctor> {
-    if(data.crm?.length > 4) {
+    if(data.crm?.length < 4) {
       throw new BadRequest("crm inválido");
     }
     // Garante que não existam médicos com o mesmo CRM.
@@ -43,7 +43,7 @@ export class DoctorService {
    * Garante que o CRM não conflite com outro registro.
    */
   async update(id: number, data: IDoctorCreate): Promise<IDoctor> {
-    if(data.crm?.length > 4) {
+    if(data.crm?.length < 4) {
       throw new BadRequest("crm inválido");
     }
     const exists = await DoctorModel.findOne({

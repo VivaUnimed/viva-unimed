@@ -1,4 +1,4 @@
-import { patientTypes } from './patientTypes';
+import * as patientTypes from './patientTypes';
 
 export const patientReducer = (state, action) => {
   switch (action.type) {
@@ -15,40 +15,7 @@ export const patientReducer = (state, action) => {
     case patientTypes.GET_ALL_PATIENTS_SUCCESS:
       return {
         ...state,
-        patients: action.payload.patients,
-        isLoading: false,
-        error: null,
-      };
-
-    case patientTypes.CREATE_PATIENT:
-    case patientTypes.CREATE_PATIENT_SUCCESS:
-      return {
-        ...state,
-        patients: [action.payload.patient, ...state.patients],
-        isLoading: false,
-        error: null,
-      };
-
-    case patientTypes.UPDATE_PATIENT:
-    case patientTypes.UPDATE_PATIENT_SUCCESS:
-      return {
-        ...state,
-        patients: state.patients.map((patient) =>
-          String(patient.id) === String(action.payload.patient.id)
-            ? action.payload.patient
-            : patient,
-        ),
-        isLoading: false,
-        error: null,
-      };
-
-    case patientTypes.DELETE_PATIENT:
-    case patientTypes.DELETE_PATIENT_SUCCESS:
-      return {
-        ...state,
-        patients: state.patients.filter(
-          (patient) => String(patient.id) !== String(action.payload.id),
-        ),
+        patients: action.payload?.patients ?? [],
         isLoading: false,
         error: null,
       };
@@ -60,7 +27,16 @@ export const patientReducer = (state, action) => {
       return {
         ...state,
         isLoading: false,
-        error: action.payload.error,
+        error: action.payload?.error ?? null,
+      };
+
+    case patientTypes.CREATE_PATIENT_SUCCESS:
+    case patientTypes.UPDATE_PATIENT_SUCCESS:
+    case patientTypes.DELETE_PATIENT_SUCCESS:
+      return {
+        ...state,
+        isLoading: false,
+        error: null,
       };
 
     default:

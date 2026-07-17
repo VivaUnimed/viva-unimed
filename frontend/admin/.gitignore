@@ -31,3 +31,5 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+
+BACKEND_API_SEPARADA_ADMIN.md

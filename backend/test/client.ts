@@ -1,6 +1,6 @@
 import axios, { Axios, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-class AppClient implements Pick<Axios,'get'|'post'|'patch'|'request'|'delete'> {
+class AppClient implements Pick<Axios,'get'|'post' | 'put' |'patch'|'request'|'delete'> {
   private http: Axios;
   constructor(private baseURL: string) {
     this.http = axios.create({ baseURL });
@@ -28,6 +28,11 @@ class AppClient implements Pick<Axios,'get'|'post'|'patch'|'request'|'delete'> {
   get<T = any, R = AxiosResponse<T, any, {}>, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R> {
     return this.http.get(url, config);
   }
+
+  put<T = any, R = AxiosResponse<T, any, {}>, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R> {
+    return this.http.put(url, data, config);
+  }
+
   patch<T = any, R = AxiosResponse<T, any, {}>, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R> {
     return this.http.patch(url, data, config);
   }

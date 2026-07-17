@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LuBadgeAlert,
   LuBadgeCheck,
@@ -11,67 +11,178 @@ import {
 } from 'react-icons/lu';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { usePatients } from '../../context/patientContext/patientContext';
-import { normalizeText } from '../../data/patients';
+import { formatCpf, formatPhone } from '../../utils/patients/patientFormatters';
 import './styles.css';
 
 const contactOptions = [
-  { value: 'valid', label: 'Telefone válido' },
-  { value: 'invalid', label: 'Telefone inválido' },
+  { value: 'with-phone', label: 'Com telefone' },
+  { value: 'without-phone', label: 'Sem telefone' },
 ];
 
-function toSlug(value) {
+function normalizeText(value = '') {
   return value
+    .toString()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-');
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function formatDate(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const normalizedValue = String(value).trim();
+  const dateOnlyMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (dateOnlyMatch) {
+    return `${dateOnlyMatch[3]}/${dateOnlyMatch[2]}/${dateOnlyMatch[1]}`;
+  }
+
+  const parsedDate = new Date(normalizedValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return normalizedValue;
+  }
+
+  return new Intl.DateTimeFormat('pt-BR').format(parsedDate);
+}
+
+function hasRegisteredPhone(patient) {
+  const phone = patient?.phone;
+
+  return Boolean(String(phone ?? '').trim()) && phone !== '-';
+}
+
+function formatPhoneValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatPhone(String(value));
+}
+
+function formatCpfValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+
+  return formatCpf(String(value));
+}
+
+function getPatientIdentifier(patient) {
+  if (patient?.id && patient?.userId) {
+    return `Paciente #${patient.id} · Usuário #${patient.userId}`;
+  }
+
+  return 'ID indisponível';
+}
+
+function getPatientInitials(name = '') {
+  const [firstName = '', secondName = ''] = String(name)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return `${firstName[0] ?? ''}${secondName[0] ?? firstName[1] ?? ''}`.toUpperCase() || 'CL';
+}
+
+function getSearchableFields(patient) {
+  return [
+    patient?.name ?? '',
+    patient?.email && patient.email !== '-' ? patient.email : '',
+    patient?.phone && patient.phone !== '-' ? patient.phone : '',
+    patient?.cpf && patient.cpf !== '-' ? patient.cpf : '',
+    patient?.birth ?? '',
+    formatDate(patient?.birth),
+  ];
 }
 
 export default function Patients() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { patientState } = usePatients();
+  const { patientState, getPatients } = usePatients();
   const patients = patientState.patients;
+  const [feedbackMessage, setFeedbackMessage] = useState(
+    () => location.state?.successMessage ?? '',
+  );
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [contactFilter, setContactFilter] = useState('');
-  const feedbackMessage = location.state?.successMessage ?? '';
+  const hasLoadedPatientsRef = useRef(false);
+
+  const isMockMode = false;
+
+  useEffect(() => {
+    const routeFeedbackMessage = location.state?.successMessage;
+
+    if (!routeFeedbackMessage) {
+      return;
+    }
+
+    setFeedbackMessage(routeFeedbackMessage);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: null,
+      },
+    );
+  }, [location.hash, location.pathname, location.search, location.state, navigate]);
+
+  useEffect(() => {
+
+    if (isMockMode) {
+      return;
+    }
+
+    if (hasLoadedPatientsRef.current) {
+      return;
+    }
+
+    hasLoadedPatientsRef.current = true;
+
+    const loadPatients = async () => {
+      try {
+        await getPatients();
+      } catch {
+        // O erro de carregamento fica disponível em patientState.error.
+      }
+    };
+
+    loadPatients();
+  }, []);
 
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
-  const statusOptions = [...new Set(patients.map((patient) => patient.status))];
-  const specialtyOptions = [
-    ...new Set(patients.flatMap((patient) => patient.interests)),
-  ].sort((firstValue, secondValue) => firstValue.localeCompare(secondValue, 'pt-BR'));
-  const hasActiveFilters = Boolean(
-    normalizedSearchTerm || statusFilter || specialtyFilter || contactFilter,
-  );
+  const hasActiveFilters = Boolean(normalizedSearchTerm || contactFilter);
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setStatusFilter('');
-    setSpecialtyFilter('');
     setContactFilter('');
   };
 
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
       !normalizedSearchTerm ||
-      [patient.name, patient.phone, patient.email, patient.cpf, ...patient.interests].some(
-        (value) => normalizeText(value).includes(normalizedSearchTerm),
+      getSearchableFields(patient).some((value) =>
+        normalizeText(value).includes(normalizedSearchTerm),
       );
 
-    const matchesStatus = !statusFilter || patient.status === statusFilter;
-    const matchesSpecialty =
-      !specialtyFilter || patient.interests.includes(specialtyFilter);
     const matchesContact =
       !contactFilter ||
-      (contactFilter === 'valid' ? patient.phoneValid : !patient.phoneValid);
+      (contactFilter === 'with-phone'
+        ? hasRegisteredPhone(patient)
+        : !hasRegisteredPhone(patient));
 
-    return matchesSearch && matchesStatus && matchesSpecialty && matchesContact;
+    return matchesSearch && matchesContact;
   });
 
   const totalPatientsLabel = patients.length.toLocaleString('pt-BR');
+  const patientsWithPhone = patients.filter(hasRegisteredPhone).length;
+  const patientsWithoutPhone = patients.length - patientsWithPhone;
   const summaryCards = [
     {
       id: 1,
@@ -82,34 +193,44 @@ export default function Patients() {
     },
     {
       id: 2,
-      title: 'EM FILA INTELIGENTE',
-      value: patients.filter((patient) => patient.status === 'Em fila').length.toString(),
-      helper: 'Pacientes aguardando disparo',
+      title: 'COM TELEFONE',
+      value: patientsWithPhone.toLocaleString('pt-BR'),
+      helper: 'Pacientes com telefone cadastrado',
       modifier: 'neutral',
     },
     {
       id: 3,
-      title: 'COM CONFIRMAÇÃO',
-      value: patients
-        .filter((patient) => patient.lastConfirmationDate)
-        .length.toString(),
-      helper: 'Pacientes com retorno registrado',
+      title: 'SEM TELEFONE',
+      value: patientsWithoutPhone.toLocaleString('pt-BR'),
+      helper: 'Pacientes sem telefone cadastrado',
       modifier: 'highlight',
     },
   ];
+
+  const emptyMessage = patientState.isLoading
+    ? 'Carregando pacientes...'
+    : patientState.error
+      ? 'Não foi possível carregar os pacientes no momento.'
+      : hasActiveFilters
+        ? 'Nenhum paciente encontrado com os filtros atuais.'
+        : 'Nenhum paciente cadastrado até o momento.';
 
   return (
     <main className="patients-page">
       <section className="patients-header">
         <div>
           <h1>Gestão de Pacientes</h1>
-          <p>Consulte, cadastre e acompanhe pacientes inscritos na fila inteligente.</p>
+          <p>
+            Consulte, cadastre e acompanhe os pacientes da base administrativa.
+          </p>
         </div>
 
         <div className="patients-header__actions">
           <button
             type="button"
             className="patients-header__button patients-header__button--secondary"
+            disabled
+            title="TODO: importação em lote depende de endpoint confirmado."
           >
             <LuDownload size={18} />
             Importar pacientes
@@ -132,6 +253,16 @@ export default function Patients() {
         </div>
       ) : null}
 
+      {patientState.error ? (
+        <div
+          className="patients-feedback-banner patients-feedback-banner--error"
+          role="alert"
+        >
+          <LuBadgeAlert size={18} />
+          <span>{patientState.error}</span>
+        </div>
+      ) : null}
+
       <section className="patients-stats">
         {summaryCards.map((card) => (
           <article
@@ -150,45 +281,11 @@ export default function Patients() {
           <LuSearch size={18} />
           <input
             type="text"
-            placeholder="Buscar por nome, telefone, e-mail, CPF ou interesse..."
+            placeholder="Buscar por nome, telefone, e-mail, CPF ou nascimento..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
         </div>
-
-        <label className="patients-filter-button">
-          <LuSlidersHorizontal size={16} />
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            aria-label="Filtrar por status"
-          >
-            <option value="">Status</option>
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <LuChevronDown size={16} className="patients-filter-button__chevron" />
-        </label>
-
-        <label className="patients-filter-button">
-          <LuSlidersHorizontal size={16} />
-          <select
-            value={specialtyFilter}
-            onChange={(event) => setSpecialtyFilter(event.target.value)}
-            aria-label="Filtrar por especialidade"
-          >
-            <option value="">Especialidade</option>
-            {specialtyOptions.map((specialty) => (
-              <option key={specialty} value={specialty}>
-                {specialty}
-              </option>
-            ))}
-          </select>
-          <LuChevronDown size={16} className="patients-filter-button__chevron" />
-        </label>
 
         <label className="patients-filter-button">
           <LuSlidersHorizontal size={16} />
@@ -204,7 +301,10 @@ export default function Patients() {
               </option>
             ))}
           </select>
-          <LuChevronDown size={16} className="patients-filter-button__chevron" />
+          <LuChevronDown
+            size={16}
+            className="patients-filter-button__chevron"
+          />
         </label>
 
         <button
@@ -225,126 +325,90 @@ export default function Patients() {
               <tr>
                 <th>PACIENTE</th>
                 <th>CONTATO</th>
-                <th>INTERESSES</th>
-                <th>STATUS</th>
-                <th>ÚLTIMA NOTIFICAÇÃO</th>
-                <th>ÚLTIMA CONFIRMAÇÃO</th>
+                <th>CPF</th>
+                <th>DATA DE NASCIMENTO</th>
+                <th>DATA DE CADASTRO</th>
                 <th>AÇÕES</th>
               </tr>
             </thead>
 
             <tbody>
               {filteredPatients.length > 0 ? (
-                filteredPatients.map((patient) => {
-                  const visibleInterests = patient.interests.slice(0, 2);
-                  const hiddenInterests = patient.interests.length - visibleInterests.length;
-
-                  return (
-                    <tr key={patient.id}>
-                      <td>
-                        <div className="patient-info">
-                          <img src={patient.avatar} alt={patient.name} />
-
-                          <div>
-                            <strong>{patient.name}</strong>
-                            <span>CPF: {patient.cpf}</span>
-                          </div>
+                filteredPatients.map((patient) => (
+                  <tr key={patient.id}>
+                    <td>
+                      <div className="patient-info">
+                        <div className="patient-info__avatar" aria-hidden="true">
+                          {getPatientInitials(patient.name)}
                         </div>
-                      </td>
-
-                      <td>
-                        <div className="patient-contact">
-                          <div className="patient-contact__phone">
-                            <strong className="table-main-text">{patient.phone}</strong>
-                            <span
-                              className={`patient-contact-status patient-contact-status--${patient.phoneValid ? 'valid' : 'invalid'}`}
-                              title={patient.phoneValid ? 'Telefone válido' : 'Telefone inválido'}
-                              aria-label={patient.phoneValid ? 'Telefone válido' : 'Telefone inválido'}
-                            >
-                              {patient.phoneValid ? (
-                                <LuBadgeCheck size={16} />
-                              ) : (
-                                <LuBadgeAlert size={16} />
-                              )}
-                            </span>
-                          </div>
-                          <span className="table-secondary-text">{patient.email}</span>
+                        <div>
+                          <strong>{patient.name}</strong>
+                          <span>{getPatientIdentifier(patient)}</span>
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      <td>
-                        <div className="patient-interests">
-                          {visibleInterests.map((interest) => (
-                            <span key={interest} className="patient-interest-badge">
-                              {interest}
-                            </span>
-                          ))}
-
-                          {hiddenInterests > 0 ? (
-                            <span className="patient-interest-badge">+{hiddenInterests}</span>
-                          ) : null}
-                        </div>
-                      </td>
-
-                      <td>
-                        <span className={`patient-status patient-status--${toSlug(patient.status)}`}>
-                          {patient.status}
+                    <td>
+                      <div className="patient-contact">
+                        <strong className="table-main-text">
+                          {hasRegisteredPhone(patient)
+                            ? formatPhoneValue(patient.phone)
+                            : '-'}
+                        </strong>
+                        <span className="table-secondary-text">
+                          {patient.email && patient.email !== '-'
+                            ? patient.email
+                            : '-'}
                         </span>
-                      </td>
+                      </div>
+                    </td>
 
-                      <td>
-                        <strong className="table-main-text">{patient.lastNotificationDate}</strong>
-                        <span
-                          className={`notification-status notification-status--${toSlug(patient.lastNotificationStatus)}`}
+                    <td>
+                      <strong className="table-main-text">
+                        {patient.cpf && patient.cpf !== '-'
+                          ? formatCpfValue(patient.cpf)
+                          : '-'}
+                      </strong>
+                    </td>
+
+                    <td>
+                      <strong className="table-main-text">
+                        {formatDate(patient.birth)}
+                      </strong>
+                    </td>
+
+                    <td>
+                      <strong className="table-main-text">
+                        {patient.createdAt
+                          ? formatDate(patient.createdAt)
+                          : '-'}
+                      </strong>
+                    </td>
+
+                    <td>
+                      <div className="patient-actions">
+                        <button
+                          type="button"
+                          className="patient-action-button patient-action-button--primary"
+                          onClick={() => navigate(`/patients/${patient.id}`)}
                         >
-                          {patient.lastNotificationStatus}
-                        </span>
-                      </td>
-
-                      <td>
-                        {patient.lastConfirmationDate ? (
-                          <>
-                            <strong className="table-main-text table-main-text--green">
-                              {patient.lastConfirmationDate}
-                            </strong>
-                            <span className="table-secondary-text">
-                              {patient.lastConfirmationSpecialty}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <strong className="table-main-text">Nenhuma confirmação</strong>
-                            <span className="table-secondary-text">Sem retorno registrado</span>
-                          </>
-                        )}
-                      </td>
-
-                      <td>
-                        <div className="patient-actions">
-                          <button
-                            type="button"
-                            className="patient-action-button patient-action-button--primary"
-                            onClick={() => navigate(`/patients/${patient.id}`)}
-                          >
-                            Detalhes
-                          </button>
-                          <button
-                            type="button"
-                            className="patient-action-button"
-                            onClick={() => navigate(`/patients/${patient.id}/edit`)}
-                          >
-                            Editar
-                          </button>
-                          
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                          Detalhes
+                        </button>
+                        <button
+                          type="button"
+                          className="patient-action-button"
+                          onClick={() => navigate(`/patients/${patient.id}/edit`)}
+                        >
+                          Editar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="patients-table__empty">
-                    Nenhum paciente encontrado com os filtros atuais.
+                  <td colSpan={6} className="patients-table__empty">
+                    {emptyMessage}
                   </td>
                 </tr>
               )}

@@ -14,7 +14,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@tsoa/cli": "^6.6.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -25,7 +24,6 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "axios": "^1.18.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "cron": "^4.4.0",
@@ -34,7 +32,7 @@
     "helmet": "^8.2.0",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.11.5",
+    "pg": "^8.20.0",
     "pg-hstore": "^2.3.4",
     "reflect-metadata": "^0.2.2",
     "sequelize": "^6.37.8",

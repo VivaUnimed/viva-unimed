@@ -1,15 +1,14 @@
-import { Table, Column, Model, DataType, HasMany, BelongsToMany, ForeignKey, BelongsTo } from "sequelize-typescript";
-import { IPatientCreate, IPatientInternal } from "shared/src/patient"
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from "sequelize-typescript";
+import { IPatientInternal, IPatientRecordCreate } from "shared";
 import UserModel from "./user.model";
-// import AppointmentModel from "./appointment.model";
 
 @Table({
   tableName: "patients",
-  defaultScope: {
-    attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-  },
 })
-export default class PatientModel extends Model<IPatientInternal, IPatientCreate> {
+export default class PatientModel extends Model<IPatientInternal, IPatientRecordCreate> {
+  @Column({ primaryKey: true, autoIncrement: true })
+  declare id: number;
+
   @Column({ type: DataType.DATEONLY, allowNull: false })
   declare birth: Date;
 
@@ -19,5 +18,8 @@ export default class PatientModel extends Model<IPatientInternal, IPatientCreate
 
   @BelongsTo(() => UserModel)
   declare user: UserModel;
+
+  declare createdAt: Date;
+  declare updatedAt: Date;
 
 }

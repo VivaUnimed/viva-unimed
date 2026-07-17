@@ -6,16 +6,18 @@ import { BrowserRouter } from 'react-router';
 import AuthProvider from './context/authContext/authProvider.jsx';
 import ProfessionalProvider from './context/professionalContext/professionalProvider.jsx';
 import PatientProvider from './context/patientContext/patientProvider.jsx';
-
+import SpecialtyProvider from './context/specialtyContext/specialtyProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter basename='admin'>
+  <BrowserRouter>
     <AuthProvider>
       <ProfessionalProvider>
         <PatientProvider>
-          <StrictMode>
-            <App />
-          </StrictMode>
+          <SpecialtyProvider>
+            <StrictMode>
+              <App />
+            </StrictMode>
+          </SpecialtyProvider>
         </PatientProvider>
       </ProfessionalProvider>
     </AuthProvider>

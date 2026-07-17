@@ -11,8 +11,10 @@ export interface IUserCreate {
 }
 
 export interface IUserUpdate {
-  name: string;
-  email: string;
+  name?: string;
+  email?: string;
+  cpf?: string;
+  phone?: number;
 }
 
 export interface IUser {

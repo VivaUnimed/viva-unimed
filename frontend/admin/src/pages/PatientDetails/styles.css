@@ -30,6 +30,16 @@
   padding: 20px 22px;
 }
 
+.patient-details-card--error {
+  margin-bottom: 12px;
+  border-color: #f0d5d5;
+  background-color: #fff4f4;
+}
+
+.patient-details-card--error .patient-details-message {
+  color: #b42318;
+}
+
 .patient-details-card__header {
   display: flex;
   align-items: flex-start;
@@ -41,16 +51,8 @@
 
 .patient-details-identity {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-}
-
-.patient-details-identity img {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  object-fit: cover;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
 }
 
 .patient-details-identity__badge {
@@ -102,6 +104,34 @@
   stroke: #ffffff;
 }
 
+.patient-details-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.patient-details-delete-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #f0d5d5;
+  border-radius: 10px;
+  background-color: #fff4f4;
+  color: #b42318;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.patient-details-delete-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .patient-details-grid {
   margin-top: 18px;
   display: grid;
@@ -146,80 +176,13 @@
   font-weight: 700;
 }
 
-.patient-details-status,
-.patient-details-contact-badge,
-.patient-details-notification {
-  width: fit-content;
-  min-height: 22px;
-  padding: 0 9px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.patient-details-status--ativo {
-  background-color: #bdf7d6;
-  color: #008256;
-}
-
-.patient-details-status--em-fila {
-  background-color: #f3efe5;
-  color: #8a6d1d;
-}
-
-.patient-details-status--inativo {
-  background-color: #ffe0e0;
-  color: #e11d48;
-}
-
-.patient-details-contact-badge--valid,
-.patient-details-notification--enviada {
-  background-color: #eefaf5;
-  color: #008256;
-}
-
-.patient-details-contact-badge--invalid,
-.patient-details-notification--falhou {
-  background-color: #fff1f1;
-  color: #d14343;
-}
-
-.patient-details-notification--sem-envio {
-  background-color: #eeeeee;
+.patient-details-message {
+  margin: 0;
+  padding: 12px 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
   color: #5f6368;
-}
-
-.patient-details-contact-badge svg {
-  flex-shrink: 0;
-}
-
-.patient-details-contact-badge--valid svg {
-  stroke: #008256;
-}
-
-.patient-details-contact-badge--invalid svg {
-  stroke: #d14343;
-}
-
-.patient-details-interests {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.patient-details-interest-badge {
-  min-height: 22px;
-  padding: 0 9px;
-  border-radius: 999px;
-  background-color: #eef4f1;
-  color: #4b5563;
-  font-size: 10px;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
 }
 
 @media (max-width: 1180px) {
@@ -256,17 +219,21 @@
     align-items: flex-start;
   }
 
-  .patient-details-identity img {
-    width: 48px;
-    height: 48px;
-  }
-
   .patient-details-identity h1 {
     font-size: 20px;
     line-height: 25px;
   }
 
   .patient-details-edit-button {
+    width: 100%;
+  }
+
+  .patient-details-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .patient-details-delete-button {
     width: 100%;
   }
 }
