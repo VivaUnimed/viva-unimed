@@ -1,10 +1,20 @@
 import service from "../service";
-import { Controller, Get, Path, Post, Route, Tags } from "tsoa";
-import type { IAppointmentMatch } from "shared";
+import { Body, Controller, Get, Path, Post, Route, SuccessResponse, Tags } from "tsoa";
+import type { IAppointmentMatch, IAppointmentMatchCreate } from "shared";
 
 @Route("/api/match")
 @Tags("Match")
 export class MatchController extends Controller {
+
+  /**
+   * Vincula um pedido da fila a uma vaga disponível (Gera o Match)
+   */
+  @Post("/")
+  @SuccessResponse("201", "Created")
+  async createMatch(@Body() requestBody: IAppointmentMatchCreate): Promise<any> {
+    return service.appointment.addMatch(requestBody);
+  }
+
 
   /**
    * Confirmação de agendamento pelo paciente.
