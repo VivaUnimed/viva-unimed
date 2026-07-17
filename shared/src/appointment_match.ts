@@ -12,8 +12,10 @@ export type AppointmentMatchStatus =
   | "cancelled";
 
 export interface IAppointmentMatchCreate {
-  appointmentId?: number;
-  requestId?: number;
+  appointmentId: number;
+  requestId: number;
+  expiresAt?: Date;
+  status?: AppointmentMatchStatus;
 }
 
 export interface IAppointmentMatch extends IAppointmentMatchCreate {
