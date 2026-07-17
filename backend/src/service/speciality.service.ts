@@ -1,5 +1,6 @@
 import { ISpeciality, ISpecialityCreate, ISpecialityListParams } from "shared";
 import SpecialityModel from "../db/models/speciality.model"
+import DoctorModel from "../db/models/doctor.model";
 import { Conflict, NotFound } from "../error";
 import { Op } from "sequelize";
 import { paginate } from "./helpers";
@@ -48,7 +49,14 @@ export class SpecialityService {
    * Lança NotFound caso não exista.
    */
   async getById(id: number): Promise<ISpeciality> {
-    const model = await SpecialityModel.findByPk(id);
+    const model = await SpecialityModel.findByPk(id, {
+      include: [
+        {
+          model: DoctorModel,
+          required: false,
+        }
+      ],
+    });
     if(!model) {
       throw new NotFound();
     }
@@ -60,6 +68,12 @@ export class SpecialityService {
    */
   async list(params?: ISpecialityListParams): Promise<ISpeciality[]> {
     const list = await SpecialityModel.findAll({
+      include: [
+        {
+          model: DoctorModel,
+          required: false,
+        }
+      ],
       where: params?.search ? {
         name: { [Op.iLike]: `%${params.search}%` }
       } : undefined,
