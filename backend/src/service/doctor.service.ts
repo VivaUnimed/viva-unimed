@@ -4,8 +4,10 @@ import { BadRequest, Conflict, NotFound } from "../error";
 import { Op, WhereOptions } from "sequelize";
 import UserModel from "../db/models/user.model";
 import SpecialityModel from "../db/models/speciality.model";
+import RoleModel from "../db/models/role.model";
 import { paginate } from "./helpers";
 import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
+import { getPermissionsFromRoles } from "../entities";
 /**
  * Serviço responsável pelas operações de médico.
  * Contém validações de unicidade e tratamento de erros
@@ -74,7 +76,14 @@ export class DoctorService {
    */
   async getById(id: number): Promise<IDoctor> {
     const model = await DoctorModel.findByPk(id, {
-      include: [UserModel, SpecialityModel],
+      include: [
+        {
+          model: UserModel,
+          required: true,
+          include: [RoleModel],
+        },
+        SpecialityModel,
+      ],
     });
     if (!model) {
       throw new NotFound();
@@ -137,6 +146,7 @@ export class DoctorService {
         {
           model: UserModel,
           required: true,
+          include: [RoleModel],
         },
         {
           model: SpecialityModel,
@@ -152,6 +162,8 @@ export class DoctorService {
   }
 
   static makeDoctor(model: DoctorModel): IDoctor {
+    const roles = model.user.roles?.map(r => r.role) ?? [];
+
     return {
       crm: model.crm,
       enabled: model.enabled,
@@ -160,6 +172,8 @@ export class DoctorService {
       name: model.user.name,
       cpf: model.user.cpf,
       phone: model.user.phone,
+      roles,
+      permissions: getPermissionsFromRoles(roles),
       specialities: model?.specialities.map(s => ({
         id: s.id,
         name: s.name,
