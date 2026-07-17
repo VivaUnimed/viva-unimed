@@ -105,6 +105,41 @@ export class AppointmentRequestService {
   }
 
   /**
+   * Lista o histórico de matches (ofertas de vagas).
+   * Útil para exibir no app do paciente as vagas que ele já recebeu, aceitou ou recusou.
+   */
+  async listMatches(params: { userId?: number; appointmentId?: number; status?: string }): Promise<IAppointmentMatch[]> {
+    const where: WhereOptions<IAppointmentMatch> = {};
+    if (params.status) where.status = params.status;
+    if (params.appointmentId) where.appointmentId = params.appointmentId;
+
+    const include: any[] = [
+      {
+        model: AppointmentModel,
+        include: [SpecialityModel]
+      }
+    ];
+
+    // Se filtrar por usuário, buscamos via tabela de Request
+    if (params.userId) {
+      include.push({
+        model: AppointmentRequestModel,
+        where: { patientId: params.userId }
+      });
+    } else {
+      include.push({ model: AppointmentRequestModel });
+    }
+
+    const matches = await AppointmentMatchModel.findAll({
+      where,
+      include,
+      order: [['createdAt', 'DESC']]
+    });
+
+    return matches.map(m => m.get({ plain: true }));
+  }
+
+  /**
    * Remove o paciente da fila de espera (queue.leave).
    */
   async delete(id: number): Promise<void> {
