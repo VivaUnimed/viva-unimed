@@ -640,7 +640,7 @@
 .calendar-cell-events {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   height: 100%;
   max-height: calc(var(--calendar-slot-height) * 1.5);
   overflow-y: auto;
@@ -660,7 +660,7 @@
 
 .schedule-event--compact {
   min-height: auto;
-  padding: 6px 10px;
+  padding: 4px 8px;
   gap: 2px;
 }
 
@@ -672,6 +672,14 @@
 .schedule-event--compact .schedule-event__title {
   font-size: 11px;
   line-height: 14px;
+}
+
+.schedule-event__title--compact {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .schedule-event--compact .schedule-event__details {

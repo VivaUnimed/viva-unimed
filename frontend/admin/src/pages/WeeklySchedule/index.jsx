@@ -420,8 +420,16 @@ function AppointmentCard({ appointment, onOpenDetails, isCompact }) {
         </span>
       </div>
 
-      <strong className="schedule-event__title">{appointment.specialty}</strong>
-      <small className="schedule-event__details">{appointment.professional}</small>
+      {isCompact ? (
+        <strong className="schedule-event__title schedule-event__title--compact">
+          {appointment.specialty} <span style={{ fontWeight: 'normal', color: '#4b5563' }}>&middot; {appointment.professional}</span>
+        </strong>
+      ) : (
+        <>
+          <strong className="schedule-event__title">{appointment.specialty}</strong>
+          <small className="schedule-event__details">{appointment.professional}</small>
+        </>
+      )}
     </button>
   );
 }
