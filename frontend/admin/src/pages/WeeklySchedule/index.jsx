@@ -322,12 +322,12 @@ function getStatusPresentation(status) {
   return statusPresentation[status] || statusPresentation.open;
 }
 
-// Busca um appointment para um slot específico.
+// Busca appointments para um slot específico.
 // Compara pela hora (ignora minutos) para que vagas às 14:30 apareçam no slot 14:00.
-function getAppointment(date, timeSlot, appointments = []) {
+function getAppointmentsForSlot(date, timeSlot, appointments = []) {
   const slotHour = timeSlot.split(':')[0];
 
-  return appointments.find(
+  return appointments.filter(
     (item) => item.date === date && item.time.split(':')[0] === slotHour,
   );
 }
@@ -360,7 +360,7 @@ function formatAppointmentDate(dateString) {
 function countAvailableSlots(days, appointments) {
   return days.reduce(
     (total, day) =>
-      total + timeSlots.filter((time) => !getAppointment(day.date, time, appointments)).length,
+      total + timeSlots.filter((time) => getAppointmentsForSlot(day.date, time, appointments).length === 0).length,
     0,
   );
 }
@@ -424,19 +424,25 @@ function AppointmentCard({ appointment, onOpenDetails }) {
 }
 
 function ScheduleSlotContent({
-  appointment,
-  hasAppointment,
+  appointments,
+  hasAppointments,
   showEmptySlot,
   date,
   time,
   onEmptySlotClick,
   onOpenDetails,
 }) {
-  if (appointment) {
-    return <AppointmentCard appointment={appointment} onOpenDetails={onOpenDetails} />;
+  if (appointments && appointments.length > 0) {
+    return (
+      <div className="calendar-cell-events" style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
+        {appointments.map((appointment) => (
+          <AppointmentCard key={appointment.id} appointment={appointment} onOpenDetails={onOpenDetails} />
+        ))}
+      </div>
+    );
   }
 
-  if (!hasAppointment && showEmptySlot) {
+  if (!hasAppointments && showEmptySlot) {
     return (
       <EmptySlotButton
         date={date}
@@ -894,8 +900,8 @@ export default function WeeklySchedule() {
                   <div className="calendar-time">{time}</div>
                   <div className="calendar-cell">
                     <ScheduleSlotContent
-                      appointment={getAppointment(currentDay.date, time, filteredAppointments)}
-                      hasAppointment={Boolean(getAppointment(currentDay.date, time, calendarEvents))}
+                      appointments={getAppointmentsForSlot(currentDay.date, time, filteredAppointments)}
+                      hasAppointments={getAppointmentsForSlot(currentDay.date, time, calendarEvents).length > 0}
                       showEmptySlot={canShowEmptySlots}
                       date={currentDay.date}
                       time={time}
@@ -946,8 +952,8 @@ export default function WeeklySchedule() {
                           className={`calendar-cell ${isLastRow ? 'calendar-cell--last-row' : ''}`}
                         >
                           <ScheduleSlotContent
-                            appointment={getAppointment(day.date, time, filteredAppointments)}
-                            hasAppointment={Boolean(getAppointment(day.date, time, calendarEvents))}
+                            appointments={getAppointmentsForSlot(day.date, time, filteredAppointments)}
+                            hasAppointments={getAppointmentsForSlot(day.date, time, calendarEvents).length > 0}
                             showEmptySlot={canShowEmptySlots}
                             date={day.date}
                             time={time}
