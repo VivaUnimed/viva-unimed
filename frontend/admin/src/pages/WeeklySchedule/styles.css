@@ -1019,6 +1019,14 @@
   background-color: #eefaf5;
 }
 
+.month-cell--clickable {
+  cursor: pointer;
+}
+
+.month-cell--clickable:hover {
+  background-color: #faf8f7;
+}
+
 .month-cell--muted {
   background-color: #fafafa;
   cursor: default;
@@ -1116,10 +1124,27 @@
   color: #a12a3c;
 }
 
-.month-events-list small {
+.month-events-list small,
+.month-events-more {
   color: #6b7280;
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.month-events-more {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.month-events-more:hover {
+  color: #007a49;
+  text-decoration: underline;
 }
 
 .schedule-details-backdrop {

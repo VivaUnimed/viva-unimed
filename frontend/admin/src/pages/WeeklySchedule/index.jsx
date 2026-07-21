@@ -560,8 +560,56 @@ function AppointmentDetailsModal({ appointment, onClose }) {
   );
 }
 
+function MonthDayAppointmentsModal({ date, appointments, onClose, onOpenDetails }) {
+  if (!appointments || appointments.length === 0) {
+    return null;
+  }
+
+  const dateObj = new Date(date + 'T12:00:00');
+  const dateTitle = formatDayMonthYear(dateObj);
+
+  return (
+    <div className="schedule-details-backdrop" onClick={onClose}>
+      <section
+        className="schedule-details-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="month-day-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="schedule-details-modal__header">
+          <div>
+            <h3 id="month-day-modal-title">{dateTitle}</h3>
+            <p>Vagas operacionais do dia.</p>
+          </div>
+
+          <button
+            type="button"
+            className="schedule-details-modal__close"
+            aria-label="Fechar modal"
+            onClick={onClose}
+          >
+            <LuX size={20} />
+          </button>
+        </div>
+
+        <div className="schedule-details-modal__content" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '50vh', overflowY: 'auto' }}>
+          {appointments.map((appointment) => (
+            <AppointmentCard
+              key={appointment.id}
+              appointment={appointment}
+              onOpenDetails={onOpenDetails}
+              isCompact={true}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // ==============================
-// Componente principal
+// Componente Principal
 // ==============================
 
 export default function WeeklySchedule() {
@@ -576,6 +624,7 @@ export default function WeeklySchedule() {
   const [professionalFilter, setProfessionalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedMonthDay, setSelectedMonthDay] = useState(null);
 
   // Carrega vagas reais do backend na montagem do componente.
   useEffect(() => {
@@ -1032,7 +1081,12 @@ export default function WeeklySchedule() {
                   return (
                     <div
                       key={day.id}
-                      className={`month-cell ${day.active ? 'month-cell--active' : ''} ${day.muted ? 'month-cell--muted' : ''}`}
+                      className={`month-cell ${day.active ? 'month-cell--active' : ''} ${day.muted ? 'month-cell--muted' : ''} ${dayAppointments.length > 0 ? 'month-cell--clickable' : ''}`}
+                      onClick={() => {
+                        if (dayAppointments.length > 0) {
+                          setSelectedMonthDay({ date: day.date, appointments: dayAppointments });
+                        }
+                      }}
                     >
                       <span className="month-day-number">{day.number}</span>
 
@@ -1053,7 +1107,16 @@ export default function WeeklySchedule() {
                         })}
 
                         {dayAppointments.length > 2 && (
-                          <small>+{dayAppointments.length - 2} registro(s)</small>
+                          <button
+                            type="button"
+                            className="month-events-more"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMonthDay({ date: day.date, appointments: dayAppointments });
+                            }}
+                          >
+                            +{dayAppointments.length - 2} registro(s)
+                          </button>
                         )}
                       </div>
                     </div>
@@ -1079,10 +1142,24 @@ export default function WeeklySchedule() {
         <LuCirclePlus size={28} />
       </button>
 
-      <AppointmentDetailsModal
-        appointment={selectedAppointment}
-        onClose={handleCloseDetails}
-      />
+      {selectedAppointment && (
+        <AppointmentDetailsModal
+          appointment={selectedAppointment}
+          onClose={handleCloseDetails}
+        />
+      )}
+
+      {selectedMonthDay && (
+        <MonthDayAppointmentsModal
+          date={selectedMonthDay.date}
+          appointments={selectedMonthDay.appointments}
+          onClose={() => setSelectedMonthDay(null)}
+          onOpenDetails={(appointment) => {
+            setSelectedMonthDay(null);
+            setSelectedAppointment(appointment);
+          }}
+        />
+      )}
     </main>
   );
 }
