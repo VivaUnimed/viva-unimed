@@ -26,6 +26,15 @@ export class AppointmentController extends Controller {
     });
   }
 
+   /**
+   * Atualiza agenda
+   */
+  @Put("/{id}")
+  @Security(Guard.JWT, ['appointment.edit'])
+  update(@Path() id:number, @Body() data:Omit<IAppointmentCreate, 'createdBy'>): Promise<IAppointment> {
+    return service.appointment.update(id, data);
+  }
+
   /**
    * Busca uma vaga de consulta por ID.
    */
