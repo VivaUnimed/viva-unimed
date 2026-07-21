@@ -637,6 +637,48 @@
   -webkit-line-clamp: 2;
 }
 
+.calendar-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  max-height: calc(var(--calendar-slot-height) * 1.5);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.calendar-cell-events::-webkit-scrollbar {
+  width: 4px;
+}
+.calendar-cell-events::-webkit-scrollbar-track {
+  background: transparent;
+}
+.calendar-cell-events::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.schedule-event--compact {
+  min-height: auto;
+  padding: 6px 10px;
+  gap: 2px;
+}
+
+.schedule-event--compact .schedule-event__type {
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.schedule-event--compact .schedule-event__title {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.schedule-event--compact .schedule-event__details {
+  font-size: 10px;
+  line-height: 12px;
+}
+
 .schedule-event--occupied {
   background-color: #e9f8f1;
   border-color: #cfe9dc;

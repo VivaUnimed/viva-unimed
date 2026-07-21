@@ -398,23 +398,26 @@ function EmptySlotButton({ date, time, onEmptySlotClick }) {
   );
 }
 
-function AppointmentCard({ appointment, onOpenDetails }) {
+function AppointmentCard({ appointment, onOpenDetails, isCompact }) {
   if (!appointment) {
     return null;
   }
 
   const presentation = getStatusPresentation(appointment.status);
+  const cardClasses = `schedule-event schedule-event--filled schedule-event--${presentation.modifier} schedule-event--button ${isCompact ? 'schedule-event--compact' : ''}`;
 
   return (
     <button
       type="button"
-      className={`schedule-event schedule-event--filled schedule-event--${presentation.modifier} schedule-event--button`}
+      className={cardClasses}
       aria-haspopup="dialog"
       aria-label={`Ver detalhes da vaga #${appointment.id} às ${appointment.time}`}
       onClick={() => onOpenDetails(appointment)}
     >
       <div className="schedule-event__header">
-        <span className="schedule-event__type">{presentation.label}</span>
+        <span className="schedule-event__type">
+          {appointment.time} &middot; {presentation.label}
+        </span>
       </div>
 
       <strong className="schedule-event__title">{appointment.specialty}</strong>
@@ -433,10 +436,17 @@ function ScheduleSlotContent({
   onOpenDetails,
 }) {
   if (appointments && appointments.length > 0) {
+    const isCompact = appointments.length > 1;
+
     return (
-      <div className="calendar-cell-events" style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
+      <div className="calendar-cell-events">
         {appointments.map((appointment) => (
-          <AppointmentCard key={appointment.id} appointment={appointment} onOpenDetails={onOpenDetails} />
+          <AppointmentCard
+            key={appointment.id}
+            appointment={appointment}
+            onOpenDetails={onOpenDetails}
+            isCompact={isCompact}
+          />
         ))}
       </div>
     );
