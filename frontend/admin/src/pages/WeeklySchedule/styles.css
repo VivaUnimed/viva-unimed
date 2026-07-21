@@ -107,6 +107,51 @@
   gap: 10px;
 }
 
+.schedule-error-banner {
+  margin-bottom: 16px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  background-color: #fff0f1;
+  border: 1px solid #f0d8db;
+  color: #b73542;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.schedule-error-banner span {
+  flex: 1;
+}
+
+.schedule-error-banner button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background-color: #d84c5b;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.schedule-error-banner button:hover {
+  background-color: #c2344a;
+}
+
+.schedule-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .weekly-schedule-filters {
   display: flex;
   align-items: center;
@@ -269,6 +314,10 @@
 
 .legend-color--expired {
   background-color: #d9d2ca;
+}
+
+.legend-color--no-show {
+  background-color: #fbc4cc;
 }
 
 .schedule-indicators {
@@ -616,6 +665,16 @@
   background-color: #f3efea;
   border-color: #e1d9d1;
   border-left-color: #b1a293;
+}
+
+.schedule-event--no-show {
+  background-color: #fef1f2;
+  border-color: #f5d0d5;
+  border-left-color: #c2344a;
+}
+
+.schedule-event--no-show .schedule-event__type {
+  color: #a12a3c;
 }
 
 .schedule-event--available-vacancy .schedule-event__type {
@@ -998,6 +1057,12 @@
   color: #7a6b5f;
 }
 
+.month-event-pill--no-show {
+  background-color: #fef1f2;
+  border-left: 3px solid #c2344a;
+  color: #a12a3c;
+}
+
 .month-events-list small {
   color: #6b7280;
   font-size: 9px;
@@ -1107,6 +1172,11 @@
 .schedule-details-modal__status-pill--expired {
   background-color: #f3efea;
   color: #7a6b5f;
+}
+
+.schedule-details-modal__status-pill--no-show {
+  background-color: #fef1f2;
+  color: #a12a3c;
 }
 
 .schedule-details-modal__type {
