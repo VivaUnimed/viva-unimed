@@ -1,5 +1,5 @@
 import service from "../service";
-import { Body, Controller, Delete, Get, Path, Post, Put, Request, Route, Security, Tags } from "tsoa";
+import { Body, Controller, Delete, Get, Patch, Path, Post, Put, Request, Route, Security, Tags } from "tsoa";
 import type { IAppointment, IAppointmentCreate } from "shared";
 import { Guard } from "./guards";
 
@@ -29,9 +29,9 @@ export class AppointmentController extends Controller {
    /**
    * Atualiza agenda
    */
-  @Put("/{id}")
+  @Patch("/{id}")
   @Security(Guard.JWT, ['appointment.edit'])
-  update(@Path() id:number, @Body() data:Omit<IAppointmentCreate, 'createdBy'>): Promise<IAppointment> {
+  update(@Path() id:number, @Body() data: Partial<Omit<IAppointmentCreate, 'createdBy'>>): Promise<IAppointment> {
     return service.appointment.update(id, data);
   }
 
