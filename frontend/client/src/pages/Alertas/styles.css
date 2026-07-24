@@ -71,7 +71,7 @@
 .alertas-content {
   flex: 1;
 
-  padding: 224px 14px 24px;
+  padding: 224px 18px 24px;
 
   overflow-y: auto;
 }
@@ -211,7 +211,8 @@
   margin-bottom: 18px;
 
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 220px));
+  justify-content: center;
   gap: 4px;
 }
 
@@ -249,7 +250,7 @@
 }
 
 .alertas-section-title h3 {
-  font-size: 24px;
+  font-size: 2rem;
   color: #1f2937;
 }
 
@@ -275,10 +276,9 @@
 
 .alerta-item {
   background: #f7f7f7;
-
   border-radius: 16px;
-
-  padding: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 
   display: flex;
   gap: 14px;
@@ -436,11 +436,15 @@
   cursor: pointer;
 }
 
+.tempo-real-section {
+  padding: 0 4px;
+}
+
 .tempo-real-title {
   display: flex;
-  gap: 14px;
+  gap: 12px;
 
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .tempo-real-line {
@@ -452,25 +456,23 @@
 }
 
 .tempo-real-title h2 {
-  font-size: 28px;
+  font-size: 2rem;
   line-height: 1.1;
 
   color: #1f2937;
 
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .tempo-real-title p {
-  font-size: 13px;
+  font-size: 1.3rem;
   color: #666;
 }
 
 .vaga-card {
   background: #f7f7f7;
-
   border-radius: 16px;
-
-  padding: 16px;
+  padding: 16px 18px;
 
   margin-bottom: 14px;
 

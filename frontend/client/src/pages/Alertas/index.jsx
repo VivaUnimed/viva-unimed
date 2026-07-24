@@ -1,563 +1,339 @@
-import "./styles.css";
+import "../Vagas/styles.css";
+
 import AppNav from "../../components/layouts/AppNav";
 import AppLogo from "../../components/layouts/AppLogo";
-import { useEffect, useRef, useState } from "react";
 
 import {
-  Search,
-  Bell,
-  TriangleAlert,
-  ClipboardCheck,
-  Droplets,
-  FileCheck2,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
   Clock3,
-  ChevronRight,
+  Search,
 } from "lucide-react";
 
-export default function Alertas() {
-  const contentRef = useRef(null);
-  const [isCriticalHidden, setIsCriticalHidden] = useState(false);
-  const [showCriticalHero, setShowCriticalHero] = useState(true);
-  const [activeTab, setActiveTab] = useState("recentes");
+import { toast } from "react-toastify";
 
-  const tabs = [
-    { key: "recentes", label: "Recentes" },
-    { key: "vagas", label: "Vagas em tempo real" },
-    { key: "exames", label: "Exames e relatorios" },
-  ];
+import {
+  aceitarVaga,
+  getVagasTempoReal,
+  recusarVaga,
+} from "../../api/alarmesApi";
+
+export default function Alertas() {
+  const [vagas, setVagas] =
+    useState([]);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [
+    processingMatchId,
+    setProcessingMatchId,
+  ] = useState(null);
+
+  /*
+   * Esta mensagem precisa aparecer no Console.
+   */
+  console.log(
+    "COMPONENTE NOVO DE ALERTAS CARREGADO",
+  );
+
+  const loadVagas = useCallback(
+    async ({
+      showLoading = true,
+    } = {}) => {
+      try {
+        if (showLoading) {
+          setIsLoading(true);
+        }
+
+        const data =
+          await getVagasTempoReal();
+
+        console.log(
+          "Alertas recebeu do alarmesApi:",
+          data,
+        );
+
+        const list =
+          Array.isArray(data)
+            ? data.filter(Boolean)
+            : [];
+
+        console.log(
+          "Executando setVagas com:",
+          list,
+        );
+
+        setVagas(list);
+      } catch (error) {
+        console.error(
+          "Erro ao carregar alertas:",
+          error,
+        );
+
+        setVagas([]);
+
+        toast.error(
+          error?.message ||
+            "Não foi possível carregar as vagas.",
+        );
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    const contentNode = contentRef.current;
+    void loadVagas();
 
-    const handleScroll = (event) => {
-      const currentScrollTop =
-        event?.currentTarget === contentNode
-          ? contentNode.scrollTop
-          : window.scrollY;
-
-      setIsCriticalHidden(currentScrollTop > 48);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    contentNode?.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
+    const intervalId =
+      window.setInterval(() => {
+        void loadVagas({
+          showLoading: false,
+        });
+      }, 15000);
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      contentNode?.removeEventListener("scroll", handleScroll);
+      window.clearInterval(
+        intervalId,
+      );
     };
-  }, []);
+  }, [loadVagas]);
+
+  const handleAccept = async (
+    vaga,
+  ) => {
+    try {
+      setProcessingMatchId(
+        vaga.matchId,
+      );
+
+      await aceitarVaga(
+        vaga.matchId,
+      );
+
+      toast.success(
+        "Vaga aceita com sucesso!",
+      );
+
+      setVagas(
+        (currentVagas) =>
+          currentVagas.filter(
+            (currentVaga) =>
+              currentVaga.matchId !==
+              vaga.matchId,
+          ),
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao aceitar vaga:",
+        error,
+      );
+
+      toast.error(
+        error?.message ||
+          "Não foi possível aceitar a vaga.",
+      );
+    } finally {
+      setProcessingMatchId(null);
+    }
+  };
+
+  const handleReject = async (
+    vaga,
+  ) => {
+    try {
+      setProcessingMatchId(
+        vaga.matchId,
+      );
+
+      await recusarVaga(
+        vaga.matchId,
+      );
+
+      toast.success(
+        "Vaga recusada.",
+      );
+
+      setVagas(
+        (currentVagas) =>
+          currentVagas.filter(
+            (currentVaga) =>
+              currentVaga.matchId !==
+              vaga.matchId,
+          ),
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao recusar vaga:",
+        error,
+      );
+
+      toast.error(
+        error?.message ||
+          "Não foi possível recusar a vaga.",
+      );
+    } finally {
+      setProcessingMatchId(null);
+    }
+  };
 
   return (
-    <div className="alertas-page">
-      <div className="alertas-card">
-
-        {/* HEADER */}
-        <header className="alertas-header">
-
-          <div className="alertas-brand">
-
+    <div className="vagas-page">
+      <div className="vagas-card">
+        <header className="vagas-header">
+          <div className="vagas-brand">
             <AppLogo size="small" />
-
           </div>
 
-<button
-          type="button"
-          className={`alerta-toggle-btn ${showCriticalHero ? "on" : "off"}`}
-          onClick={() => setShowCriticalHero((current) => !current)}
-          aria-pressed={showCriticalHero}
-        >
-          Balão: {showCriticalHero ? "ON" : "OFF"}
-        </button>
-
-        <button className="alertas-search-btn">
-          <Search size={18} />
-        </button>
-
+          <button
+            type="button"
+            className="vagas-search-btn"
+            aria-label="Atualizar vagas"
+            onClick={() => {
+              void loadVagas();
+            }}
+          >
+            <Search size={20} />
+          </button>
         </header>
 
-        {/* CONTENT */}
-        <main
-          className={`alertas-content ${showCriticalHero ? "" : "hero-hidden"}`}
-          ref={contentRef}
-        >
+        <main className="vagas-content">
+          <section className="vagas-title-group">
+            <div className="vagas-title-line" />
 
-          {/* HERO ALERT */}
-          {showCriticalHero && (
-            <section
-              className={`alerta-hero ${
-                isCriticalHidden ? "alerta-hero-hidden" : ""
-              }`}
-            >
-              <div className="alerta-hero-top">
-                <div className="alerta-dot"></div>
-                <span>ALERTA</span>
-              </div>
-
-              <h1>Oportunidade Crítica</h1>
+            <div>
+              <h1>
+                Vagas em Tempo Real
+              </h1>
 
               <p>
-                Vaga aberta agora em Cardiologia para hoje às 15:45.
-                Expira em instantes.
+                As oportunidades expiram
+                rapidamente. Aceite agora
+                para garantir o horário.
               </p>
-
-              <button className="alerta-hero-btn">
-                Aceitar Vaga Agora
-                <ChevronRight size={16} />
-              </button>
-
-              <div className="alerta-lightning"></div>
-            </section>
-          )}
-
-          <section className="alertas-tabs" aria-label="Tipos de alertas">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`alertas-tab ${
-                  activeTab === tab.key ? "active" : ""
-                }`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
+            </div>
           </section>
 
-          {activeTab === "recentes" && (
-          <>
-          {/* SECTION TITLE */}
-          <section className="alertas-section-title">
+          <section className="vagas-list">
+            {isLoading && (
+              <p>
+                Carregando vagas...
+              </p>
+            )}
 
-            <h3>Recentes</h3>
+            {!isLoading &&
+              vagas.length === 0 && (
+                <p>
+                  Nenhuma vaga disponível
+                  no momento.
+                </p>
+              )}
 
-            <button>
-              Marcar todas como lidas
-            </button>
+            {!isLoading &&
+              vagas.map((vaga) => {
+                const isProcessing =
+                  processingMatchId ===
+                  vaga.matchId;
 
+                return (
+                  <article
+                    key={vaga.matchId}
+                    className={`vaga-item ${vaga.variant}`}
+                  >
+                    <div className="vaga-top">
+                      <div className="vaga-profile">
+                        <div className="vaga-profile-image" />
+
+                        <div>
+                          <h3>
+                            {vaga.medico}
+                          </h3>
+
+                          <span>
+                            {vaga.especialidade}
+                          </span>
+                        </div>
+                      </div>
+
+                      {vaga.urgente && (
+                        <div className="vaga-tag">
+                          URGENTE
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="vaga-bottom">
+                      <div className="vaga-time">
+                        <small>
+                          HORÁRIO DISPONÍVEL
+                        </small>
+
+                        <div className="vaga-time-row">
+                          <Clock3 size={18} />
+
+                          <strong>
+                            {vaga.horario}
+                          </strong>
+                        </div>
+
+                        <small>
+                          {vaga.dataFormatada}
+                        </small>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "10px",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="vaga-button"
+                          disabled={isProcessing}
+                          onClick={() => {
+                            void handleReject(
+                              vaga,
+                            );
+                          }}
+                        >
+                          Recusar
+                        </button>
+
+                        <button
+                          type="button"
+                          className="vaga-button"
+                          disabled={isProcessing}
+                          onClick={() => {
+                            void handleAccept(
+                              vaga,
+                            );
+                          }}
+                        >
+                          {isProcessing
+                            ? "Processando..."
+                            : "Aceite Rápido"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
           </section>
-
-          {/* ALERT LIST */}
-          <section className="alertas-list">
-
-            {/* ALERTA 1 */}
-            <div className="alerta-item success">
-
-              <div className="alerta-item-icon green">
-                <Bell size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label green">
-                    VAGA DISPONÍVEL
-                  </span>
-
-                  <small>Agora</small>
-                </div>
-
-                <h4>Cardiologia hoje às 15:45</h4>
-
-                <p>
-                  Uma nova vaga surgiu por cancelamento
-                  na Unidade Litoral Sul.
-                </p>
-
-                <div className="alerta-actions">
-
-                  <button className="btn-green">
-                    Agendar
-                  </button>
-
-                  <button className="btn-gray">
-                    Ignorar
-                  </button>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* ALERTA 2 */}
-            <div className="alerta-item">
-
-              <div className="alerta-item-icon gray">
-                <ClipboardCheck size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label gray">
-                    CONFIRMAÇÃO
-                  </span>
-
-                  <small>2h atrás</small>
-                </div>
-
-                <h4>Confirmação de agendamento</h4>
-
-                <p>
-                  Seu check-up com Dr. Ricardo foi
-                  confirmado para amanhã às 08:00.
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* ALERTA 3 */}
-            <div className="alerta-item warning">
-
-              <div className="alerta-item-icon red">
-                <TriangleAlert size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label red">
-                    ATRASO NOTIFICADO
-                  </span>
-
-                  <small>4h atrás</small>
-                </div>
-
-                <h4>Atraso na Pediatria</h4>
-
-                <p>
-                  A unidade reporta 20 minutos de atraso
-                  médio. Planeje sua chegada.
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* ALERTA 4 */}
-            <div className="alerta-item hidden-alerta">
-
-              <div className="alerta-item-icon light">
-                <Droplets size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label light">
-                    DICA DE SAÚDE
-                  </span>
-
-                  <small>Ontem</small>
-                </div>
-
-                <h4>Hidratação e Exames</h4>
-
-                <p>
-                  Mantenha-se hidratado para o seu exame
-                  de sangue de quinta-feira.
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* ALERTA 5 */}
-            <div className="alerta-item success hidden-alerta">
-
-              <div className="alerta-item-icon green">
-                <FileCheck2 size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label green">
-                    RESULTADOS
-                  </span>
-
-                  <small>Ontem</small>
-                </div>
-
-                <h4>Exames laboratoriais prontos</h4>
-
-                <p>
-                  Seus resultados de Hemograma e Glicemia
-                  já estão disponíveis no app.
-                </p>
-
-                <button className="alerta-link-btn">
-                  Ver resultados ↗
-                </button>
-
-              </div>
-
-            </div>
-
-          </section>
-          </>
-          )}
-
-          {activeTab === "vagas" && (
-          <>
-          {/* LIVE VACANCIES */}
-          <section className="tempo-real-section">
-
-            <div className="tempo-real-title">
-
-              <div className="tempo-real-line"></div>
-
-              <div>
-                <h2>Vagas em Tempo Real</h2>
-
-                <p>
-                  As oportunidades expiram rapidamente.
-                </p>
-              </div>
-
-            </div>
-
-            {/* CARD */}
-            <div className="vaga-card success">
-
-              <div className="vaga-profile">
-
-                <div className="vaga-profile-image"></div>
-
-                <div>
-                  <h4>Dra. Ana Silva</h4>
-                  <span>CARDIOLOGIA</span>
-                </div>
-
-              </div>
-
-              <div className="vaga-footer">
-
-                <div className="vaga-time">
-
-                  <small>HORÁRIO DISPONÍVEL</small>
-
-                  <div>
-                    <Clock3 size={16} />
-                    <strong>15:45</strong>
-                  </div>
-
-                </div>
-
-                <div className="vaga-buttons">
-
-                  <button className="btn-accept">
-                    Aceitar
-                  </button>
-
-                  <button className="btn-reject">
-                    Recusar
-                  </button>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* CARD */}
-            <div className="vaga-card neutral">
-
-              <div className="vaga-profile">
-
-                <div className="vaga-profile-image"></div>
-
-                <div>
-                  <h4>Dr. Marcos Lima</h4>
-                  <span>ORTOPEDIA</span>
-                </div>
-
-              </div>
-
-              <div className="vaga-footer">
-
-                <div className="vaga-time">
-
-                  <small>HORÁRIO DISPONÍVEL</small>
-
-                  <div>
-                    <Clock3 size={16} />
-                    <strong>15:45</strong>
-                  </div>
-
-                </div>
-
-                <button className="btn-accept">
-                  Aceite Rápido
-                </button>
-
-              </div>
-
-            </div>
-
-            {/* CARD */}
-            <div className="vaga-card urgent">
-
-              <div className="vaga-top-row">
-
-                <div className="vaga-profile">
-
-                  <div className="vaga-profile-image"></div>
-
-                  <div>
-                    <h4>Dra. Julia Costa</h4>
-                    <span>PEDIATRIA</span>
-                  </div>
-
-                </div>
-
-                <div className="vaga-tag">
-                  URGENTE
-                </div>
-
-              </div>
-
-              <div className="vaga-footer">
-
-                <div className="vaga-time">
-
-                  <small>HORÁRIO DISPONÍVEL</small>
-
-                  <div>
-                    <Clock3 size={16} />
-                    <strong>16:30</strong>
-                  </div>
-
-                </div>
-
-                <button className="btn-accept">
-                  Aceite Rápido
-                </button>
-
-              </div>
-
-            </div>
-
-          </section>
-          </>
-          )}
-
-          {activeTab === "exames" && (
-          <>
-          <section className="alertas-section-title">
-
-            <h3>Exames e relatorios</h3>
-
-            <button>
-              Marcar todas como lidas
-            </button>
-
-          </section>
-
-          <section className="alertas-list">
-
-            <div className="alerta-item success">
-
-              <div className="alerta-item-icon green">
-                <FileCheck2 size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label green">
-                    RESULTADOS
-                  </span>
-
-                  <small>Ontem</small>
-                </div>
-
-                <h4>Exames laboratoriais prontos</h4>
-
-                <p>
-                  Seus resultados de Hemograma e Glicemia
-                  ja estao disponiveis no app.
-                </p>
-
-                <button className="alerta-link-btn">
-                  Ver resultados
-                </button>
-
-              </div>
-
-            </div>
-
-            <div className="alerta-item">
-
-              <div className="alerta-item-icon gray">
-                <ClipboardCheck size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label gray">
-                    RELATORIO
-                  </span>
-
-                  <small>2 dias atras</small>
-                </div>
-
-                <h4>Relatorio de consulta liberado</h4>
-
-                <p>
-                  O resumo da sua consulta com a endocrinologia
-                  foi atualizado para revisao.
-                </p>
-
-                <button className="alerta-link-btn">
-                  Abrir relatorio
-                </button>
-
-              </div>
-
-            </div>
-
-            <div className="alerta-item">
-
-              <div className="alerta-item-icon light">
-                <Droplets size={16} />
-              </div>
-
-              <div className="alerta-item-content">
-
-                <div className="alerta-item-top">
-                  <span className="alerta-label light">
-                    DICA DE SAUDE
-                  </span>
-
-                  <small>Ontem</small>
-                </div>
-
-                <h4>Hidratacao e Exames</h4>
-
-                <p>
-                  Mantenha-se hidratado para o seu exame
-                  de sangue de quinta-feira.
-                </p>
-
-              </div>
-
-            </div>
-
-          </section>
-          </>
-          )}
-
         </main>
 
-        {/* NAVIGATION */}
-        <AppNav className="alertas-bottom-nav" active="alertas" />
-
+        <AppNav
+          className="vagas-bottom-nav"
+          active="alertas"
+        />
       </div>
     </div>
   );
