@@ -254,28 +254,6 @@ export default function Specialties() {
         </div>
       ) : null}
 
-      <section className="specialties-summary-grid">
-        <article className="specialties-summary-card">
-          <div className="specialties-summary-card__icon specialties-summary-card__icon--blue">
-            <LuClipboardList size={22} />
-          </div>
-          <div className="specialties-summary-card__content">
-            <span>Total de especialidades</span>
-            <strong>{specialtiesList.length.toString().padStart(2, '0')}</strong>
-          </div>
-        </article>
-
-        <article className="specialties-summary-card">
-          <div className="specialties-summary-card__icon specialties-summary-card__icon--green">
-            <LuCircleCheck size={22} />
-          </div>
-          <div className="specialties-summary-card__content">
-            <span>Encontradas na busca</span>
-            <strong>{filteredSpecialties.length.toString().padStart(2, '0')}</strong>
-          </div>
-        </article>
-      </section>
-
       <section className="specialties-main-card">
         <div className="specialties-filters">
           <div className="specialties-filters__search">
