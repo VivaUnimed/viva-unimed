@@ -271,6 +271,9 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+          </section>
+
+          <section className="dashboard-column dashboard-column--small">
             <div className="dashboard-panel">
               <div className="dashboard-panel__header">
                 <h2>
@@ -304,8 +307,10 @@ export default function AdminDashboard() {
               </div>
             </div>
           </section>
+        </div>
 
-          <section className="dashboard-column dashboard-column--small">
+        <div className="dashboard-bottom-content">
+          <section className="dashboard-column">
             <div className="dashboard-panel">
               <div className="dashboard-panel__header">
                 <h2>
@@ -332,7 +337,9 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+          </section>
 
+          <section className="dashboard-column">
             <div className="dashboard-panel">
               <div className="dashboard-panel__header">
                 <h2>

@@ -245,10 +245,18 @@
   grid-template-columns: 1.8fr 1.2fr;
   gap: 24px;
   align-items: start;
+  margin-bottom: 24px;
+}
+
+.dashboard-bottom-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
 @media (max-width: 1100px) {
-  .dashboard-main-content {
+  .dashboard-main-content, .dashboard-bottom-content {
     grid-template-columns: 1fr;
   }
 }
