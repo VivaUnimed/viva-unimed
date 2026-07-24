@@ -47,13 +47,8 @@
 
 .login-institutional__logo {
   margin-bottom: 40px;
-  background-color: #ffffff;
-  padding: 20px 28px;
-  border-radius: 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 32px rgba(0, 122, 73, 0.4);
   width: fit-content;
   align-self: flex-start;
 }
