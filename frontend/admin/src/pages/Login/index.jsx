@@ -114,10 +114,8 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="login-form__actions">
-              <a className="login-forgot-password" href="/forgot-password">
-                Esqueci minha senha
-              </a>
+            <div className="login-form__support">
+              <p>Problemas para acessar? Contate o administrador do sistema.</p>
             </div>
 
             <button

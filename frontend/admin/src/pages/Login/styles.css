@@ -248,31 +248,30 @@
 
 .login-password-toggle:hover {
   background-color: #f3f4f6;
-  color: #4b5563;
 }
 
 .login-password-toggle svg {
-  stroke: currentColor;
+  stroke: #9ca3af;
+  transition: stroke 0.2s;
+}
+
+.login-password-toggle:hover svg {
+  stroke: #4b5563;
 }
 
 /* Actions & Footer */
-.login-form__actions {
+.login-form__support {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   margin-bottom: 28px;
+  text-align: center;
 }
 
-.login-forgot-password {
+.login-form__support p {
   font-size: 13px;
-  font-weight: 700;
-  color: #007a49;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.login-forgot-password:hover {
-  color: #006039;
-  text-decoration: underline;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0;
 }
 
 .login-submit-btn {
