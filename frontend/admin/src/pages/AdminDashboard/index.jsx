@@ -284,7 +284,7 @@ export default function AdminDashboard() {
                     return (
                       <div key={status.id} className="status-bar-item">
                         <div className="status-bar-item__label">
-                          <Icon size={16} color={status.color} />
+                          <Icon size={16} color={status.color} style={{ stroke: status.color }} />
                           <span>{status.label}</span>
                           <strong>{status.count}</strong>
                         </div>

@@ -60,6 +60,7 @@
 
 .strategic-dashboard-date svg {
   color: #007a49;
+  stroke: #007a49;
   stroke-width: 2.5;
 }
 
@@ -183,20 +184,32 @@
   background-color: #e6f7ef;
   color: #007a49;
 }
+.strategic-summary-card--green .strategic-summary-card__icon svg {
+  stroke: #007a49;
+}
 
 .strategic-summary-card--blue .strategic-summary-card__icon {
   background-color: #e8f5ff;
   color: #0369a1;
+}
+.strategic-summary-card--blue .strategic-summary-card__icon svg {
+  stroke: #0369a1;
 }
 
 .strategic-summary-card--light-green .strategic-summary-card__icon {
   background-color: #f0fdf4;
   color: #15803d;
 }
+.strategic-summary-card--light-green .strategic-summary-card__icon svg {
+  stroke: #15803d;
+}
 
 .strategic-summary-card--red .strategic-summary-card__icon {
   background-color: #fef2f2;
   color: #b42318;
+}
+.strategic-summary-card--red .strategic-summary-card__icon svg {
+  stroke: #b42318;
 }
 
 .strategic-summary-card h2 {
@@ -278,6 +291,7 @@
 
 .dashboard-panel__header h2 svg {
   color: #5f6368;
+  stroke: #5f6368;
   stroke-width: 2.2;
 }
 
@@ -332,10 +346,16 @@
   justify-content: center;
   color: #9ca3af;
 }
+.dashboard-empty-icon svg {
+  stroke: #9ca3af;
+}
 
 .dashboard-empty-icon--success {
   background-color: #e6f7ef;
   color: #007a49;
+}
+.dashboard-empty-icon--success svg {
+  stroke: #007a49;
 }
 
 .dashboard-empty-state p {
@@ -432,10 +452,16 @@
   background-color: #e8f5ff;
   color: #0369a1;
 }
+.queue-badge--active svg {
+  stroke: #0369a1;
+}
 
 .queue-badge--empty {
   background-color: #f3f4f6;
   color: #6b7280;
+}
+.queue-badge--empty svg {
+  stroke: #6b7280;
 }
 
 .recent-vacancy-item__action {
@@ -543,6 +569,7 @@
 
 .alert-item--warning svg {
   color: #d97706;
+  stroke: #d97706;
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -555,6 +582,7 @@
 
 .alert-item--error svg {
   color: #ef4444;
+  stroke: #ef4444;
   flex-shrink: 0;
   margin-top: 1px;
 }
