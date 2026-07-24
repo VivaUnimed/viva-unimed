@@ -46,7 +46,7 @@
 }
 
 .login-institutional__logo {
-  margin-bottom: 64px;
+  margin-bottom: 40px;
   background-color: #ffffff;
   padding: 20px 28px;
   border-radius: 16px;
@@ -81,6 +81,19 @@
   color: #e6f7ef;
   margin: 0;
   font-weight: 400;
+  position: relative;
+  padding-top: 24px;
+}
+
+.login-institutional__text p::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
 }
 
 /* Decor elements */
