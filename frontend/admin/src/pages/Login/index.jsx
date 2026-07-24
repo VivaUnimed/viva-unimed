@@ -10,17 +10,27 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [hideError, setHideError] = useState(false);
   const { login, authState } = useAuth();
   const location = useLocation();
 
-  const handleEmailChange = (e) => setEmail(e.target.value);
-  const handlePasswordChange = (e) => setPassword(e.target.value);
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    setHideError(true);
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    setHideError(true);
+  };
+
   const togglePassword = () => setShowPassword(!showPassword);
 
   const userLogin = (e) => {
     e.preventDefault();
+    setHideError(false);
     const userCredentials = {
-      email,
+      email: email.trim(),
       password,
     };
     login(userCredentials);
@@ -67,7 +77,7 @@ export default function Login() {
             </div>
 
             {/* Error Message */}
-            {authState?.error && (
+            {(authState?.error && !hideError) && (
               <div className="login-form__error">
                 <LuBadgeAlert size={20} />
                 <span>{authState.error}</span>
@@ -85,6 +95,7 @@ export default function Login() {
                     placeholder="voce@unimed.coop.br"
                     value={email}
                     onChange={handleEmailChange}
+                    autoComplete="username"
                     required
                   />
                 </div>
@@ -100,13 +111,14 @@ export default function Login() {
                     placeholder="Sua senha de acesso"
                     value={password}
                     onChange={handlePasswordChange}
+                    autoComplete="current-password"
                     required
                   />
                   <button
                     type="button"
                     className="login-password-toggle"
                     onClick={togglePassword}
-                    tabIndex="-1"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   >
                     {showPassword ? <LuEyeOff size={20} /> : <LuEye size={20} />}
                   </button>
