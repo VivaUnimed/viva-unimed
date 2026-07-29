@@ -2,27 +2,22 @@ import { client } from './client';
 import { describe, it, expect, beforeAll } from 'vitest'
 
 describe('patient controller', () => {
-  let userId: number;
   let patientId: number;
 
   beforeAll(async () => {
     await client.login();
-
-    const userRes = await client.post('/api/user', {
-      name: 'Paciente Teste',
-      email: `paciente.teste.${Date.now()}@example.com`,
-    });
-    userId = userRes.data.id;
   });
 
   it('cria paciente', async () => {
     const res = await client.post('/api/patient', {
-      birth: '1997-05-15',
-      userId,
+      name: 'Josenildo',
+      email: `josenildo.${Date.now()}@example.com`,
+      cpf: '42144477735',
+      birth: '1980-05-15',
     });
 
     expect(res.status).toBe(200);
-    expect(res.data.birth).toBe('1997-05-15');
+    expect(res.data.birth).toBe('1980-05-15');
 
     expect(res.data.id).toBeDefined();
     patientId = res.data.id;
@@ -53,8 +48,8 @@ describe('patient controller', () => {
   it('busca paciente por id', async () => {
     const res = await client.get(`/api/patient/${patientId}`)
     expect(res.status).toBe(200);
-    expect(res.data).toHaveProperty('name', 'Paciente Teste');
-    expect(res.data.birth).toContain('1997-05-15'); // toContain para ignorar as horas
+    expect(res.data).toHaveProperty('name', 'Josenildo');
+    expect(res.data.birth).toContain('1980-05-15'); // toContain para ignorar as horas
   })
 
   it('exclui paciente', async () => {

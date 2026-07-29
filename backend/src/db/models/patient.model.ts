@@ -1,5 +1,5 @@
 import { Table, Column, Model, DataType, HasMany, BelongsToMany, ForeignKey, BelongsTo } from "sequelize-typescript";
-import { IPatientCreate, IPatientInternal } from "shared/src/patient"
+import type { IPatientCreate, IPatientInternal } from "shared";
 import UserModel from "./user.model";
 // import AppointmentModel from "./appointment.model";
 

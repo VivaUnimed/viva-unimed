@@ -12,6 +12,8 @@ describe('doctor controller', () => {
     const userRes = await client.post('/api/user', {
       name: 'Médico Teste',
       email: `medico.teste.${Date.now()}@example.com`,
+      cpf: '52998224725',
+      role: 'Medico'
     });
     userId = userRes.data.id;
 
@@ -68,7 +70,7 @@ describe('doctor controller', () => {
   });
 
   it('atualiza os dados de um medico existente', async () => {
-    const res = await client.put(`/api/doctor/${doctorId}`, {
+    const res = await client.patch(`/api/doctor/${doctorId}`, {
       userId,
       crm: '1236-RJ',
       enabled: true,

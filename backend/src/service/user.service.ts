@@ -1,37 +1,63 @@
-import { IUser, IUserCreate, IUserListParams, IUserUpdate, Role } from "shared";
+import { IUser, IUserListParams, IUserUpdate, Role, StaffCreateRequest } from "shared";
 import UserModel from "../db/models/user.model";
 import { Op, WhereOptions } from "sequelize";
 import PasswordModel from "../db/models/password.model";
 import { hashPassword } from "../helpers/password";
 import RoleModel from "../db/models/role.model";
 import { getPermissionsFromRoles } from "../entities";
+import { BadRequest } from "../error";
+import { db } from "../db";
 
 export class UserService {
     /** Cria um usuário, salva sua senha (hasheada) e atribui cargos iniciais */
-  async create(user: IUserCreate): Promise<IUser> {
-    const res = await UserModel.create({
-      name: user.name,
-      email: user.email,
-    });
-    if(user.password) {
-      const { hash, salt } = await hashPassword(user.password);
-      await PasswordModel.create({
-        userId: res.id,
-        hash,
-        salt,
-      });
+  async createStaff(data: StaffCreateRequest): Promise<IUser> {
+    if (data.role !== 'Admin' && data.role !== 'Tecnico') {
+      throw new BadRequest("Utilize a rota /api/patient para cadastrar pacientes.");
     }
-    if(user.roles) {
-      await RoleModel.bulkCreate(user.roles.map(role => ({
-        role,
-        userId: res.id,
-      })));
+    const t = await db.transaction();
+
+    try {
+      // cria o registro na tabela base
+      const newUser = await UserModel.create({
+        name: data.name,
+        email: data.email,
+        // cpf: data.cpf,
+        phone: data.phone,
+      }, { transaction: t });
+
+      // atribui a role administrativa
+      await RoleModel.create({
+        userId: newUser.id,
+        role: data.role
+      }, { transaction: t });
+
+      if (data.password) {
+        const { hash, salt } = await hashPassword(data.password);
+
+        await PasswordModel.create({
+          userId: newUser.id,
+          hash,
+          salt,
+        }, { transaction: t });
+      }
+
+      await t.commit();
+
+      // retorna o usuário recém-criado
+      return this.getById(newUser.id);
+
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-    return res.get({ plain: true });
   }
+
 
   /** Atribui um novo cargo ao usuário, evitando duplicidade */
   async addUserRole(userId: number, role: Role): Promise<void> {
+    if (role === 'Paciente') {
+      throw new BadRequest("Não é possível atribuir o perfil de Paciente por aqui. Um paciente precisa ter um prontuário criado no sistema.");
+    }
     const exists = await RoleModel.findOne({ where: { userId, role }});
     if (exists) return;
     await RoleModel.create({
@@ -56,8 +82,17 @@ export class UserService {
     }
     const res = await UserModel.findAll({
       where,
+      include: [RoleModel]
     });
-    return res.map(r => r.get({ plain: true }));
+
+    return res.map(user => {
+      const roles = user.roles?.map(r => r.role) || [];
+
+      return {
+        ...user.get({ plain: true }),
+        roles,
+      };
+    });
   }
 
   /** Busca usuário por ID, incluindo seus cargos e calculando permissões derivadas */
@@ -81,6 +116,33 @@ export class UserService {
     await res.update(user);
     return res.get({ plain: true });
   }
+  async updateStaffRole(userId: number, newRole: 'Admin' | 'Tecnico'): Promise<void> {
+    const t = await db.transaction();
+
+    try {
+      // remove apenas os cargos de equipe (protegendo Medico ou Paciente se existirem)
+      await RoleModel.destroy({
+        where: {
+          userId,
+          role: {
+            [Op.in]: ['Admin', 'Tecnico']
+          }
+        },
+        transaction: t
+      });
+
+      // insere o cargo novo escolhido
+      await RoleModel.create({
+        userId,
+        role: newRole
+      }, { transaction: t });
+
+      await t.commit();
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  }
 
   /** Remove o registro do usuário do banco de dados */
   async delete(id: number): Promise<boolean> {
@@ -98,11 +160,12 @@ export class UserService {
     })
     if(admin) return;
     console.log(`CREATING ADMIN USER WITH ${email}`);
-    await this.create({
+    await this.createStaff({
       email,
       password,
+      cpf: '00000000000',
       name: 'admin',
-      roles: ['Admin'],
+      role: 'Admin',
     });
   }
 }

@@ -2,19 +2,31 @@ import { IPaginate } from "./paginate";
 import { ISpeciality } from "./speciality";
 import { IUser } from "./user";
 
+export type DoctorCreateFacade = {
+  name: string;
+  email: string;
+  cpf: string;
+  phone?: string;
+  password?: string;
+  crm: string;
+};
 export interface IDoctorCreate {
   userId: number;
   crm: string;
   enabled: boolean;
 }
 
-export interface IDoctorInternal extends IDoctorCreate {
-  specialities?: ISpeciality[];
+export interface IDoctorUpdate {
+  crm?: string;
+  enabled?: boolean;
 }
 
-export interface IDoctor extends IUser {
+export interface IDoctor {
+  id: number;
+  userId: number;
   crm: string;
   enabled: boolean;
+  user?: IUser;
   specialities?: ISpeciality[];
 }
 

@@ -29,4 +29,4 @@ export const PERMISSIONS = [
 export type Permission = typeof PERMISSIONS[number];
 
 /** Define os perfis de usuário (cargos) que agrupam conjuntos de permissões */
-export type Role = 'Admin' | 'Tecnico' | 'Paciente';
+export type Role = 'Admin' | 'Tecnico' | 'Paciente' | 'Medico';

@@ -1,25 +1,34 @@
 import { Controller, Route, Get, Path, Tags, Post, Body, Queries, Delete, Request, Put } from "tsoa";
 import { NotFound } from "../error";
-import type { IUser, IUserCreate, IUserListParams, Role } from "shared";
+import type { IUser, IUserListParams, Role, StaffCreateRequest } from "shared";
 import service from "../service";
 import { Guard, Security } from "./guards";
 
 
+
 @Route("/api/user")
-@Tags("User")
+@Tags("User (Backoffice)")
 export class UserController extends Controller {
   /** Cria um novo usuário no sistema */
-  @Post("")
+  @Post()
   @Security(Guard.JWT, ["user.create"])
-  async create(@Body() requestBody: IUserCreate): Promise<IUser> {
-    return service.user.create(requestBody);
+  async create(@Body() data: StaffCreateRequest): Promise<IUser> {
+    return service.user.createStaff(data);
   }
 
   /** Adiciona uma permissão específica a um usuário existente */
-  @Put("/{userId}/roles")
+  @Put("/{userId}/role")
   @Security(Guard.JWT, ["user.edit.role"])
-  async addUserRole(@Path() userId: number, @Body() data: { role: Role }): Promise<void> {
-    return service.user.addUserRole(userId, data.role);
+  async changeStaffRole(
+    @Path() userId: number,
+    @Body() data: { role: 'Admin' | 'Tecnico' }
+  ): Promise<IUser> {
+    await service.user.updateStaffRole(userId, data.role);
+
+    const user = await service.user.getById(userId);
+    if (!user) throw new NotFound();
+
+    return user;
   }
 
   /** Remove uma permissão específica de um usuário */
