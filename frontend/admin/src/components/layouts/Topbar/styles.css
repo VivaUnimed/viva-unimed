@@ -132,13 +132,21 @@
 
 .topbar__icon-indicator {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 8px;
-  height: 8px;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border-radius: 999px;
   background-color: #f59e0b;
+  color: #ffffff;
   box-shadow: 0 0 0 2px #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .topbar__action-btn {
@@ -300,6 +308,10 @@
   border-left-color: #f59e0b;
 }
 
+.topbar__notification-card--queue {
+  border-left-color: #3b82f6;
+}
+
 .topbar__notification-title-row {
   display: flex;
   align-items: flex-start;
@@ -336,6 +348,10 @@
 
 .topbar__notification-dot--alert {
   background-color: #f59e0b;
+}
+
+.topbar__notification-dot--queue {
+  background-color: #3b82f6;
 }
 
 .topbar__notification-time {
@@ -383,6 +399,11 @@
   color: #b45309;
 }
 
+.topbar__notification-badge--queue {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
 .topbar__notification-action {
   height: 32px;
   border: none;
@@ -406,6 +427,7 @@
   background-color: #f9fafb;
   text-align: center;
   font-size: 14px;
+  line-height: 1.5;
   color: #6b7280;
 }
 

@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LuBell, LuCircleHelp, LuMenu, LuX } from 'react-icons/lu';
 import { useAuth } from '../../../context/authContext/authContext';
+import { useQueue } from '../../../context/queueContext/queueContext';
+import { useVacancies } from '../../../context/vacancyContext/vacancyContext';
 import './styles.css';
 
 const roleLabelMap = {
@@ -34,48 +36,88 @@ const getProfileItems = (user) => {
 };
 
 const helpTopics = [
+  'Use o painel para acompanhar vagas, fila inteligente, pacientes, profissionais e especialidades.',
   'Cadastre vagas remanescentes pela página Vagas.',
-  'A fila inteligente é processada automaticamente após o cadastro da vaga.',
-  'Acompanhe confirmações, falhas e expirações pelo Dashboard e pela tela de Vagas.',
+  'A fila inteligente cruza solicitações e vagas compatíveis com os dados disponíveis no sistema.',
   'Cadastre pacientes, profissionais e especialidades antes de operar a agenda.',
-  'Use Configurações para ajustar tempo de expiração e parâmetros operacionais.',
+  'Algumas configurações operacionais ainda dependem de suporte futuro no backend.',
 ];
 
-const notificationTypeLabel = {
-  error: 'Erro',
-  success: 'Sucesso',
-  alert: 'Alerta',
+const getTodayKey = () => {
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const day = String(currentDate.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 };
 
-const mockedNotifications = [
-  {
-    id: 'vacancy-3-dispatch-error',
-    title: 'Falha no disparo',
-    description: 'Dermatologia possui uma vaga com falha no envio.',
-    time: 'há 5 min',
-    type: 'error',
-    vacancyId: 3,
-    actionLabel: 'Ver vaga',
-  },
-  {
-    id: 'vacancy-5-confirmed',
-    title: 'Vaga confirmada',
-    description: 'Ginecologia foi confirmada pela fila inteligente.',
-    time: 'há 12 min',
-    type: 'success',
-    vacancyId: 5,
-    actionLabel: 'Ver vaga',
-  },
-  {
-    id: 'vacancy-1-expiring',
-    title: 'Vaga próxima de expirar',
-    description: 'Cardiologia expira em 8 minutos.',
-    time: 'agora',
-    type: 'alert',
-    vacancyId: 1,
-    actionLabel: 'Ver vaga',
-  },
-];
+const buildOperationalAlerts = (vacancies = [], queueRequests = []) => {
+  const alerts = [];
+  const todayKey = getTodayKey();
+
+  const openWithoutPatients = vacancies.filter(
+    (vacancy) => vacancy.vacancyStatus === 'open' && vacancy.queuePatients === 0,
+  ).length;
+
+  if (openWithoutPatients > 0) {
+    alerts.push({
+      id: 'open-without-patients',
+      title: 'Vagas abertas sem fila compatível',
+      description:
+        openWithoutPatients === 1
+          ? 'Há 1 vaga aberta sem pacientes compatíveis neste momento.'
+          : `Há ${openWithoutPatients} vagas abertas sem pacientes compatíveis neste momento.`,
+      type: 'alert',
+      badgeLabel: 'Vagas',
+      actionLabel: 'Abrir vagas',
+      route: '/vacancies',
+    });
+  }
+
+  const requestsWithoutVacancy = queueRequests.filter(
+    (queueRequest) =>
+      queueRequest.status === 'waiting' &&
+      queueRequest.compatibleVacanciesCount === 0,
+  ).length;
+
+  if (requestsWithoutVacancy > 0) {
+    alerts.push({
+      id: 'queue-without-vacancy',
+      title: 'Solicitações aguardando sem vaga compatível',
+      description:
+        requestsWithoutVacancy === 1
+          ? 'Há 1 solicitação aguardando sem vaga compatível no momento.'
+          : `Há ${requestsWithoutVacancy} solicitações aguardando sem vaga compatível no momento.`,
+      type: 'queue',
+      badgeLabel: 'Fila',
+      actionLabel: 'Abrir fila',
+      route: '/queue',
+    });
+  }
+
+  const expiredToday = vacancies.filter(
+    (vacancy) =>
+      vacancy.vacancyStatus === 'expired' && vacancy.dateKey === todayKey,
+  ).length;
+
+  if (expiredToday > 0) {
+    alerts.push({
+      id: 'expired-today',
+      title: 'Vagas expiradas na agenda de hoje',
+      description:
+        expiredToday === 1
+          ? 'Há 1 vaga com status expirado na agenda de hoje.'
+          : `Há ${expiredToday} vagas com status expirado na agenda de hoje.`,
+      type: 'error',
+      badgeLabel: 'Expiração',
+      actionLabel: 'Abrir vagas',
+      route: '/vacancies',
+    });
+  }
+
+  return alerts;
+};
 
 function TopbarModal({
   title,
@@ -172,12 +214,28 @@ function HelpModal({ onClose }) {
 export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { vacancyState, getVacancies } = useVacancies();
+  const { queueState, getQueueRequests } = useQueue();
   const profileMenuRef = useRef(null);
   const notificationsRef = useRef(null);
+  const hasRequestedAlertsRef = useRef(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const userName = user?.name || 'Usuário';
+  const operationalAlerts = useMemo(
+    () =>
+      buildOperationalAlerts(
+        vacancyState?.vacancies ?? [],
+        queueState?.adminAppointmentRequests ?? [],
+      ),
+    [queueState?.adminAppointmentRequests, vacancyState?.vacancies],
+  );
+  const isAlertsLoading =
+    (vacancyState?.isLoading || queueState?.isLoading) &&
+    operationalAlerts.length === 0;
+  const alertsError =
+    (vacancyState?.error || queueState?.error) && operationalAlerts.length === 0;
 
   useEffect(() => {
     if (!isMenuOpen && !isNotificationsOpen) {
@@ -239,6 +297,19 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
     };
   }, [activeModal]);
 
+  useEffect(() => {
+    if (hasRequestedAlertsRef.current) {
+      return;
+    }
+
+    hasRequestedAlertsRef.current = true;
+
+    Promise.all([
+      getVacancies().catch(() => []),
+      getQueueRequests().catch(() => []),
+    ]);
+  }, [getQueueRequests, getVacancies]);
+
   const handleToggleMenu = () => {
     setIsNotificationsOpen(false);
     setIsMenuOpen((current) => !current);
@@ -273,13 +344,7 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
 
   const handleNotificationAction = (notification) => {
     setIsNotificationsOpen(false);
-
-    if (notification.vacancyId) {
-      navigate(`/vacancies/${notification.vacancyId}`);
-      return;
-    }
-
-    navigate('/vacancies');
+    navigate(notification.route || '/vacancies');
   };
 
   const handleLogout = async () => {
@@ -310,15 +375,20 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
             <button
               type="button"
               className={`topbar__icon-btn${isNotificationsOpen ? ' topbar__icon-btn--active' : ''}`}
-              aria-label="Notificações"
+              aria-label="Alertas operacionais"
               aria-haspopup="dialog"
               aria-expanded={isNotificationsOpen}
               aria-controls="topbar-notifications"
               onClick={handleToggleNotifications}
             >
               <LuBell className="icon-topbar" />
-              {mockedNotifications.length ? (
-                <span className="topbar__icon-indicator" aria-hidden="true" />
+              {operationalAlerts.length ? (
+                <span
+                  className="topbar__icon-indicator"
+                  aria-label={`${operationalAlerts.length} alertas operacionais`}
+                >
+                  {operationalAlerts.length}
+                </span>
               ) : null}
             </button>
 
@@ -327,16 +397,24 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                 id="topbar-notifications"
                 className="topbar__notifications-panel"
                 role="dialog"
-                aria-label="Notificações do sistema"
+                aria-label="Alertas operacionais"
               >
                 <div className="topbar__notifications-header">
-                  <h2>Notificações</h2>
-                  <span>{mockedNotifications.length}</span>
+                  <h2>Alertas operacionais</h2>
+                  <span>{operationalAlerts.length}</span>
                 </div>
 
                 <div className="topbar__notifications-list">
-                  {mockedNotifications.length ? (
-                    mockedNotifications.map((notification) => (
+                  {isAlertsLoading ? (
+                    <p className="topbar__notifications-empty">
+                      Atualizando alertas operacionais...
+                    </p>
+                  ) : alertsError ? (
+                    <p className="topbar__notifications-empty">
+                      Não foi possível atualizar os alertas no momento.
+                    </p>
+                  ) : operationalAlerts.length ? (
+                    operationalAlerts.map((notification) => (
                       <article
                         key={notification.id}
                         className={`topbar__notification-card topbar__notification-card--${notification.type}`}
@@ -350,9 +428,11 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                             <strong>{notification.title}</strong>
                           </div>
 
-                          <time className="topbar__notification-time">
-                            {notification.time}
-                          </time>
+                          {notification.time ? (
+                            <time className="topbar__notification-time">
+                              {notification.time}
+                            </time>
+                          ) : null}
                         </div>
 
                         <p className="topbar__notification-description">
@@ -363,7 +443,7 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                           <span
                             className={`topbar__notification-badge topbar__notification-badge--${notification.type}`}
                           >
-                            {notificationTypeLabel[notification.type]}
+                            {notification.badgeLabel}
                           </span>
 
                           {notification.actionLabel ? (
@@ -380,7 +460,8 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                     ))
                   ) : (
                     <p className="topbar__notifications-empty">
-                      Nenhuma notificação no momento.
+                      Nenhum alerta operacional no momento. O sino mostra
+                      apenas dados reais de vagas e fila.
                     </p>
                   )}
                 </div>
