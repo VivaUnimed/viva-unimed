@@ -12,27 +12,56 @@ const roleLabelMap = {
   Paciente: 'Paciente',
 };
 
-const getProfileItems = (user) => {
-  const roleNames = Array.isArray(user?.roles)
-    ? user.roles
-        .filter(Boolean)
-        .map((role) => roleLabelMap[role] || role)
-        .join(', ')
-    : '';
+const getRoleLabel = (user) => {
+  if (!Array.isArray(user?.roles)) {
+    return '';
+  }
 
-  const unit =
-    user?.unit ||
-    user?.unidade ||
-    user?.unitName ||
-    user?.unit_name ||
-    '';
+  return user.roles
+    .filter(Boolean)
+    .map((role) => roleLabelMap[role] || role)
+    .join(', ');
+};
 
-  return [
-    { label: 'Nome', value: user?.name || 'Não informado' },
-    { label: 'Perfil', value: roleNames || 'Não informado' },
-    ...(unit ? [{ label: 'Unidade', value: unit }] : []),
-    { label: 'E-mail', value: user?.email || 'Não informado' },
+const getAvatarSource = (user) => {
+  const candidates = [
+    user?.avatar,
+    user?.avatarUrl,
+    user?.photo,
+    user?.photoUrl,
+    user?.picture,
+    user?.image,
+    user?.imageUrl,
+    user?.profileImage,
+    user?.profileImageUrl,
+    user?.profilePhoto,
+    user?.profilePhotoUrl,
   ];
+
+  return (
+    candidates.find(
+      (candidate) =>
+        typeof candidate === 'string' && candidate.trim().length > 0,
+    ) || ''
+  );
+};
+
+const getAvatarInitials = (user) => {
+  const sourceText = user?.name || getRoleLabel(user) || '';
+  const words = sourceText
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return 'U';
 };
 
 const helpTopics = [
@@ -166,29 +195,6 @@ function TopbarModal({
   );
 }
 
-function ProfileModal({ onClose, user }) {
-  const profileItems = getProfileItems(user);
-
-  return (
-    <TopbarModal
-      title="Meu perfil"
-      titleId="topbar-profile-title"
-      modalId="topbar-profile-modal"
-      footerLabel="Fechar"
-      onClose={onClose}
-    >
-      <div className="topbar__modal-content">
-        {profileItems.map((item) => (
-          <div key={item.label} className="topbar__modal-info">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </div>
-        ))}
-      </div>
-    </TopbarModal>
-  );
-}
-
 function HelpModal({ onClose }) {
   return (
     <TopbarModal
@@ -222,7 +228,10 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
-  const userName = user?.name || 'Usuário';
+  const userRoleLabel = useMemo(() => getRoleLabel(user), [user]);
+  const userAvatarSource = useMemo(() => getAvatarSource(user), [user]);
+  const userAvatarInitials = useMemo(() => getAvatarInitials(user), [user]);
+  const profileTitle = user?.name || user?.email || userRoleLabel || 'Usuário';
   const operationalAlerts = useMemo(
     () =>
       buildOperationalAlerts(
@@ -320,12 +329,6 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
     setIsNotificationsOpen((current) => !current);
   };
 
-  const handleOpenProfileModal = () => {
-    setIsMenuOpen(false);
-    setIsNotificationsOpen(false);
-    setActiveModal('profile');
-  };
-
   const handleOpenHelpModal = () => {
     setIsMenuOpen(false);
     setIsNotificationsOpen(false);
@@ -334,12 +337,6 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
 
   const handleCloseModal = () => {
     setActiveModal(null);
-  };
-
-  const handleNavigateToSettings = () => {
-    setIsMenuOpen(false);
-    setIsNotificationsOpen(false);
-    navigate('/settings');
   };
 
   const handleNotificationAction = (notification) => {
@@ -485,49 +482,64 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
             <button
               type="button"
               className={`topbar__profile${isMenuOpen ? ' topbar__profile--active' : ''}`}
-              aria-label={`Perfil de ${userName}`}
-              aria-haspopup="menu"
+              aria-label={`Perfil de ${profileTitle}`}
+              aria-haspopup="dialog"
               aria-expanded={isMenuOpen}
               aria-controls="topbar-profile-menu"
               onClick={handleToggleMenu}
-              title={userName}
+              title={profileTitle}
             >
-              <img
-                src="https://i.pravatar.cc/40?img=18"
-                alt={`Avatar de ${userName}`}
-                className="topbar__avatar"
-              />
+              {userAvatarSource ? (
+                <img
+                  src={userAvatarSource}
+                  alt={`Avatar de ${profileTitle}`}
+                  className="topbar__avatar"
+                />
+              ) : (
+                <span className="topbar__avatar-fallback" aria-hidden="true">
+                  {userAvatarInitials}
+                </span>
+              )}
             </button>
 
             {isMenuOpen ? (
               <div
                 id="topbar-profile-menu"
                 className="topbar__profile-menu"
-                role="menu"
-                aria-label="Menu do usuário"
+                role="dialog"
+                aria-label="Perfil do usuário"
               >
-                <button
-                  type="button"
-                  className="topbar__profile-menu-item"
-                  role="menuitem"
-                  onClick={handleOpenProfileModal}
-                >
-                  Meu perfil
-                </button>
+                <div className="topbar__profile-summary">
+                  <div className="topbar__profile-avatar-panel" aria-hidden="true">
+                    {userAvatarSource ? (
+                      <img
+                        src={userAvatarSource}
+                        alt=""
+                        className="topbar__avatar topbar__avatar--panel"
+                      />
+                    ) : (
+                      <span className="topbar__avatar-fallback topbar__avatar-fallback--panel">
+                        {userAvatarInitials}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="topbar__profile-meta">
+                    <strong>{profileTitle}</strong>
+                    {user?.email && user.email !== profileTitle ? (
+                      <span>{user.email}</span>
+                    ) : null}
+                    {userRoleLabel ? (
+                      <small>{userRoleLabel}</small>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="topbar__profile-divider" />
 
                 <button
                   type="button"
                   className="topbar__profile-menu-item"
-                  role="menuitem"
-                  onClick={handleNavigateToSettings}
-                >
-                  Configurações
-                </button>
-
-                <button
-                  type="button"
-                  className="topbar__profile-menu-item"
-                  role="menuitem"
                   onClick={handleLogout}
                 >
                   Sair
@@ -537,10 +549,6 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
           </div>
         </div>
       </header>
-
-      {activeModal === 'profile' ? (
-        <ProfileModal onClose={handleCloseModal} user={user} />
-      ) : null}
 
       {activeModal === 'help' ? (
         <HelpModal onClose={handleCloseModal} />
