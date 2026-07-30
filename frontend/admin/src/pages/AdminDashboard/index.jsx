@@ -220,8 +220,8 @@ export default function AdminDashboard() {
           })}
         </section>
 
-        <div className="dashboard-main-content">
-          <section className="dashboard-column dashboard-column--large">
+        <div className="dashboard-panels-grid">
+          <section className="dashboard-stack">
             <div className="dashboard-panel">
               <div className="dashboard-panel__header">
                 <h2>
@@ -246,12 +246,12 @@ export default function AdminDashboard() {
                         </div>
                         <div className="recent-vacancy-item__status">
                            <span className={`queue-badge queue-badge--${vacancy.queuePatients > 0 ? 'active' : 'empty'}`}>
-                              <LuUsers size={14} /> 
+                              <LuUsers size={14} />
                               {vacancy.queuePatients} {vacancy.queuePatients === 1 ? 'paciente' : 'pacientes'} na fila
                            </span>
                         </div>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           className="recent-vacancy-item__action"
                           onClick={() => navigate(`/vacancies/${vacancy.id}`)}
                         >
@@ -271,46 +271,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-          </section>
-
-          <section className="dashboard-column dashboard-column--small">
-            <div className="dashboard-panel">
-              <div className="dashboard-panel__header">
-                <h2>
-                  <LuChartColumn size={20} /> Resumo de vagas por status
-                </h2>
-              </div>
-              <div className="dashboard-panel__body">
-                <div className="status-bars-container">
-                  {vacanciesByStatus.map(status => {
-                    const Icon = status.icon;
-                    return (
-                      <div key={status.id} className="status-bar-item">
-                        <div className="status-bar-item__label">
-                          <Icon size={16} color={status.color} style={{ stroke: status.color }} />
-                          <span>{status.label}</span>
-                          <strong>{status.count}</strong>
-                        </div>
-                        <div className="status-bar-item__track">
-                          <div 
-                            className="status-bar-item__fill" 
-                            style={{ 
-                              width: `${status.percentage}%`,
-                              backgroundColor: status.color 
-                            }} 
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="dashboard-bottom-content">
-          <section className="dashboard-column">
             <div className="dashboard-panel">
               <div className="dashboard-panel__header">
                 <h2>
@@ -339,7 +299,40 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          <section className="dashboard-column">
+          <section className="dashboard-stack">
+            <div className="dashboard-panel">
+              <div className="dashboard-panel__header">
+                <h2>
+                  <LuChartColumn size={20} /> Resumo de vagas por status
+                </h2>
+              </div>
+              <div className="dashboard-panel__body">
+                <div className="status-bars-container">
+                  {vacanciesByStatus.map(status => {
+                    const Icon = status.icon;
+                    return (
+                      <div key={status.id} className="status-bar-item">
+                        <div className="status-bar-item__label">
+                          <Icon size={16} color={status.color} style={{ stroke: status.color }} />
+                          <span>{status.label}</span>
+                          <strong>{status.count}</strong>
+                        </div>
+                        <div className="status-bar-item__track">
+                          <div
+                            className="status-bar-item__fill"
+                            style={{
+                              width: `${status.percentage}%`,
+                              backgroundColor: status.color
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             <div className="dashboard-panel">
               <div className="dashboard-panel__header">
                 <h2>

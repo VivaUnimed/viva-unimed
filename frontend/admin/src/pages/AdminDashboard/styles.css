@@ -143,7 +143,7 @@
 /* Summary Grid */
 .strategic-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
   margin-bottom: 8px;
 }
@@ -240,31 +240,18 @@
 }
 
 /* Main Content Layout */
-.dashboard-main-content {
+.dashboard-panels-grid {
   display: grid;
-  grid-template-columns: 1.8fr 1.2fr;
-  gap: 24px;
-  align-items: start;
-  margin-bottom: 24px;
-}
-
-.dashboard-bottom-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
   gap: 24px;
   align-items: start;
 }
 
-@media (max-width: 1100px) {
-  .dashboard-main-content, .dashboard-bottom-content {
-    grid-template-columns: 1fr;
-  }
-}
-
-.dashboard-column {
+.dashboard-stack {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 
 /* Panels */
@@ -383,9 +370,9 @@
 }
 
 .recent-vacancy-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
   padding: 16px 20px;
   background-color: #ffffff;
   border: 1px solid #ece7e3;
@@ -403,7 +390,7 @@
 .recent-vacancy-item__time-box {
   display: flex;
   flex-direction: column;
-  min-width: 100px;
+  min-width: 0;
 }
 
 .recent-vacancy-item__time-box strong {
@@ -424,6 +411,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 }
 
 .recent-vacancy-item__info strong {
@@ -431,6 +419,9 @@
   font-weight: 800;
   font-size: 14px;
   line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recent-vacancy-item__info span {
@@ -438,11 +429,15 @@
   font-size: 12px;
   font-weight: 500;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recent-vacancy-item__status {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .queue-badge {
@@ -644,4 +639,155 @@
   color: #0369a1;
   font-weight: 900;
   font-size: 14px;
+}
+
+@media (max-width: 1280px) {
+  .strategic-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-panels-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.9fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .dashboard-panels-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-stack {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .strategic-dashboard-page {
+    padding: 28px 24px;
+    gap: 20px;
+  }
+
+  .strategic-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .strategic-dashboard-date {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-panel__header,
+  .dashboard-panel__body {
+    padding: 20px;
+  }
+
+  .recent-vacancy-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "time action"
+      "info info"
+      "status status";
+    align-items: start;
+  }
+
+  .recent-vacancy-item__time-box {
+    grid-area: time;
+  }
+
+  .recent-vacancy-item__info {
+    grid-area: info;
+  }
+
+  .recent-vacancy-item__status {
+    grid-area: status;
+    justify-content: flex-start;
+  }
+
+  .recent-vacancy-item__action {
+    grid-area: action;
+  }
+}
+
+@media (max-width: 640px) {
+  .strategic-dashboard-page {
+    padding: 20px 16px 28px;
+  }
+
+  .strategic-dashboard-header h1 {
+    font-size: 28px;
+    line-height: 34px;
+  }
+
+  .strategic-dashboard-header p {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .strategic-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .strategic-summary-card {
+    padding: 20px;
+  }
+
+  .dashboard-panel {
+    border-radius: 20px;
+  }
+
+  .dashboard-panel__header,
+  .dashboard-panel__body {
+    padding: 18px 16px;
+  }
+
+  .dashboard-panel__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dashboard-panel__link {
+    padding: 0;
+  }
+
+  .recent-vacancy-item {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "time"
+      "info"
+      "status"
+      "action";
+    padding: 14px 16px;
+  }
+
+  .recent-vacancy-item__action {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .queue-badge {
+    white-space: normal;
+  }
+
+  .status-bar-item__label {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .status-bar-item__label strong {
+    margin-left: auto;
+  }
+
+  .specialty-queue-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .specialty-queue-item__count {
+    width: 100%;
+    justify-content: center;
+  }
 }
