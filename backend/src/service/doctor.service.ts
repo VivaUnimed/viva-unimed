@@ -5,7 +5,7 @@ import { Op, WhereOptions } from "sequelize";
 import UserModel from "../db/models/user.model";
 import SpecialityModel from "../db/models/speciality.model";
 import RoleModel from "../db/models/role.model";
-import { paginate } from "./helpers";
+import { assertUniqueUserIdentity, paginate } from "./helpers";
 import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
 import { getPermissionsFromRoles } from "../entities";
 import { hashPassword } from "../helpers/password";
@@ -26,36 +26,31 @@ export class DoctorService {
       throw new BadRequest("CRM inválido");
     }
 
-    // FIX: Adicionada validação de unicidade de e-mail antes de abrir a transação
-    const userExists = await UserModel.findOne({ where: { email: data.email } });
-    if (userExists) {
-      throw new Conflict("Já existe um usuário cadastrado com este e-mail.");
-    }
+    const { normalizedEmail, normalizedCpf } = await assertUniqueUserIdentity(data.email, data.cpf);
 
     const doctorExists = await DoctorModel.findOne({ where: { crm: data.crm } });
     if (doctorExists) {
       throw new Conflict("O médico com este CRM já está cadastrado no sistema.");
     }
 
-    // FIX: Início da transação no banco de dados para evitar registros órfãos
+    // início da transação no banco de dados para evitar registros órfãos
     const t = await db.transaction();
 
     try {
-      // FIX: 1. Criação do Usuário base na tabela Users
+      // criação do usuário base na tabela Users
       const newUser = await UserModel.create({
         name: data.name,
-        email: data.email,
-        cpf: data.cpf,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
         phone: data.phone,
       }, { transaction: t });
 
-      // FIX: 2. Atribuição automática da Role 'Medico' na tabela Roles
+
       await RoleModel.create({
         userId: newUser.id,
         role: 'Medico'
       }, { transaction: t });
 
-      // FIX: 3. Criação da senha na tabela Passwords (se a senha for enviada)
       if (data.password) {
         const { hash, salt } = await hashPassword(data.password);
         await PasswordModel.create({
@@ -65,7 +60,6 @@ export class DoctorService {
         }, { transaction: t });
       }
 
-      // FIX: 4. Criação do perfil do médico linkado ao novo usuário criado acima
       const newDoctor = await DoctorModel.create({
         userId: newUser.id,
         crm: data.crm,
@@ -78,7 +72,6 @@ export class DoctorService {
       return await this.getById(newDoctor.userId);
 
     } catch (error) {
-      // FIX: Se qualquer etapa acima falhar, desfaz tudo
       await t.rollback();
       throw error;
     }

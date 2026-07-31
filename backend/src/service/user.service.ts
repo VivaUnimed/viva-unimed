@@ -7,6 +7,7 @@ import RoleModel from "../db/models/role.model";
 import { getPermissionsFromRoles } from "../entities";
 import { BadRequest } from "../error";
 import { db } from "../db";
+import { assertUniqueUserIdentity } from "./helpers";
 
 export class UserService {
     /** Cria um usuário, salva sua senha (hasheada) e atribui cargos iniciais */
@@ -14,14 +15,17 @@ export class UserService {
     if (data.role !== 'Admin' && data.role !== 'Tecnico') {
       throw new BadRequest("Utilize a rota /api/patient para cadastrar pacientes.");
     }
+
+    const { normalizedEmail, normalizedCpf } = await assertUniqueUserIdentity(data.email, data.cpf);
+
     const t = await db.transaction();
 
     try {
       // cria o registro na tabela base
       const newUser = await UserModel.create({
         name: data.name,
-        email: data.email,
-        // cpf: data.cpf,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
         phone: data.phone,
       }, { transaction: t });
 

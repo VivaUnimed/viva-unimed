@@ -3,7 +3,7 @@ import PatientModel from "../db/models/patient.model";
 import { NotFound } from "../error";
 import UserModel from "../db/models/user.model";
 import RoleModel from "../db/models/role.model";
-import { paginate } from "./helpers";
+import { assertUniqueUserIdentity, paginate } from "./helpers";
 import { Op } from "sequelize";
 import { getPermissionsFromRoles } from "../entities";
 import { db } from "../db";
@@ -26,14 +26,16 @@ export class PatientService {
    * Cria o Usuário e o Paciente em uma única transação (Facade)
    */
   async createPatientComplete(data: IPatientCreateInput): Promise<IPatient> {
+    const { normalizedEmail, normalizedCpf } = await assertUniqueUserIdentity(data.email, data.cpf);
+
     const t = await db.transaction();
 
     try {
       // cria usuário base
       const newUser = await UserModel.create({
         name: data.name,
-        email: data.email,
-        cpf: data.cpf,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
         phone: data.phone,
       }, { transaction: t });
 
