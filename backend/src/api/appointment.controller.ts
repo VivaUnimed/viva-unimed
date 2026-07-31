@@ -39,6 +39,7 @@ export class AppointmentController extends Controller {
    * Busca uma vaga de consulta por ID.
    */
   @Get("/{id}")
+  @Security(Guard.JWT, ['appointment.read'])
   getById(@Path() id: number): Promise<IAppointment> {
     return service.appointment.getById(id);
   }
@@ -47,6 +48,7 @@ export class AppointmentController extends Controller {
    * Lista todas as vagas de consulta.
    */
   @Get()
+  @Security(Guard.JWT, ['appointment.read'])
   list(): Promise<IAppointment[]> {
     return service.appointment.list();
   }
@@ -55,6 +57,7 @@ export class AppointmentController extends Controller {
    * Remove uma vaga de consulta pelo ID.
    */
   @Delete("/{id}")
+  @Security(Guard.JWT, ['appointment.delete'])
   delete(@Path() id: number): Promise<void> {
     return service.appointment.delete(id);
   }
