@@ -22,6 +22,7 @@ export const ROLES: Record<Role, readonly Permission[]> = {
 
   Paciente: [
     "schedule.request",
+    "schedule.read",
     "speciality.read", //para escolher o médico
     "appointment.read" //para ver suas próprias consultas
   ],

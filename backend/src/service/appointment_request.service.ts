@@ -1,7 +1,7 @@
-import type { AppointmentMatchStatus, AppointmentRequestStatus, IAppointmentMatch, IAppointmentRequest, IAppointmentRequestCreate, IAppointmentRequestListParams } from "shared";
+import type { AppointmentMatchStatus, AppointmentRequestStatus, IAppointmentMatch, IAppointmentRequest, IAppointmentRequestCreate, IAppointmentRequestListParams, IAppointmentRequestPatientCreate, IAppointmentRequestPatientListParams } from "shared";
 import AppointmentRequestModel from "../db/models/appointment_request.model";
 import { Conflict, NotFound } from "../error";
-import { Op, WhereOptions } from "sequelize";
+import { Op, Transaction, WhereOptions } from "sequelize";
 import AppointmentModel from "../db/models/appointment.model";
 import AppointmentMatchModel from "../db/models/appointment_match.model";
 import { paginate } from "./helpers";
@@ -10,6 +10,9 @@ import { db } from "../db";
 import { IConfig } from "../config";
 import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
 import { HOUR, MINUTE } from "../constants";
+import DoctorModel from "../db/models/doctor.model";
+import UserModel from "../db/models/user.model";
+import PatientModel from "../db/models/patient.model";
 
 /**
  * Serviço responsável pelas operações de pedido de consulta.
@@ -20,123 +23,243 @@ export class AppointmentRequestService {
   constructor(private config: IConfig) {}
 
   /**
-   * Cria um novo pedido de consulta.
-   * Retorna o registro criado em formato plain object.
+   * Cria um novo pedido para o paciente autenticado.
+   * O patientId é obtido a partir do userId presente no JWT.
    */
-  async create(data: IAppointmentRequestCreate): Promise<IAppointmentRequest> {
+  async createForPatient(
+    patientUserId: number,
+    data: IAppointmentRequestPatientCreate,
+  ): Promise<IAppointmentRequest> {
+    const patientId = await this.getPatientProfileId(patientUserId);
+
     if (data.doctorId) {
       const doctorSpecialityBind = await DoctorSpecialityModel.findOne({
         where: {
           userId: data.doctorId,
-          specialityId: data.specialityId
-        }
+          specialityId: data.specialityId,
+        },
       });
 
       if (!doctorSpecialityBind) {
-        throw new Conflict("O médico selecionado não realiza atendimentos para a especialidade informada.");
+        throw new Conflict(
+          "O médico selecionado não realiza atendimentos para a especialidade informada.",
+        );
       }
     }
 
-    // trava de duplicidade
+    // Mantém a regra de uma única solicitação ativa por especialidade/paciente.
     const found = await AppointmentRequestModel.findOne({
       where: {
-        patientId: data.patientId,
+        patientId,
         specialityId: data.specialityId,
-        status: 'waiting' satisfies AppointmentRequestStatus,
-      }
-    })
-    if(found) {
-      throw new Conflict("O paciente já possui uma solicitação ativa na fila de espera para esta especialidade.");
+        status: "waiting" satisfies AppointmentRequestStatus,
+      },
+    });
+
+    if (found) {
+      throw new Conflict(
+        "O paciente já possui uma solicitação ativa na fila de espera para esta especialidade.",
+      );
     }
 
     const model = await AppointmentRequestModel.create({
       ...data,
+      patientId,
+      status: "waiting",
       attempts: 0,
       cooldownUntil: null,
     });
+
     return model.get({ plain: true });
   }
 
-  /**
-   * Atualiza um pedido de consulta existente.
-   * Lança NotFound se o ID não existir.
-   */
-  async update(id: number, data: Partial<IAppointmentRequestCreate>): Promise<IAppointmentRequest> {
-    // TODO: e se já foi confirmada?
-    const model = await AppointmentRequestModel.findByPk(id);
-    if (!model) {
-      throw new NotFound();
+  /** Atualiza uma solicitação somente quando ela pertence ao paciente autenticado. */
+  async updateForPatient(
+    id: number,
+    patientUserId: number,
+    data: Partial<IAppointmentRequestPatientCreate>,
+  ): Promise<IAppointmentRequest> {
+    const patientId = await this.getPatientProfileId(patientUserId);
+    const model = await AppointmentRequestModel.findOne({
+      where: { id, patientId },
+    });
+
+    if (!model) throw new NotFound();
+
+    if (data.doctorId !== undefined) {
+      const specialityId = data.specialityId ?? model.specialityId;
+      const doctorSpecialityBind = await DoctorSpecialityModel.findOne({
+        where: {
+          userId: data.doctorId,
+          specialityId,
+        },
+      });
+
+      if (!doctorSpecialityBind) {
+        throw new Conflict(
+          "O médico selecionado não realiza atendimentos para a especialidade informada.",
+        );
+      }
     }
+
+    const nextSpecialityId = data.specialityId ?? model.specialityId;
+    if (nextSpecialityId !== model.specialityId) {
+      const duplicate = await AppointmentRequestModel.findOne({
+        where: {
+          id: { [Op.ne]: id },
+          patientId,
+          specialityId: nextSpecialityId,
+          status: "waiting" satisfies AppointmentRequestStatus,
+        },
+      });
+      if (duplicate) {
+        throw new Conflict(
+          "O paciente já possui uma solicitação ativa na fila de espera para esta especialidade.",
+        );
+      }
+    }
+
     await model.update(data);
     return model.get({ plain: true });
   }
 
-  /**
-   * Busca um pedido de consulta pelo ID.
-   * Lança NotFound se não encontrar o registro.
-   */
-  async getById(id: number): Promise<IAppointmentRequest> {
-    const model = await AppointmentRequestModel.findByPk(id);
-    if(!model) {
-      throw new NotFound();
-    }
+  /** Busca uma solicitação exigindo que ela pertença ao paciente autenticado. */
+  async getByIdForPatient(
+    id: number,
+    patientUserId: number,
+  ): Promise<IAppointmentRequest> {
+    const patientId = await this.getPatientProfileId(patientUserId);
+    const model = await AppointmentRequestModel.findOne({
+      where: { id, patientId },
+    });
+
+    if (!model) throw new NotFound();
     return model.get({ plain: true });
   }
 
-  /**
-   * Lista todos os pedidos de consulta cadastrados.
-   * Aplica filtros dinâmicos, paginação, ordenação cronológica e inclui dados relacionais.
-   */
-  async list(params: IAppointmentRequestListParams = {}): Promise<IAppointmentRequest[]> {
-    const { patientId, specialityId, status, doctorId } = params;
-    const where: WhereOptions<IAppointmentRequest> = { };
+  /** Lista somente as solicitações do paciente autenticado. */
+  async listForPatient(
+    patientUserId: number,
+    params: IAppointmentRequestPatientListParams = {},
+  ): Promise<IAppointmentRequest[]> {
+    const patientId = await this.getPatientProfileId(patientUserId);
+    const { specialityId, status, doctorId } = params;
+    const where: WhereOptions<IAppointmentRequest> = { patientId };
 
-    if(patientId) where.patientId = patientId;
-    if(specialityId) where.specialityId = specialityId;
-    if(status) where.status = status;
-    if(doctorId) where.doctorId = doctorId;
+    if (specialityId) where.specialityId = specialityId;
+    if (status) where.status = status;
+    if (doctorId) where.doctorId = doctorId;
 
     const list = await AppointmentRequestModel.findAll({
       where,
       ...paginate(params),
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
-    return list.map((model) => model.get({ plain: true }))
+
+    return list.map((model) => model.get({ plain: true }));
   }
 
   /**
-   * Lista o histórico de matches (ofertas de vagas).
-   * Útil para exibir no app do paciente as vagas que ele já recebeu, aceitou ou recusou.
+   * Remove o paciente autenticado da própria fila de espera.
+   * Solicitações de outros pacientes são tratadas como não encontradas.
    */
-  async listMatches(params: { userId?: number; appointmentId?: number; status?: string }): Promise<IAppointmentMatch[]> {
+  async deleteForPatient(id: number, patientUserId: number): Promise<void> {
+    const patientId = await this.getPatientProfileId(patientUserId);
+    const request = await AppointmentRequestModel.findOne({
+      where: { id, patientId },
+    });
+
+    if (!request) throw new NotFound();
+
+    if (request.status === "approved") {
+      throw new Conflict(
+        "Esta solicitação já gerou uma consulta confirmada. Use a opção de cancelar a consulta.",
+      );
+    }
+
+    const transaction = await db.transaction();
+    try {
+      const pendingMatch = await AppointmentMatchModel.findOne({
+        where: {
+          requestId: id,
+          status: {
+            [Op.in]: ["queued", "waiting_response"] satisfies AppointmentMatchStatus[],
+          },
+        },
+        transaction,
+      });
+
+      if (pendingMatch) {
+        await pendingMatch.update(
+          { status: "rejected", respondedAt: new Date() },
+          { transaction },
+        );
+      }
+
+      await request.update({ status: "cancelled" }, { transaction });
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * Lista as ofertas do paciente autenticado.
+   * Por padrão retorna somente alertas ativos, aguardando resposta.
+   */
+  async listPatientMatches(
+    patientUserId: number,
+    status?: AppointmentMatchStatus,
+    includeHistory = false,
+  ): Promise<IAppointmentMatch[]> {
+    const where: WhereOptions<IAppointmentMatch> = {};
+
+    if (status) {
+      where.status = status;
+    } else if (!includeHistory) {
+      // O paciente só deve visualizar ofertas que já foram notificadas
+      // e que ainda aguardam uma resposta.
+      where.status = "waiting_response";
+    }
+
+    const patientId = await this.getPatientProfileId(patientUserId);
+
+    const matches = await AppointmentMatchModel.findAll({
+      where,
+      include: this.patientMatchIncludes(patientId, true),
+      order: [
+        ["expiresAt", "ASC"],
+        ["createdAt", "DESC"],
+      ],
+    });
+
+    return matches.map((match) => match.get({ plain: true }));
+  }
+
+  /** Mantido para usos administrativos/internos já existentes. */
+  async listMatches(params: {
+    userId?: number;
+    appointmentId?: number;
+    status?: AppointmentMatchStatus;
+  }): Promise<IAppointmentMatch[]> {
     const where: WhereOptions<IAppointmentMatch> = {};
     if (params.status) where.status = params.status;
     if (params.appointmentId) where.appointmentId = params.appointmentId;
 
-    const include: any[] = [
-      {
-        model: AppointmentModel,
-        include: [SpecialityModel]
-      }
-    ];
-
-    // Se filtrar por usuário, buscamos via tabela de Request
-    if (params.userId) {
-      include.push({
-        model: AppointmentRequestModel,
-        where: { patientId: params.userId }
-      });
-    } else {
-      include.push({ model: AppointmentRequestModel });
-    }
+    const patientId = params.userId
+      ? await this.getPatientProfileId(params.userId)
+      : undefined;
 
     const matches = await AppointmentMatchModel.findAll({
       where,
-      include,
-      order: [['createdAt', 'DESC']]
+      include: patientId
+        ? this.patientMatchIncludes(patientId, true)
+        : this.patientMatchIncludes(undefined, false),
+      order: [["createdAt", "DESC"]],
     });
 
-    return matches.map(m => m.get({ plain: true }));
+    return matches.map((match) => match.get({ plain: true }));
   }
 
   /**
@@ -293,140 +416,228 @@ export class AppointmentRequestService {
     }
   }
 
+
+  /**
+   * Converte o ID do usuário autenticado no ID interno do perfil de paciente.
+   * A tabela appointment_requests guarda patients.id, e não users.id.
+   */
+  private async getPatientProfileId(
+    patientUserId: number,
+    transaction?: Transaction,
+  ): Promise<number> {
+    const patient = await PatientModel.findOne({
+      where: { userId: patientUserId },
+      transaction,
+    });
+
+    if (!patient) throw new NotFound();
+    return patient.id;
+  }
+
+  private patientMatchIncludes(patientId?: number, required = false): any[] {
+    return [
+      {
+        model: AppointmentModel,
+        include: [
+          SpecialityModel,
+          {
+            model: DoctorModel,
+            attributes: ["userId", "crm", "enabled"],
+            include: [
+              {
+                model: UserModel,
+                attributes: ["id", "name"],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        model: AppointmentRequestModel,
+        required,
+        ...(patientId ? { where: { patientId } } : {}),
+      },
+    ];
+  }
+
+  /** Busca um match sem filtro de proprietário, apenas para rotinas internas. */
   async getMatch(matchId: number): Promise<IAppointmentMatch> {
     const match = await AppointmentMatchModel.findByPk(matchId, {
-      include: [
-        {
-          model: AppointmentModel,
-          include: [{
-            model: SpecialityModel,
-          }]
-        },
-        { model: AppointmentRequestModel },
-      ],
+      include: this.patientMatchIncludes(),
     });
-    if (!match) {
-      throw new NotFound();
-    }
+
+    if (!match) throw new NotFound();
     return match.get({ plain: true });
   }
 
-  async confirmMatch(matchId: number): Promise<void> {
-    const match = await this.getMatch(matchId);
+  /**
+   * Busca um match exigindo que a solicitação pertença ao usuário autenticado.
+   * Retorna 404 também para match alheio, evitando revelar sua existência.
+   */
+  async getPatientMatch(
+    matchId: number,
+    patientUserId: number,
+    transaction?: Transaction,
+  ): Promise<IAppointmentMatch> {
+    const patientId = await this.getPatientProfileId(
+      patientUserId,
+      transaction,
+    );
 
-    if(match.appointment.status !== 'open') throw new Conflict('appointment status is not open');
-    if(match.request.status !== 'waiting') throw new Conflict('request status is not waiting');
-    if(match.status !== 'waiting_response') throw new Conflict('match status is not waiting_response');
-    if(match.expiresAt && match.expiresAt < new Date()) throw new Conflict('match expired');
-
-    const transaction = await db.transaction();
-    try {
-      await AppointmentMatchModel.update({ status: 'accepted' }, {
-        where: { id: match.id },
-        transaction,
-      });
-      await AppointmentModel.update({ status: 'booked' }, {
-        where: { id: match.appointment.id },
-        transaction,
-      });
-      await AppointmentMatchModel.update({ status: 'cancelled' }, {
-      where: {
-        appointmentId: match.appointmentId,
-        id: { [Op.ne]: match.id } // Atualiza todos daquela vaga, MENOS o do vencedor
-      },
-      transaction // Importante manter na mesma transação
+    const match = await AppointmentMatchModel.findOne({
+      where: { id: matchId },
+      include: this.patientMatchIncludes(patientId, true),
+      transaction,
     });
-      await AppointmentRequestModel.update({ status: 'approved' }, {
-        where: { id: match.request.id },
-        transaction,
-      });
-      await transaction.commit();
-    } catch (e) {
-      await transaction.rollback();
-      throw e;
-    }
+
+    if (!match) throw new NotFound();
+    return match.get({ plain: true });
   }
 
-/**
-   * Desfaz a confirmação de um match aceito por engano ou por desistência.
-   * Valida regras de tempo (24h de antecedência ou 15 min de arrependimento).
-   * Reabre a vaga, volta o pedido para a fila e cancela o match atual.
-   */
-  async cancelMatch(matchId: number): Promise<void> {
-    const match = await this.getMatch(matchId);
-
-    // 1. Validação de status
-    if (match.status !== 'accepted') {
-      throw new Conflict('Only accepted matches can be undone');
-    }
-
-    // 2. Cálculo das janelas de tempo
-    const now = new Date().getTime();
-    const acceptedAt = new Date(match.updatedAt).getTime();
-    const appointmentDate = new Date(match.appointment.date).getTime();
-
-    const timeSinceAccepted = now - acceptedAt;
-    const timeUntilAppointment = appointmentDate - now;
-
-    const maxAllowedToCancel = 15 * MINUTE;
-    const maxAllowedTimeToCancelSchedule = 24 * HOUR;
-
-    // 3. Aplicação das Regras de Negócio
-
-    // Regra A: A consulta já passou?
-    if (timeUntilAppointment < 0) {
-      throw new Conflict('Cannot undo a past appointment.');
-    }
-
-    // Regra B: Faltam menos de 24h para a consulta E já passou o prazo de 15 min para desfazer o clique errado?
-    const isTooCloseToAppointment = timeUntilAppointment < maxAllowedTimeToCancelSchedule;
-    const isPastUndoWindow = timeSinceAccepted > maxAllowedToCancel;
-
-    if (isTooCloseToAppointment && isPastUndoWindow) {
-      throw new Conflict('Cannot undo: less than 24 hours to the appointment and the 15-minute grace period has expired.');
-    }
-
-    // 4. Se passou nas validações, executa a transação
+  async confirmMatch(matchId: number, patientUserId: number): Promise<void> {
     const transaction = await db.transaction();
+
     try {
-      // Invalida o match atual
-      await AppointmentMatchModel.update({ status: 'cancelled' }, {
-        where: { id: match.id },
-        transaction,
-      });
+      const match = await this.getPatientMatch(matchId, patientUserId, transaction);
+      const now = new Date();
 
-      // Reabre a vaga na agenda
-      await AppointmentModel.update({ status: 'open' }, {
-        where: { id: match.appointment.id },
-        transaction,
-      });
+      if (match.appointment?.status !== "open") {
+        throw new Conflict("A vaga não está mais disponível.");
+      }
+      if (match.request?.status !== "waiting") {
+        throw new Conflict("A solicitação não está mais aguardando atendimento.");
+      }
+      if (match.status !== "waiting_response") {
+        throw new Conflict("Esta oferta não está aguardando resposta.");
+      }
+      if (match.expiresAt && new Date(match.expiresAt) <= now) {
+        await AppointmentMatchModel.update(
+          { status: "expired" },
+          { where: { id: match.id }, transaction },
+        );
+        throw new Conflict("A oferta expirou e não pode mais ser aceita.");
+      }
 
-      // Devolve o paciente para a fila
-      await AppointmentRequestModel.update({ status: 'waiting' }, {
-        where: { id: match.request.id },
-        transaction,
-      });
+      await AppointmentMatchModel.update(
+        { status: "accepted", respondedAt: now },
+        { where: { id: match.id }, transaction },
+      );
+      await AppointmentModel.update(
+        { status: "booked" },
+        { where: { id: match.appointmentId }, transaction },
+      );
+      await AppointmentMatchModel.update(
+        { status: "cancelled" },
+        {
+          where: {
+            appointmentId: match.appointmentId,
+            id: { [Op.ne]: match.id },
+            status: {
+              [Op.in]: ["queued", "waiting_response"] satisfies AppointmentMatchStatus[],
+            },
+          },
+          transaction,
+        },
+      );
+      await AppointmentRequestModel.update(
+        { status: "approved" },
+        { where: { id: match.requestId }, transaction },
+      );
 
       await transaction.commit();
-    } catch (e) {
+    } catch (error) {
       await transaction.rollback();
-      throw e;
+      throw error;
     }
   }
 
   /**
-   * Chamado quando o paciente clica em "Recusar" na notificação da vaga.
-   * Marca o match como rejeitado e aplica a penalidade de tempo (cooldown)
-   * para que ele vá para o final da fila.
+   * Cancela um match aceito, após validar que ele pertence ao paciente conectado.
    */
-  async rejectMatch(matchId: number): Promise<void> {
-    const match = await this.getMatch(matchId);
+  async cancelMatch(matchId: number, patientUserId: number): Promise<void> {
+    const transaction = await db.transaction();
 
-    if(match.status !== 'waiting_response' && match.status !== 'queued') {
-      throw new Conflict(`A vaga não pode ser recusada no status atual (${match.status}).`);
+    try {
+      const match = await this.getPatientMatch(matchId, patientUserId, transaction);
+
+      if (match.status !== "accepted") {
+        throw new Conflict("Somente ofertas aceitas podem ser canceladas.");
+      }
+
+      const now = Date.now();
+      const acceptedAt = new Date(match.respondedAt ?? match.updatedAt).getTime();
+      const appointmentDate = new Date(match.appointment!.date).getTime();
+      const timeSinceAccepted = now - acceptedAt;
+      const timeUntilAppointment = appointmentDate - now;
+
+      if (timeUntilAppointment < 0) {
+        throw new Conflict("Não é possível cancelar uma consulta já realizada.");
+      }
+
+      const isTooClose = timeUntilAppointment < 24 * HOUR;
+      const undoWindowExpired = timeSinceAccepted > 15 * MINUTE;
+      if (isTooClose && undoWindowExpired) {
+        throw new Conflict(
+          "Faltam menos de 24 horas para a consulta e o prazo de 15 minutos para desfazer expirou.",
+        );
+      }
+
+      await AppointmentMatchModel.update(
+        { status: "cancelled" },
+        { where: { id: match.id }, transaction },
+      );
+      await AppointmentModel.update(
+        { status: "open" },
+        { where: { id: match.appointmentId }, transaction },
+      );
+      await AppointmentRequestModel.update(
+        { status: "waiting" },
+        { where: { id: match.requestId }, transaction },
+      );
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-    // chama o método que já contém a regra de negócio do backoff (cooldown) para rejeições!
-    await this.updateMatchStatus(matchId, 'rejected');
+  }
+
+  /** Recusa a oferta e aplica cooldown dentro da mesma transação. */
+  async rejectMatch(matchId: number, patientUserId: number): Promise<void> {
+    const transaction = await db.transaction();
+
+    try {
+      const match = await this.getPatientMatch(matchId, patientUserId, transaction);
+      if (match.status !== "waiting_response" && match.status !== "queued") {
+        throw new Conflict(
+          `A oferta não pode ser recusada no status atual (${match.status}).`,
+        );
+      }
+
+      const request = match.request!;
+      const newAttempts = (request.attempts ?? 0) + 1;
+      const backoffMinutes =
+        this.config.APPOINTMENT_REQUEST_BACKOFF_MINUTES *
+        Math.pow(
+          this.config.APPOINTMENT_REQUEST_BACKOFF_MULTIPLIER,
+          newAttempts - 1,
+        );
+      const cooldownUntil = new Date(Date.now() + backoffMinutes * MINUTE);
+
+      await AppointmentMatchModel.update(
+        { status: "rejected", respondedAt: new Date() },
+        { where: { id: match.id }, transaction },
+      );
+      await AppointmentRequestModel.update(
+        { attempts: newAttempts, cooldownUntil },
+        { where: { id: match.requestId }, transaction },
+      );
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   async setExpiredStatus() {
