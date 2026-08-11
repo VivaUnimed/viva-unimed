@@ -1,7 +1,5 @@
-import { getGeneratedVacancies } from '../../data/vacancies';
-
 export const vacancyInitialState = {
-  vacancies: getGeneratedVacancies(),
+  vacancies: [],
   isLoading: false,
   error: null,
 };

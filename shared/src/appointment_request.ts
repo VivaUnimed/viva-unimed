@@ -18,6 +18,16 @@ export interface IAppointmentRequestCreate {
   cooldownUntil?: Date;
 }
 
+/**
+ * Payload aceito nas rotas do próprio paciente.
+ * patientId, status, attempts e cooldownUntil são controlados pelo backend.
+ */
+export interface IAppointmentRequestPatientCreate {
+  specialityId: number;
+  doctorId?: number;
+  date: Date;
+}
+
 export interface IAppointmentRequest extends IAppointmentRequestCreate {
   id: number;
   patient: IPatient;
@@ -32,6 +42,13 @@ export interface IAppointmentRequest extends IAppointmentRequestCreate {
 
 export interface IAppointmentRequestListParams extends IPaginate {
   patientId?: number;
+  specialityId?: number;
+  doctorId?: number;
+  status?: AppointmentRequestStatus;
+}
+
+/** Filtros permitidos para o próprio paciente. patientId nunca vem do cliente. */
+export interface IAppointmentRequestPatientListParams extends IPaginate {
   specialityId?: number;
   doctorId?: number;
   status?: AppointmentRequestStatus;

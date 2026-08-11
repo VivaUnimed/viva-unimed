@@ -132,13 +132,21 @@
 
 .topbar__icon-indicator {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 8px;
-  height: 8px;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border-radius: 999px;
   background-color: #f59e0b;
+  color: #ffffff;
   box-shadow: 0 0 0 2px #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .topbar__action-btn {
@@ -163,8 +171,8 @@
 .topbar__profile {
   width: 32px;
   height: 32px;
-  border: none;
-  background: transparent;
+  border: 1px solid #cfe7da;
+  background: linear-gradient(135deg, #e8f7ef 0%, #d7efe4 100%);
   border-radius: 50%;
   padding: 0;
   cursor: pointer;
@@ -172,6 +180,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.topbar__profile:hover {
+  border-color: #b8e6cf;
+  box-shadow: 0 8px 18px rgba(0, 127, 79, 0.14);
+  transform: translateY(-1px);
 }
 
 .topbar__profile--active {
@@ -183,43 +201,130 @@
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
-  border: 1px solid rgb(209, 209, 209);
+  border: none;
+}
+
+.topbar__avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #0f6b47;
 }
 
 .topbar__profile-menu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  min-width: 180px;
-  padding: 8px;
-  border-radius: 14px;
+  width: min(92vw, 280px);
+  padding: 12px;
+  border-radius: 18px;
   border: 1px solid #e5e7eb;
   background-color: #ffffff;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
   z-index: 40;
+}
+
+.topbar__profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar__profile-avatar-panel {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e8f7ef 0%, #d7efe4 100%);
+  border: 1px solid #cfe7da;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.topbar__avatar--panel {
+  width: 100%;
+  height: 100%;
+}
+
+.topbar__avatar-fallback--panel {
+  font-size: 14px;
+}
+
+.topbar__profile-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbar__profile-meta strong,
+.topbar__profile-meta span,
+.topbar__profile-meta small {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__profile-meta strong {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.topbar__profile-meta span {
+  font-size: 12px;
+  line-height: 16px;
+  color: #4b5563;
+}
+
+.topbar__profile-meta small {
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 800;
+  color: #0f6b47;
+}
+
+.topbar__profile-divider {
+  width: 100%;
+  height: 1px;
+  background-color: #e5e7eb;
 }
 
 .topbar__profile-menu-item {
   width: 100%;
   border: none;
-  background: transparent;
-  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 10px 12px;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
-  color: #1f2937;
+  font-weight: 700;
+  color: #b42318;
   cursor: pointer;
   transition:
     background-color 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .topbar__profile-menu-item:hover {
-  background-color: #e8f7ef;
-  color: #009953;
+  background-color: #fff4f4;
+  border-color: #f1b5b5;
+  color: #b42318;
 }
 
 .topbar__profile-menu-item--disabled,
@@ -300,6 +405,10 @@
   border-left-color: #f59e0b;
 }
 
+.topbar__notification-card--queue {
+  border-left-color: #3b82f6;
+}
+
 .topbar__notification-title-row {
   display: flex;
   align-items: flex-start;
@@ -336,6 +445,10 @@
 
 .topbar__notification-dot--alert {
   background-color: #f59e0b;
+}
+
+.topbar__notification-dot--queue {
+  background-color: #3b82f6;
 }
 
 .topbar__notification-time {
@@ -383,6 +496,11 @@
   color: #b45309;
 }
 
+.topbar__notification-badge--queue {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
 .topbar__notification-action {
   height: 32px;
   border: none;
@@ -406,6 +524,7 @@
   background-color: #f9fafb;
   text-align: center;
   font-size: 14px;
+  line-height: 1.5;
   color: #6b7280;
 }
 

@@ -16,8 +16,12 @@ export class AppointmentNotificationJob {
       });
   }
 
-  async start(){
+  start(){
     this.job.start();
+  }
+
+  stop(){
+    this.job.stop();
   }
 
   private async execute(){

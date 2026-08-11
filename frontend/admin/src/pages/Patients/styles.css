@@ -41,6 +41,10 @@
   text-decoration: none;
 }
 
+.patients-header__button-wrapper {
+  display: inline-flex;
+}
+
 .patients-header__button {
   height: 44px;
   padding: 0 18px;

@@ -22,6 +22,7 @@ export interface IAppointment extends IAppointmentCreate {
   doctor?: IDoctor;
   speciality?: ISpeciality;
   user?: IUser;
-  createAt: Date;
+  createdByUser?: IUser;
+  createdAt: Date;
   updatedAt: Date;
 }

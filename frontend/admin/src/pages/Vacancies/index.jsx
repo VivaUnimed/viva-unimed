@@ -1,25 +1,25 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  LuBadgeAlert,
+  LuBadgeCheck,
   LuCalendarCheck,
   LuChevronDown,
-  LuSearch,
-  LuHistory,
-  LuRefreshCw,
-  LuPlus,
-  LuClock3,
-  LuUsers,
   LuCircleCheck,
   LuCircleX,
-  LuSend,
-  LuFilter,
+  LuClock3,
+  LuHistory,
+  LuPlus,
+  LuRefreshCw,
+  LuSearch,
+  LuSlidersHorizontal,
+  LuUsers,
 } from 'react-icons/lu';
 
+import { useVacancies } from '../../context/vacancyContext/vacancyContext';
 import {
-  getSlotAction,
-  loadVacancies,
-  persistVacancies,
+  normalizeText,
+  vacancyStatusOptions,
 } from '../../data/vacancies';
 
 import './styles.css';
@@ -30,186 +30,148 @@ const summaryCards = [
     label: 'Abertas',
     icon: LuCalendarCheck,
     modifier: 'open',
-    matches: (slot) => slot.vacancyStatus === 'open',
+    matches: (vacancy) => vacancy.vacancyStatus === 'open',
   },
   {
     id: 2,
-    label: 'Aguardando aceite',
-    icon: LuClock3,
-    modifier: 'waiting',
-    matches: (slot) => slot.vacancyStatus === 'waiting-acceptance',
+    label: 'Reservadas',
+    icon: LuCircleCheck,
+    modifier: 'booked',
+    matches: (vacancy) => vacancy.vacancyStatus === 'booked',
   },
   {
     id: 3,
-    label: 'Confirmadas',
-    icon: LuCircleCheck,
-    modifier: 'confirmed',
-    matches: (slot) => slot.vacancyStatus === 'confirmed',
-  },
-  {
-    id: 4,
     label: 'Expiradas',
     icon: LuHistory,
     modifier: 'expired',
-    matches: (slot) => slot.vacancyStatus === 'expired',
+    matches: (vacancy) => vacancy.vacancyStatus === 'expired',
   },
   {
-    id: 5,
+    id: 4,
     label: 'Canceladas',
     icon: LuCircleX,
     modifier: 'cancelled',
-    matches: (slot) => slot.vacancyStatus === 'cancelled',
+    matches: (vacancy) => vacancy.vacancyStatus === 'cancelled',
+  },
+  {
+    id: 5,
+    label: 'No-show',
+    icon: LuClock3,
+    modifier: 'no-show',
+    matches: (vacancy) => vacancy.vacancyStatus === 'no_show',
   },
   {
     id: 6,
-    label: 'Falhas no disparo',
-    icon: LuSend,
-    modifier: 'error',
-    matches: (slot) => slot.dispatchStatus === 'error',
+    label: 'Com fila',
+    icon: LuUsers,
+    modifier: 'queue',
+    matches: (vacancy) => vacancy.queuePatients > 0,
   },
 ];
 
-const vacancyStatusOptions = [
-  { value: '', label: 'Todos os status da vaga' },
-  { value: 'open', label: 'Aberta' },
-  { value: 'waiting-acceptance', label: 'Aguardando aceite' },
-  { value: 'confirmed', label: 'Confirmada' },
-  { value: 'expired', label: 'Expirada' },
-  { value: 'cancelled', label: 'Cancelada' },
-];
-
-const dispatchStatusOptions = [
-  { value: '', label: 'Todos os status do disparo' },
-  { value: 'success', label: 'Enviado com sucesso' },
-  { value: 'error', label: 'Falha no disparo' },
-];
-
-function formatSummaryValue(value) {
-  return String(value).padStart(2, '0');
-}
-
-function createRetryHistoryEntry(slot) {
-  return {
-    id: `${slot.id}-retry-${Date.now()}`,
-    title: 'Disparo reenviado com sucesso',
-    description: 'Nova tentativa simulada a partir da tela de vagas.',
-    timestamp: 'Agora',
-  };
-}
+const formatSummaryValue = (value) => String(value).padStart(2, '0');
 
 export default function Vacancies() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [slots, setSlots] = useState(loadVacancies);
+  const { vacancyState, getVacancies } = useVacancies();
+  const { vacancies, isLoading, error } = vacancyState;
+  const [feedbackMessage, setFeedbackMessage] = useState(
+    () => location.state?.successMessage ?? '',
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [vacancyStatusFilter, setVacancyStatusFilter] = useState('');
-  const [dispatchStatusFilter, setDispatchStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [queueModalSlot, setQueueModalSlot] = useState(null);
+  const hasLoadedVacanciesRef = useRef(false);
 
   useEffect(() => {
-    if (!feedbackMessage) {
-      return undefined;
+    const routeFeedbackMessage = location.state?.successMessage;
+
+    if (!routeFeedbackMessage) {
+      return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setFeedbackMessage('');
-    }, 3500);
+    setFeedbackMessage(routeFeedbackMessage);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: null,
+      },
+    );
+  }, [location.hash, location.pathname, location.search, location.state, navigate]);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [feedbackMessage]);
+  useEffect(() => {
+    if (hasLoadedVacanciesRef.current) {
+      return;
+    }
 
-  const dateOptions = [...new Set(slots.map((slot) => slot.date))];
-  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    hasLoadedVacanciesRef.current = true;
+
+    const loadVacancies = async () => {
+      try {
+        await getVacancies();
+      } catch {
+        // O erro de carregamento permanece disponível em vacancyState.error.
+      }
+    };
+
+    loadVacancies();
+  }, [getVacancies]);
+
+  const normalizedSearchTerm = normalizeText(searchTerm.trim());
   const hasActiveFilters = Boolean(
-    normalizedSearchTerm
-    || vacancyStatusFilter
-    || dispatchStatusFilter
-    || dateFilter
+    normalizedSearchTerm || vacancyStatusFilter || dateFilter,
   );
+  const dateOptions = [...new Map(
+    vacancies.map((vacancy) => [vacancy.dateKey, vacancy.date]),
+  ).entries()]
+    .map(([value, label]) => ({ value, label }))
+    .sort((firstOption, secondOption) => (
+      firstOption.value.localeCompare(secondOption.value)
+    ));
 
-  const filteredSlots = slots.filter((slot) => {
+  const filteredVacancies = vacancies.filter((vacancy) => {
     const matchesSearch = !normalizedSearchTerm
-      || slot.specialty.toLowerCase().includes(normalizedSearchTerm)
-      || slot.professional.toLowerCase().includes(normalizedSearchTerm)
-      || slot.confirmedPatient?.toLowerCase().includes(normalizedSearchTerm);
+      || [
+        vacancy.specialty,
+        vacancy.professional,
+        String(vacancy.id),
+      ].some((value) => normalizeText(value).includes(normalizedSearchTerm));
 
     const matchesVacancyStatus = !vacancyStatusFilter
-      || slot.vacancyStatus === vacancyStatusFilter;
+      || vacancy.vacancyStatus === vacancyStatusFilter;
 
-    const matchesDispatchStatus = !dispatchStatusFilter
-      || slot.dispatchStatus === dispatchStatusFilter;
+    const matchesDate = !dateFilter || vacancy.dateKey === dateFilter;
 
-    const matchesDate = !dateFilter || slot.date === dateFilter;
-
-    return (
-      matchesSearch
-      && matchesVacancyStatus
-      && matchesDispatchStatus
-      && matchesDate
-    );
+    return matchesSearch && matchesVacancyStatus && matchesDate;
   });
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setVacancyStatusFilter('');
-    setDispatchStatusFilter('');
     setDateFilter('');
   };
 
-  const updateSlots = (updater) => {
-    setSlots((currentSlots) => {
-      const nextSlots = typeof updater === 'function'
-        ? updater(currentSlots)
-        : updater;
-
-      persistVacancies(nextSlots);
-      return nextSlots;
-    });
-  };
-
-  const handleRetryDispatch = (slot) => {
-    updateSlots((currentSlots) =>
-      currentSlots.map((currentSlot) => {
-        if (currentSlot.id !== slot.id) {
-          return currentSlot;
-        }
-
-        return {
-          ...currentSlot,
-          dispatchStatus: 'success',
-          dispatchStatusText: 'Enviado com sucesso',
-          vacancyStatus: 'waiting-acceptance',
-          vacancyStatusText: 'Aguardando aceite',
-          expiration: 'Expira em 15 min',
-          finalDescription: '',
-          history: [...currentSlot.history, createRetryHistoryEntry(currentSlot)],
-        };
-      }),
-    );
-
-    setFeedbackMessage('Disparo reenviado com sucesso.');
-  };
-
-  const handleSlotAction = (slot) => {
-    const action = getSlotAction(slot);
-
-    switch (action.label) {
-      case 'Gerenciar':
-      case 'Ver confirmação':
-      case 'Detalhes':
-        navigate(`/vacancies/${slot.id}`);
-        break;
-      case 'Tentar novamente':
-        handleRetryDispatch(slot);
-        break;
-      case 'Ver fila':
-        setQueueModalSlot(slot);
-        break;
-      default:
-        break;
+  const handleRefresh = async () => {
+    try {
+      await getVacancies();
+    } catch {
+      // O erro de atualização permanece disponível em vacancyState.error.
     }
   };
+
+  const emptyMessage = isLoading
+    ? 'Carregando vagas...'
+    : error
+      ? 'Não foi possível carregar as vagas no momento.'
+      : hasActiveFilters
+        ? 'Nenhuma vaga encontrada com os filtros atuais.'
+        : 'Nenhuma vaga cadastrada até o momento.';
 
   return (
     <main className="idle-slots-page">
@@ -217,7 +179,7 @@ export default function Vacancies() {
         <div>
           <h1>Vagas</h1>
           <p>
-            Gestão de vagas remanescentes, disparos e confirmações de pacientes.
+            Gerencie vagas remanescentes usando os dados atuais do backend.
           </p>
         </div>
 
@@ -238,15 +200,25 @@ export default function Vacancies() {
 
       {feedbackMessage ? (
         <div className="vacancy-feedback-banner" role="status">
-          <LuCircleCheck size={18} />
+          <LuBadgeCheck size={18} />
           <span>{feedbackMessage}</span>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div
+          className="vacancy-feedback-banner vacancy-feedback-banner--error"
+          role="alert"
+        >
+          <LuBadgeAlert size={18} />
+          <span>{error}</span>
         </div>
       ) : null}
 
       <section className="vacancy-summary-grid">
         {summaryCards.map((card) => {
           const Icon = card.icon;
-          const value = slots.filter(card.matches).length;
+          const value = vacancies.filter(card.matches).length;
 
           return (
             <article
@@ -270,15 +242,15 @@ export default function Vacancies() {
         <div className="vacancy-filters__search">
           <LuSearch size={18} />
           <input
-            type="text"
-            placeholder="Buscar por especialidade ou profissional..."
+            type="search"
+            placeholder="Buscar por especialidade, profissional ou vaga..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
         </div>
 
         <label className="vacancy-filter-select">
-          <LuFilter size={16} />
+          <LuSlidersHorizontal size={16} />
           <select
             value={vacancyStatusFilter}
             onChange={(event) => setVacancyStatusFilter(event.target.value)}
@@ -294,22 +266,6 @@ export default function Vacancies() {
         </label>
 
         <label className="vacancy-filter-select">
-          <LuSend size={16} />
-          <select
-            value={dispatchStatusFilter}
-            onChange={(event) => setDispatchStatusFilter(event.target.value)}
-            aria-label="Filtrar por status do disparo"
-          >
-            {dispatchStatusOptions.map((option) => (
-              <option key={option.value || 'all-dispatch-status'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <LuChevronDown size={16} />
-        </label>
-
-        <label className="vacancy-filter-select">
           <LuCalendarCheck size={16} />
           <select
             value={dateFilter}
@@ -317,9 +273,9 @@ export default function Vacancies() {
             aria-label="Filtrar por data"
           >
             <option value="">Todas as datas</option>
-            {dateOptions.map((date) => (
-              <option key={date} value={date}>
-                {date}
+            {dateOptions.map((dateOption) => (
+              <option key={dateOption.value} value={dateOption.value}>
+                {dateOption.label}
               </option>
             ))}
           </select>
@@ -345,101 +301,77 @@ export default function Vacancies() {
                 <LuCalendarCheck size={22} />
                 <h2>Vagas Remanescentes</h2>
               </div>
+
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                <LuRefreshCw size={16} />
+                Atualizar
+              </button>
             </div>
 
             <div className="generated-slots-table-wrapper">
               <table className="generated-slots-table">
                 <thead>
                   <tr>
-                    <th>HORÁRIO</th>
-                    <th>ESPECIALIDADE <br />/ PROFISSIONAL</th>
-                    <th>FILA</th>
+                    <th>DATA / HORÁRIO</th>
+                    <th>ESPECIALIDADE / PROFISSIONAL</th>
+                    <th>FILA COMPATÍVEL</th>
                     <th>STATUS DA VAGA</th>
-                    <th>DISPARO</th>
-                    <th>EXPIRAÇÃO</th>
-                    <th>PACIENTE</th>
                     <th>AÇÃO</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredSlots.length > 0 ? (
-                    filteredSlots.map((slot) => {
-                      const action = getSlotAction(slot);
+                  {filteredVacancies.length > 0 ? (
+                    filteredVacancies.map((vacancy) => (
+                      <tr key={vacancy.id}>
+                        <td>
+                          <strong>{vacancy.time}</strong>
+                          <span>{vacancy.date}</span>
+                        </td>
 
-                      return (
-                        <tr key={slot.id}>
-                          <td>
-                            <strong>{slot.time}</strong>
-                            <span>{slot.date}</span>
-                          </td>
+                        <td>
+                          <strong>{vacancy.specialty}</strong>
+                          <span>{vacancy.professional}</span>
+                        </td>
 
-                          <td>
-                            <strong>{slot.specialty}</strong>
-                            <span>{slot.professional}</span>
-                          </td>
-
-                          <td>
-                            <div className="queue-patients">
-                              <LuUsers size={15} />
-                              <strong>{slot.queuePatients}</strong>
-                              <span>
-                                {slot.queuePatients === 1 ? 'paciente' : 'pacientes'}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td>
-                            <span
-                              className={`slot-status slot-status--${slot.vacancyStatus}`}
-                            >
-                              {slot.vacancyStatusText}
+                        <td>
+                          <div className="queue-patients">
+                            <LuUsers size={15} />
+                            <strong>{vacancy.queuePatients}</strong>
+                            <span>
+                              {vacancy.queuePatients === 1 ? 'paciente' : 'pacientes'}
                             </span>
-                          </td>
+                          </div>
+                        </td>
 
-                          <td>
-                            <span
-                              className={`slot-status slot-status--${slot.dispatchStatus}`}
-                            >
-                              {slot.dispatchStatusText}
-                            </span>
-                          </td>
-
-                          <td>
-                            <span className="slot-expiration">
-                              {slot.expiration}
-                            </span>
-                          </td>
-
-                          <td>
-                            {slot.confirmedPatient ? (
-                              <strong className="confirmed-patient">
-                                {slot.confirmedPatient}
-                              </strong>
-                            ) : (
-                              <span className="empty-patient">—</span>
-                            )}
-                          </td>
-
-                          <td>
-                            <button
-                              type="button"
-                              className={`slot-action slot-action--${action.variant}`}
-                              disabled={Boolean(action.disabled)}
-                              onClick={() => handleSlotAction(slot)}
-                            >
-                              {action.label}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
+                        <td>
+                          <span
+                            className={`slot-status slot-status--${vacancy.vacancyStatus}`}
+                          >
+                            {vacancy.vacancyStatusText}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="slot-action slot-action--primary"
+                            onClick={() => navigate(`/vacancies/${vacancy.id}`)}
+                          >
+                            Detalhes
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   ) : (
                     <tr className="generated-slots-empty-row">
-                      <td colSpan="8">
+                      <td colSpan="5">
                         <div className="generated-slots-empty">
                           <strong>Nenhuma vaga encontrada</strong>
-                          <span>Tente ajustar ou limpar os filtros aplicados.</span>
+                          <span>{emptyMessage}</span>
                         </div>
                       </td>
                     </tr>
@@ -450,52 +382,6 @@ export default function Vacancies() {
           </div>
         </section>
       </section>
-
-      {queueModalSlot ? (
-        <div
-          className="vacancy-modal-overlay"
-          role="presentation"
-          onClick={() => setQueueModalSlot(null)}
-        >
-          <div
-            className="vacancy-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="queue-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <span className="vacancy-modal__eyebrow">Fila da especialidade</span>
-            <h2 id="queue-modal-title">Fila da especialidade</h2>
-
-            <div className="vacancy-modal__content">
-              <article className="vacancy-modal__field">
-                <span>Especialidade</span>
-                <strong>{queueModalSlot.specialty}</strong>
-              </article>
-
-              <article className="vacancy-modal__field">
-                <span>Mensagem</span>
-                <p>Nenhum paciente elegível encontrado para esta especialidade.</p>
-              </article>
-
-              <article className="vacancy-modal__field">
-                <span>Orientação</span>
-                <p>
-                  Cadastre pacientes ou atualize os interesses na Gestão de Pacientes.
-                </p>
-              </article>
-            </div>
-
-            <button
-              type="button"
-              className="vacancy-modal__button"
-              onClick={() => setQueueModalSlot(null)}
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }

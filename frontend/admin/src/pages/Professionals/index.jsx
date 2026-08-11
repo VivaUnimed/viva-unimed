@@ -1,42 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  LuBadgeAlert,
   LuBadgeCheck,
-  LuUserPlus,
-  LuSlidersHorizontal,
-  LuSearch,
-  LuChevronDown,
   LuRefreshCw,
+  LuSearch,
+  LuSlidersHorizontal,
+  LuUserPlus,
+  LuChevronDown,
 } from 'react-icons/lu';
 import './styles.css';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   formatProfessionalRegistration,
-  getProfessionalSpecialtyOptions,
-  getProfessionalUnitOptions,
-  getStoredProfessionals,
+  getProfessionalSpecialtyFilterOptions,
   normalizeText,
 } from '../../data/professionals';
+import { useProfessionals } from '../../context/professionalContext/professionalContext';
+import { formatPhone } from '../../utils/patients/patientFormatters';
+
+const formatPhoneValue = (value) => {
+  if (!value) {
+    return '-';
+  }
+
+  return formatPhone(String(value));
+};
 
 export default function Professionals() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { professionalState, getProfessionals } = useProfessionals();
+  const { professionals, isLoading, error } = professionalState;
   const [feedbackMessage, setFeedbackMessage] = useState(
     () => location.state?.successMessage ?? '',
   );
-  const [professionals] = useState(() => getStoredProfessionals());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [specialtyFilter, setSpecialtyFilter] = useState('');
-  const [unitFilter, setUnitFilter] = useState('');
-  const totalProfessionalsLabel = professionals.length.toLocaleString('pt-BR');
-  const statusOptions = [...new Set(professionals.map((professional) => professional.status))];
-  const specialtyOptions = getProfessionalSpecialtyOptions(professionals);
-  const unitOptions = getProfessionalUnitOptions(professionals);
-
-  const normalizedSearchTerm = normalizeText(searchTerm.trim());
-  const hasActiveFilters = Boolean(
-    normalizedSearchTerm || statusFilter || specialtyFilter || unitFilter
-  );
+  const hasLoadedProfessionalsRef = useRef(false);
 
   useEffect(() => {
     const routeFeedbackMessage = location.state?.successMessage;
@@ -59,11 +60,41 @@ export default function Professionals() {
     );
   }, [location.hash, location.pathname, location.search, location.state, navigate]);
 
+  useEffect(() => {
+    if (hasLoadedProfessionalsRef.current) {
+      return;
+    }
+
+    hasLoadedProfessionalsRef.current = true;
+
+    const loadProfessionals = async () => {
+      try {
+        await getProfessionals();
+      } catch {
+        // O erro de carregamento fica armazenado no estado global.
+      }
+    };
+
+    loadProfessionals();
+  }, []);
+
+  const normalizedSearchTerm = normalizeText(searchTerm.trim());
+  const hasActiveFilters = Boolean(normalizedSearchTerm || statusFilter || specialtyFilter);
+  const specialtyOptions = getProfessionalSpecialtyFilterOptions(professionals);
+  const totalProfessionalsLabel = professionals.length.toLocaleString('pt-BR');
+
   const handleClearFilters = () => {
     setSearchTerm('');
     setStatusFilter('');
     setSpecialtyFilter('');
-    setUnitFilter('');
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await getProfessionals();
+    } catch {
+      // O erro de atualização fica no estado global.
+    }
   };
 
   const filteredProfessionals = professionals.filter((professional) => {
@@ -72,6 +103,7 @@ export default function Professionals() {
       [
         professional.name,
         professional.email,
+        professional.phone,
         formatProfessionalRegistration(professional),
         ...professional.specialties,
       ].some((value) => normalizeText(value).includes(normalizedSearchTerm));
@@ -80,10 +112,17 @@ export default function Professionals() {
       !statusFilter || professional.status === statusFilter;
     const matchesSpecialty =
       !specialtyFilter || professional.specialties.includes(specialtyFilter);
-    const matchesUnit = !unitFilter || professional.unit === unitFilter;
 
-    return matchesSearch && matchesStatus && matchesSpecialty && matchesUnit;
+    return matchesSearch && matchesStatus && matchesSpecialty;
   });
+
+  const emptyMessage = isLoading
+    ? 'Carregando profissionais...'
+    : error
+      ? 'Não foi possível carregar os profissionais no momento.'
+      : hasActiveFilters
+        ? 'Nenhum profissional encontrado com os filtros aplicados.'
+        : 'Nenhum profissional cadastrado até o momento.';
 
   return (
     <main className="professionals-page">
@@ -91,15 +130,15 @@ export default function Professionals() {
         <div>
           <h1>Gestão de Profissionais</h1>
           <p>
-            Gerencie profissionais e especialidades utilizados no cadastro de
-            vagas remanescentes.
+            Gerencie profissionais e especialidades utilizados no cadastro de vagas
+            remanescentes.
           </p>
         </div>
 
         <NavLink to="/professionals/new">
           <button type="button" className="professionals-header__button">
             <LuUserPlus size={18} />
-            Cadastrar Profissional
+            Cadastrar profissional
           </button>
         </NavLink>
       </section>
@@ -111,10 +150,30 @@ export default function Professionals() {
         </div>
       ) : null}
 
+      {error ? (
+        <div
+          className="professionals-feedback-banner professionals-feedback-banner--error"
+          role="alert"
+        >
+          <LuBadgeAlert size={18} />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
       <section className="professionals-content">
         <div className="professionals-table-card">
           <div className="professionals-table-card__header">
             <h2>Lista de Profissionais</h2>
+
+            <button
+              type="button"
+              className="professionals-filter-clear-button"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <LuRefreshCw size={16} />
+              Atualizar
+            </button>
           </div>
 
           <div className="professionals-filters">
@@ -123,7 +182,7 @@ export default function Professionals() {
               <input
                 id="professionals-search"
                 type="search"
-                placeholder="Buscar por nome, especialidade, CRM ou e-mail..."
+                placeholder="Buscar por nome, especialidade, CRM, telefone ou e-mail..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
@@ -137,11 +196,8 @@ export default function Professionals() {
                 aria-label="Filtrar por status"
               >
                 <option value="">Status</option>
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
+                <option value="Ativo">Ativo</option>
+                <option value="Inativo">Inativo</option>
               </select>
               <LuChevronDown
                 size={16}
@@ -169,26 +225,6 @@ export default function Professionals() {
               />
             </label>
 
-            <label className="professionals-filter-button">
-              <LuSlidersHorizontal size={16} />
-              <select
-                value={unitFilter}
-                onChange={(event) => setUnitFilter(event.target.value)}
-                aria-label="Filtrar por unidade"
-              >
-                <option value="">Unidade</option>
-                {unitOptions.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-              <LuChevronDown
-                size={16}
-                className="professionals-filter-button__chevron"
-              />
-            </label>
-
             <button
               type="button"
               className="professionals-filter-clear-button"
@@ -207,7 +243,7 @@ export default function Professionals() {
                   <th>NOME</th>
                   <th>ESPECIALIDADES</th>
                   <th>CRM</th>
-                  <th>UNIDADE</th>
+                  <th>TELEFONE</th>
                   <th>STATUS</th>
                   <th>AÇÕES</th>
                 </tr>
@@ -239,11 +275,17 @@ export default function Professionals() {
 
                         <td>
                           <div className="specialties-list">
-                            {visibleSpecialties.map((specialty) => (
-                              <span key={specialty} className="specialty-badge">
-                                {specialty}
+                            {visibleSpecialties.length > 0 ? (
+                              visibleSpecialties.map((specialty) => (
+                                <span key={specialty} className="specialty-badge">
+                                  {specialty}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="specialty-badge specialty-badge--more">
+                                Sem vínculo
                               </span>
-                            ))}
+                            )}
 
                             {remainingSpecialties > 0 ? (
                               <span className="specialty-badge specialty-badge--more">
@@ -261,7 +303,7 @@ export default function Professionals() {
 
                         <td>
                           <span className="professional-unit">
-                            {professional.unit}
+                            {formatPhoneValue(professional.phone)}
                           </span>
                         </td>
 
@@ -281,7 +323,7 @@ export default function Professionals() {
                           <div className="professional-actions">
                             <button
                               type="button"
-                              className="professional-action-button professional-action-button--primary"
+                              className="professional-actions__details"
                               onClick={() =>
                                 navigate(`/professionals/${professional.id}`)
                               }
@@ -291,7 +333,7 @@ export default function Professionals() {
 
                             <button
                               type="button"
-                              className="professional-action-button"
+                              className="professional-actions__edit"
                               onClick={() =>
                                 navigate(`/professionals/${professional.id}/edit`)
                               }
@@ -306,7 +348,7 @@ export default function Professionals() {
                 ) : (
                   <tr>
                     <td colSpan="6" className="professionals-table__empty">
-                      Nenhum profissional encontrado com os filtros aplicados.
+                      {emptyMessage}
                     </td>
                   </tr>
                 )}
@@ -319,16 +361,6 @@ export default function Professionals() {
               Exibindo {filteredProfessionals.length} de {totalProfessionalsLabel}{' '}
               profissionais
             </span>
-
-            <div className="pagination">
-              <button type="button">‹</button>
-              <button type="button" className="pagination__active">
-                1
-              </button>
-              <button type="button">2</button>
-              <button type="button">3</button>
-              <button type="button">›</button>
-            </div>
           </div>
         </div>
       </section>

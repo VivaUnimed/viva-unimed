@@ -18,6 +18,8 @@ import EditPatient from '../pages/EditPatient';
 import ProfessionalDetails from '../pages/ProfessionalDetails';
 import VacancyDetails from '../pages/VacancyDetails';
 import Settings from '../pages/Settings';
+import Queue from '../pages/Queue';
+import QueueDetails from '../pages/QueueDetails';
 
 export const RoutesApp = () => {
   return (
@@ -40,6 +42,8 @@ export const RoutesApp = () => {
           <Route path="/vacancies" element={<Vacancies/>} />
           <Route path="/vacancies/:vacancyId" element={<VacancyDetails />} />
           <Route path="/vacancies/new" element={<NoShowRegistration/>} />
+          <Route path="/queue" element={<Queue />} />
+          <Route path="/queue/:queueRequestId" element={<QueueDetails />} />
           <Route path="/patients" element={<Patients/>} />
           <Route path="/patients/new" element={<CreatePatient />} />
           <Route path="/patients/:patientId/edit" element={<EditPatient />} />

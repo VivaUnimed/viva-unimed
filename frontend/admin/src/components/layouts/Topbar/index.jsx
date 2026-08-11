@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LuBell, LuCircleHelp, LuMenu, LuX } from 'react-icons/lu';
 import { useAuth } from '../../../context/authContext/authContext';
+import { useQueue } from '../../../context/queueContext/queueContext';
+import { useVacancies } from '../../../context/vacancyContext/vacancyContext';
 import './styles.css';
 
 const roleLabelMap = {
@@ -10,72 +12,141 @@ const roleLabelMap = {
   Paciente: 'Paciente',
 };
 
-const getProfileItems = (user) => {
-  const roleNames = Array.isArray(user?.roles)
-    ? user.roles
-        .filter(Boolean)
-        .map((role) => roleLabelMap[role] || role)
-        .join(', ')
-    : '';
+const getRoleLabel = (user) => {
+  if (!Array.isArray(user?.roles)) {
+    return '';
+  }
 
-  const unit =
-    user?.unit ||
-    user?.unidade ||
-    user?.unitName ||
-    user?.unit_name ||
-    '';
+  return user.roles
+    .filter(Boolean)
+    .map((role) => roleLabelMap[role] || role)
+    .join(', ');
+};
 
-  return [
-    { label: 'Nome', value: user?.name || 'Não informado' },
-    { label: 'Perfil', value: roleNames || 'Não informado' },
-    ...(unit ? [{ label: 'Unidade', value: unit }] : []),
-    { label: 'E-mail', value: user?.email || 'Não informado' },
+const getAvatarSource = (user) => {
+  const candidates = [
+    user?.avatar,
+    user?.avatarUrl,
+    user?.photo,
+    user?.photoUrl,
+    user?.picture,
+    user?.image,
+    user?.imageUrl,
+    user?.profileImage,
+    user?.profileImageUrl,
+    user?.profilePhoto,
+    user?.profilePhotoUrl,
   ];
+
+  return (
+    candidates.find(
+      (candidate) =>
+        typeof candidate === 'string' && candidate.trim().length > 0,
+    ) || ''
+  );
+};
+
+const getAvatarInitials = (user) => {
+  const sourceText = user?.name || getRoleLabel(user) || '';
+  const words = sourceText
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return 'U';
 };
 
 const helpTopics = [
+  'Use o painel para acompanhar vagas, fila inteligente, pacientes, profissionais e especialidades.',
   'Cadastre vagas remanescentes pela página Vagas.',
-  'A fila inteligente é processada automaticamente após o cadastro da vaga.',
-  'Acompanhe confirmações, falhas e expirações pelo Dashboard e pela tela de Vagas.',
+  'A fila inteligente cruza solicitações e vagas compatíveis com os dados disponíveis no sistema.',
   'Cadastre pacientes, profissionais e especialidades antes de operar a agenda.',
-  'Use Configurações para ajustar tempo de expiração e parâmetros operacionais.',
+  'Algumas configurações operacionais ainda dependem de suporte futuro no backend.',
 ];
 
-const notificationTypeLabel = {
-  error: 'Erro',
-  success: 'Sucesso',
-  alert: 'Alerta',
+const getTodayKey = () => {
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const day = String(currentDate.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 };
 
-const mockedNotifications = [
-  {
-    id: 'vacancy-3-dispatch-error',
-    title: 'Falha no disparo',
-    description: 'Dermatologia possui uma vaga com falha no envio.',
-    time: 'há 5 min',
-    type: 'error',
-    vacancyId: 3,
-    actionLabel: 'Ver vaga',
-  },
-  {
-    id: 'vacancy-5-confirmed',
-    title: 'Vaga confirmada',
-    description: 'Ginecologia foi confirmada pela fila inteligente.',
-    time: 'há 12 min',
-    type: 'success',
-    vacancyId: 5,
-    actionLabel: 'Ver vaga',
-  },
-  {
-    id: 'vacancy-1-expiring',
-    title: 'Vaga próxima de expirar',
-    description: 'Cardiologia expira em 8 minutos.',
-    time: 'agora',
-    type: 'alert',
-    vacancyId: 1,
-    actionLabel: 'Ver vaga',
-  },
-];
+const buildOperationalAlerts = (vacancies = [], queueRequests = []) => {
+  const alerts = [];
+  const todayKey = getTodayKey();
+
+  const openWithoutPatients = vacancies.filter(
+    (vacancy) => vacancy.vacancyStatus === 'open' && vacancy.queuePatients === 0,
+  ).length;
+
+  if (openWithoutPatients > 0) {
+    alerts.push({
+      id: 'open-without-patients',
+      title: 'Vagas abertas sem fila compatível',
+      description:
+        openWithoutPatients === 1
+          ? 'Há 1 vaga aberta sem pacientes compatíveis neste momento.'
+          : `Há ${openWithoutPatients} vagas abertas sem pacientes compatíveis neste momento.`,
+      type: 'alert',
+      badgeLabel: 'Vagas',
+      actionLabel: 'Abrir vagas',
+      route: '/vacancies',
+    });
+  }
+
+  const requestsWithoutVacancy = queueRequests.filter(
+    (queueRequest) =>
+      queueRequest.status === 'waiting' &&
+      queueRequest.compatibleVacanciesCount === 0,
+  ).length;
+
+  if (requestsWithoutVacancy > 0) {
+    alerts.push({
+      id: 'queue-without-vacancy',
+      title: 'Solicitações aguardando sem vaga compatível',
+      description:
+        requestsWithoutVacancy === 1
+          ? 'Há 1 solicitação aguardando sem vaga compatível no momento.'
+          : `Há ${requestsWithoutVacancy} solicitações aguardando sem vaga compatível no momento.`,
+      type: 'queue',
+      badgeLabel: 'Fila',
+      actionLabel: 'Abrir fila',
+      route: '/queue',
+    });
+  }
+
+  const expiredToday = vacancies.filter(
+    (vacancy) =>
+      vacancy.vacancyStatus === 'expired' && vacancy.dateKey === todayKey,
+  ).length;
+
+  if (expiredToday > 0) {
+    alerts.push({
+      id: 'expired-today',
+      title: 'Vagas expiradas na agenda de hoje',
+      description:
+        expiredToday === 1
+          ? 'Há 1 vaga com status expirado na agenda de hoje.'
+          : `Há ${expiredToday} vagas com status expirado na agenda de hoje.`,
+      type: 'error',
+      badgeLabel: 'Expiração',
+      actionLabel: 'Abrir vagas',
+      route: '/vacancies',
+    });
+  }
+
+  return alerts;
+};
 
 function TopbarModal({
   title,
@@ -124,29 +195,6 @@ function TopbarModal({
   );
 }
 
-function ProfileModal({ onClose, user }) {
-  const profileItems = getProfileItems(user);
-
-  return (
-    <TopbarModal
-      title="Meu perfil"
-      titleId="topbar-profile-title"
-      modalId="topbar-profile-modal"
-      footerLabel="Fechar"
-      onClose={onClose}
-    >
-      <div className="topbar__modal-content">
-        {profileItems.map((item) => (
-          <div key={item.label} className="topbar__modal-info">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </div>
-        ))}
-      </div>
-    </TopbarModal>
-  );
-}
-
 function HelpModal({ onClose }) {
   return (
     <TopbarModal
@@ -172,12 +220,31 @@ function HelpModal({ onClose }) {
 export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { vacancyState, getVacancies } = useVacancies();
+  const { queueState, getQueueRequests } = useQueue();
   const profileMenuRef = useRef(null);
   const notificationsRef = useRef(null);
+  const hasRequestedAlertsRef = useRef(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
-  const userName = user?.name || 'Usuário';
+  const userRoleLabel = useMemo(() => getRoleLabel(user), [user]);
+  const userAvatarSource = useMemo(() => getAvatarSource(user), [user]);
+  const userAvatarInitials = useMemo(() => getAvatarInitials(user), [user]);
+  const profileTitle = user?.name || user?.email || userRoleLabel || 'Usuário';
+  const operationalAlerts = useMemo(
+    () =>
+      buildOperationalAlerts(
+        vacancyState?.vacancies ?? [],
+        queueState?.adminAppointmentRequests ?? [],
+      ),
+    [queueState?.adminAppointmentRequests, vacancyState?.vacancies],
+  );
+  const isAlertsLoading =
+    (vacancyState?.isLoading || queueState?.isLoading) &&
+    operationalAlerts.length === 0;
+  const alertsError =
+    (vacancyState?.error || queueState?.error) && operationalAlerts.length === 0;
 
   useEffect(() => {
     if (!isMenuOpen && !isNotificationsOpen) {
@@ -239,6 +306,19 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
     };
   }, [activeModal]);
 
+  useEffect(() => {
+    if (hasRequestedAlertsRef.current) {
+      return;
+    }
+
+    hasRequestedAlertsRef.current = true;
+
+    Promise.all([
+      getVacancies().catch(() => []),
+      getQueueRequests().catch(() => []),
+    ]);
+  }, [getQueueRequests, getVacancies]);
+
   const handleToggleMenu = () => {
     setIsNotificationsOpen(false);
     setIsMenuOpen((current) => !current);
@@ -247,12 +327,6 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
   const handleToggleNotifications = () => {
     setIsMenuOpen(false);
     setIsNotificationsOpen((current) => !current);
-  };
-
-  const handleOpenProfileModal = () => {
-    setIsMenuOpen(false);
-    setIsNotificationsOpen(false);
-    setActiveModal('profile');
   };
 
   const handleOpenHelpModal = () => {
@@ -265,21 +339,9 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
     setActiveModal(null);
   };
 
-  const handleNavigateToSettings = () => {
-    setIsMenuOpen(false);
-    setIsNotificationsOpen(false);
-    navigate('/settings');
-  };
-
   const handleNotificationAction = (notification) => {
     setIsNotificationsOpen(false);
-
-    if (notification.vacancyId) {
-      navigate(`/vacancies/${notification.vacancyId}`);
-      return;
-    }
-
-    navigate('/vacancies');
+    navigate(notification.route || '/vacancies');
   };
 
   const handleLogout = async () => {
@@ -310,15 +372,20 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
             <button
               type="button"
               className={`topbar__icon-btn${isNotificationsOpen ? ' topbar__icon-btn--active' : ''}`}
-              aria-label="Notificações"
+              aria-label="Alertas operacionais"
               aria-haspopup="dialog"
               aria-expanded={isNotificationsOpen}
               aria-controls="topbar-notifications"
               onClick={handleToggleNotifications}
             >
               <LuBell className="icon-topbar" />
-              {mockedNotifications.length ? (
-                <span className="topbar__icon-indicator" aria-hidden="true" />
+              {operationalAlerts.length ? (
+                <span
+                  className="topbar__icon-indicator"
+                  aria-label={`${operationalAlerts.length} alertas operacionais`}
+                >
+                  {operationalAlerts.length}
+                </span>
               ) : null}
             </button>
 
@@ -327,16 +394,24 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                 id="topbar-notifications"
                 className="topbar__notifications-panel"
                 role="dialog"
-                aria-label="Notificações do sistema"
+                aria-label="Alertas operacionais"
               >
                 <div className="topbar__notifications-header">
-                  <h2>Notificações</h2>
-                  <span>{mockedNotifications.length}</span>
+                  <h2>Alertas operacionais</h2>
+                  <span>{operationalAlerts.length}</span>
                 </div>
 
                 <div className="topbar__notifications-list">
-                  {mockedNotifications.length ? (
-                    mockedNotifications.map((notification) => (
+                  {isAlertsLoading ? (
+                    <p className="topbar__notifications-empty">
+                      Atualizando alertas operacionais...
+                    </p>
+                  ) : alertsError ? (
+                    <p className="topbar__notifications-empty">
+                      Não foi possível atualizar os alertas no momento.
+                    </p>
+                  ) : operationalAlerts.length ? (
+                    operationalAlerts.map((notification) => (
                       <article
                         key={notification.id}
                         className={`topbar__notification-card topbar__notification-card--${notification.type}`}
@@ -350,9 +425,11 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                             <strong>{notification.title}</strong>
                           </div>
 
-                          <time className="topbar__notification-time">
-                            {notification.time}
-                          </time>
+                          {notification.time ? (
+                            <time className="topbar__notification-time">
+                              {notification.time}
+                            </time>
+                          ) : null}
                         </div>
 
                         <p className="topbar__notification-description">
@@ -363,7 +440,7 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                           <span
                             className={`topbar__notification-badge topbar__notification-badge--${notification.type}`}
                           >
-                            {notificationTypeLabel[notification.type]}
+                            {notification.badgeLabel}
                           </span>
 
                           {notification.actionLabel ? (
@@ -380,7 +457,8 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
                     ))
                   ) : (
                     <p className="topbar__notifications-empty">
-                      Nenhuma notificação no momento.
+                      Nenhum alerta operacional no momento. O sino mostra
+                      apenas dados reais de vagas e fila.
                     </p>
                   )}
                 </div>
@@ -404,49 +482,64 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
             <button
               type="button"
               className={`topbar__profile${isMenuOpen ? ' topbar__profile--active' : ''}`}
-              aria-label={`Perfil de ${userName}`}
-              aria-haspopup="menu"
+              aria-label={`Perfil de ${profileTitle}`}
+              aria-haspopup="dialog"
               aria-expanded={isMenuOpen}
               aria-controls="topbar-profile-menu"
               onClick={handleToggleMenu}
-              title={userName}
+              title={profileTitle}
             >
-              <img
-                src="https://i.pravatar.cc/40?img=18"
-                alt={`Avatar de ${userName}`}
-                className="topbar__avatar"
-              />
+              {userAvatarSource ? (
+                <img
+                  src={userAvatarSource}
+                  alt={`Avatar de ${profileTitle}`}
+                  className="topbar__avatar"
+                />
+              ) : (
+                <span className="topbar__avatar-fallback" aria-hidden="true">
+                  {userAvatarInitials}
+                </span>
+              )}
             </button>
 
             {isMenuOpen ? (
               <div
                 id="topbar-profile-menu"
                 className="topbar__profile-menu"
-                role="menu"
-                aria-label="Menu do usuário"
+                role="dialog"
+                aria-label="Perfil do usuário"
               >
-                <button
-                  type="button"
-                  className="topbar__profile-menu-item"
-                  role="menuitem"
-                  onClick={handleOpenProfileModal}
-                >
-                  Meu perfil
-                </button>
+                <div className="topbar__profile-summary">
+                  <div className="topbar__profile-avatar-panel" aria-hidden="true">
+                    {userAvatarSource ? (
+                      <img
+                        src={userAvatarSource}
+                        alt=""
+                        className="topbar__avatar topbar__avatar--panel"
+                      />
+                    ) : (
+                      <span className="topbar__avatar-fallback topbar__avatar-fallback--panel">
+                        {userAvatarInitials}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="topbar__profile-meta">
+                    <strong>{profileTitle}</strong>
+                    {user?.email && user.email !== profileTitle ? (
+                      <span>{user.email}</span>
+                    ) : null}
+                    {userRoleLabel ? (
+                      <small>{userRoleLabel}</small>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="topbar__profile-divider" />
 
                 <button
                   type="button"
                   className="topbar__profile-menu-item"
-                  role="menuitem"
-                  onClick={handleNavigateToSettings}
-                >
-                  Configurações
-                </button>
-
-                <button
-                  type="button"
-                  className="topbar__profile-menu-item"
-                  role="menuitem"
                   onClick={handleLogout}
                 >
                   Sair
@@ -456,10 +549,6 @@ export default function Topbar({ isSidebarHidden, onToggleSidebar }) {
           </div>
         </div>
       </header>
-
-      {activeModal === 'profile' ? (
-        <ProfileModal onClose={handleCloseModal} user={user} />
-      ) : null}
 
       {activeModal === 'help' ? (
         <HelpModal onClose={handleCloseModal} />

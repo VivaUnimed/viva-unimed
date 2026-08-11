@@ -105,6 +105,23 @@ export const putRequest = async (endpoint, data, options = {}) => {
   return await handleResponse(response, options);
 };
 
+export const patchRequest = async (
+  endpoint,
+  data,
+  options = {},
+) => {
+  const response = await fetch(
+    `${BASE_URL}${endpoint}`,
+    {
+      method: 'PATCH',
+      headers: getHeaders(options),
+      body: JSON.stringify(data),
+    },
+  );
+
+  return await handleResponse(response, options);
+};
+
 export const getRequest = async (endpoint, options = {}) => {
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: 'GET',

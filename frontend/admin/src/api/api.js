@@ -44,7 +44,18 @@ const handleResponse = async (response) => {
   // 403: usuário autenticado, mas sem permissão para acessar o recurso
   if (response.status === 403) {
     const errorData = await parseJsonSafe(response);
-    throw new Error(errorData?.details || errorData?.message || 'Acesso negado');
+    const requiredPermissions = Array.isArray(errorData?.requires)
+      ? errorData.requires.filter(Boolean)
+      : [];
+    const permissionsSuffix = requiredPermissions.length
+      ? ` Permissões exigidas: ${requiredPermissions.join(', ')}.`
+      : '';
+    const error = new Error(
+      `${errorData?.details || errorData?.message || 'Acesso negado'}${permissionsSuffix}`,
+    );
+
+    error.requires = requiredPermissions;
+    throw error;
   }
 
   // Trata outros erros HTTP, como 400, 404 e 500
@@ -114,11 +125,12 @@ export const getRequest = async (endpoint) => {
 };
 
 // Requisição DELETE usada para remover dados no backend.
-export const deleteRequest = async (endpoint) => {
+export const deleteRequest = async (endpoint, data) => {
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     credentials: 'include',
     method: 'DELETE',
     headers: getHeaders(),
+    body: data !== undefined ? JSON.stringify(data) : undefined,
   });
 
   return handleResponse(response);

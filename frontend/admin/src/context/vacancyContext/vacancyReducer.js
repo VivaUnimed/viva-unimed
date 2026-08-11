@@ -23,7 +23,6 @@ export const vacancyReducer = (state, action) => {
     case vacancyTypes.CREATE_VACANCY_SUCCESS:
       return {
         ...state,
-        vacancies: [action.payload.vacancy, ...state.vacancies],
         isLoading: false,
         error: null,
       };
@@ -31,11 +30,6 @@ export const vacancyReducer = (state, action) => {
     case vacancyTypes.UPDATE_VACANCY_SUCCESS:
       return {
         ...state,
-        vacancies: state.vacancies.map((vacancy) =>
-          String(vacancy.id) === String(action.payload.id)
-            ? action.payload.vacancy
-            : vacancy,
-        ),
         isLoading: false,
         error: null,
       };

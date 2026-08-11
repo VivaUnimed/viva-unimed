@@ -22,6 +22,10 @@ export class AppointmentMatchJob {
     this.job.start();
   }
 
+  stop() {
+    this.job.stop();
+  }
+
   private async execute() {
     console.log(`\n\x1b[36m[Job - Match] 🔄 Iniciando cruzamento de vagas abertas com a fila de espera...\x1b[0m`);
 

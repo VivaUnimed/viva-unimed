@@ -45,8 +45,10 @@ export class App {
       await this.startJobs();
       await this.assertAdmin();
     } catch (error) {
-      console.log("Failed to start application", error);
-      await this.stop();
+      console.error("Failed to start application", error);
+      // Não esconda o erro de inicialização. O Vitest precisa receber a falha
+      // real do banco/servidor em vez de continuar e gerar ECONNREFUSED.
+      throw error;
     }
   }
 
@@ -122,9 +124,28 @@ export class App {
     // Middleware final para captura e formatação centralizada de erros
     this.app.use(ErrorMiddleware)
   }
-  /** Finaliza o servidor HTTP */
+  /** Finaliza jobs, servidor HTTP e conexão com o banco. */
   async stop() {
     console.log("Stopping server...");
-    this.server.close();
+
+    this.appointmentMatchJob?.stop();
+    this.appointmentNotificationJob?.stop();
+
+    await new Promise<void>((resolve, reject) => {
+      if (!this.server?.listening) {
+        resolve();
+        return;
+      }
+
+      this.server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+
+    await db.stop();
   }
 }

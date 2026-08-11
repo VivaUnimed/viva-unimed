@@ -79,6 +79,17 @@
   font-weight: 800;
 }
 
+.professionals-feedback-banner--error {
+  border-color: #f3c4b2;
+  background-color: #fff7f2;
+}
+
+.professionals-feedback-banner--error svg,
+.professionals-feedback-banner--error span {
+  stroke: #c2410c;
+  color: #c2410c;
+}
+
 .professionals-table-card {
   width: 100%;
   min-width: 0;

@@ -1,11 +1,16 @@
-import { IDoctor, IDoctorCreate, IDoctorInternal, IDoctorListParams, IUser } from "shared";
+import { DoctorCreateFacade, IDoctor, IDoctorCreate, IDoctorListParams, IDoctorUpdate } from "shared";
 import DoctorModel from "../db/models/doctor.model";
 import { BadRequest, Conflict, NotFound } from "../error";
 import { Op, WhereOptions } from "sequelize";
 import UserModel from "../db/models/user.model";
 import SpecialityModel from "../db/models/speciality.model";
-import { paginate } from "./helpers";
+import RoleModel from "../db/models/role.model";
+import { assertUniqueUserIdentity, paginate } from "./helpers";
 import DoctorSpecialityModel from "../db/models/doctor.speciality.model";
+import { getPermissionsFromRoles } from "../entities";
+import { hashPassword } from "../helpers/password";
+import PasswordModel from "../db/models/password.model";
+import { db } from "../db";
 /**
  * Serviço responsável pelas operações de médico.
  * Contém validações de unicidade e tratamento de erros
@@ -16,47 +21,69 @@ export class DoctorService {
    * Cria um médico novo.
    * Verifica se já existe outro médico com o mesmo CRM.
    */
-  async create(data: IDoctorCreate): Promise<IDoctor> {
-    if(data.crm?.length < 4) {
-      throw new BadRequest("crm inválido");
+  async createComplete(data: DoctorCreateFacade): Promise<IDoctor> {
+    if (data.crm?.length < 4) {
+      throw new BadRequest("CRM inválido");
     }
-    // Garante que não existam médicos com o mesmo CRM.
-    const exists = await DoctorModel.findOne({
-      where: {
-        [Op.or]: [
-          { crm: data.crm },
-          { userId: data.userId },
-        ]
+
+    const { normalizedEmail, normalizedCpf } = await assertUniqueUserIdentity(data.email, data.cpf);
+
+    const doctorExists = await DoctorModel.findOne({ where: { crm: data.crm } });
+    if (doctorExists) {
+      throw new Conflict("O médico com este CRM já está cadastrado no sistema.");
+    }
+
+    // início da transação no banco de dados para evitar registros órfãos
+    const t = await db.transaction();
+
+    try {
+      // criação do usuário base na tabela Users
+      const newUser = await UserModel.create({
+        name: data.name,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
+        phone: data.phone,
+      }, { transaction: t });
+
+
+      await RoleModel.create({
+        userId: newUser.id,
+        role: 'Medico'
+      }, { transaction: t });
+
+      if (data.password) {
+        const { hash, salt } = await hashPassword(data.password);
+        await PasswordModel.create({
+          userId: newUser.id,
+          hash,
+          salt,
+        }, { transaction: t });
       }
-    });
 
-    if (exists) {
-      throw new Conflict("O médico já está cadastrado no sistema.");
+      const newDoctor = await DoctorModel.create({
+        userId: newUser.id,
+        crm: data.crm,
+        enabled: true,
+      }, { transaction: t });
+
+      // FIX: 5. Efetiva a transação
+      await t.commit();
+
+      return await this.getById(newDoctor.userId);
+
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-
-    const model = await DoctorModel.create(data);
-    return await this.getById(model.userId);
   }
 
   /**
    * Atualiza dados de um médico existente.
    * Garante que o CRM não conflite com outro registro.
    */
-  async update(id: number, data: IDoctorCreate): Promise<IDoctor> {
-    if(data.crm?.length < 4) {
-      throw new BadRequest("crm inválido");
-    }
-    const exists = await DoctorModel.findOne({
-      where: {
-        [Op.or]: [
-          { crm: data.crm },
-        ],
-        userId: { [Op.ne]: id },
-      }
-    });
-
-    if (exists) {
-      throw new Conflict("existe um outro médico com o mesmo crm");
+  async update(id: number, data: IDoctorUpdate): Promise<IDoctor> {
+    if (data.crm !== undefined && data.crm.length < 4) {
+    throw new BadRequest("crm inválido");
     }
 
     const model = await DoctorModel.findByPk(id);
@@ -64,6 +91,20 @@ export class DoctorService {
       throw new NotFound();
     }
 
+    if (data.crm !== undefined) {
+      const exists = await DoctorModel.findOne({
+        where: {
+          [Op.or]: [
+            { crm: data.crm },
+          ],
+          userId: { [Op.ne]: id },
+        }
+      });
+
+      if (exists) {
+        throw new Conflict("Existe um outro médico com o mesmo crm");
+    }
+  }
     await model.update(data);
     return await this.getById(model.userId);
   }
@@ -74,7 +115,14 @@ export class DoctorService {
    */
   async getById(id: number): Promise<IDoctor> {
     const model = await DoctorModel.findByPk(id, {
-      include: [UserModel, SpecialityModel],
+      include: [
+        {
+          model: UserModel,
+          required: true,
+          include: [RoleModel],
+        },
+        SpecialityModel,
+      ],
     });
     if (!model) {
       throw new NotFound();
@@ -110,15 +158,17 @@ export class DoctorService {
    * Lista todos os médicos.
    */
   async list(params?: IDoctorListParams): Promise<IDoctor[]> {
-    const where: WhereOptions<IDoctorInternal> = {};
+    const where: WhereOptions<any> = {};
 
     if(params?.search) {
-      const searchTerm = params?.search ? `%${params.search}%` : undefined;
-      where[Op.or] = [
-        { crm: { [Op.iLike]: searchTerm } },
-        { "$user.name$": { [Op.iLike]: searchTerm } },
-        { "$user.email$": { [Op.iLike]: searchTerm } },
-      ]
+      const searchTerm = `%${params.search}%`;
+      Object.assign(where, {
+        [Op.or]: [
+          { crm: { [Op.iLike]: searchTerm } },
+          { "$user.name$": { [Op.iLike]: searchTerm } },
+          { "$user.email$": { [Op.iLike]: searchTerm } },
+        ]
+      });
     }
 
     if(params?.specialityId) {
@@ -137,9 +187,11 @@ export class DoctorService {
         {
           model: UserModel,
           required: true,
+          include: [RoleModel],
         },
         {
           model: SpecialityModel,
+          as: 'specialities',
         }
       ],
       where,
@@ -151,18 +203,32 @@ export class DoctorService {
   }
 
   static makeDoctor(model: DoctorModel): IDoctor {
+    const roles = model.user?.roles?.map(r => r.role) ?? [];
+
     return {
+      id: model.id || model.userId,
+      userId: model.userId,
       crm: model.crm,
       enabled: model.enabled,
-      id: model.user.id,
-      email: model.user.email,
-      name: model.user.name,
-      phone: model.user.phone,
-      specialities: model?.specialities.map(s => ({
+
+      // FIX: Refatoração por Composição ao invés de Herança.
+      // Antes: As chaves do usuário (name, email) ficavam espalhadas direto no objeto.
+      // Agora: Elas ficam organizadas dentro do atributo 'user', resolvendo o conflito de IDs.
+      user: model.user ? {
+        id: model.user.id,
+        name: model.user.name,
+        email: model.user.email,
+        cpf: model.user.cpf,
+        phone: model.user.phone,
+        roles,
+        permissions: getPermissionsFromRoles(roles),
+      } : undefined,
+
+      specialities: model.specialities?.map(s => ({
         id: s.id,
         name: s.name,
       })),
-    }
+    };
   }
 
   /**

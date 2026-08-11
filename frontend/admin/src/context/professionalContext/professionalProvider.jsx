@@ -3,10 +3,7 @@ import { professionalReducer } from './professionalReducer';
 import { professionalInitialState } from './professionalInitialState';
 import { professionalContext as ProfessionalContext } from './professionalContext.js';
 import { professionalTypes } from './professionalTypes';
-import {
-  buildProfessionalFromForm,
-  buildUpdatedProfessionalFromForm,
-} from '../../data/professionals';
+import * as doctorApi from '../../api/doctorApi';
 
 export default function ProfessionalProvider({ children }) {
   const [professionalState, professionalDispatch] = useReducer(
@@ -14,13 +11,13 @@ export default function ProfessionalProvider({ children }) {
     professionalInitialState,
   );
 
-  const getProfessionals = async () => {
+  const getProfessionals = async (filters = {}) => {
     professionalDispatch({
       type: professionalTypes.GET_ALL_PROFESSIONALS_REQUEST,
     });
 
     try {
-      const professionals = professionalState.professionals;
+      const professionals = await doctorApi.getAllDoctors(filters);
 
       professionalDispatch({
         type: professionalTypes.GET_ALL_PROFESSIONALS_SUCCESS,
@@ -34,8 +31,12 @@ export default function ProfessionalProvider({ children }) {
         payload: { error: error.message },
       });
 
-      return [];
+      throw error;
     }
+  };
+
+  const getProfessionalById = async (professionalId) => {
+    return doctorApi.getProfessionalById(professionalId);
   };
 
   const createProfessional = async (newProfessional) => {
@@ -44,10 +45,7 @@ export default function ProfessionalProvider({ children }) {
     });
 
     try {
-      const professional = buildProfessionalFromForm(
-        newProfessional,
-        professionalState.professionals,
-      );
+      const professional = await doctorApi.createProfessional(newProfessional);
 
       professionalDispatch({
         type: professionalTypes.CREATE_PROFESSIONAL_SUCCESS,
@@ -61,32 +59,24 @@ export default function ProfessionalProvider({ children }) {
         payload: { error: error.message },
       });
 
-      return null;
+      throw error;
     }
   };
 
-  const updateProfessional = async (updatedProfessional, id) => {
+  const updateProfessional = async (updatedProfessional, currentProfessional) => {
     professionalDispatch({
       type: professionalTypes.UPDATE_PROFESSIONAL_REQUEST,
     });
 
     try {
-      const currentProfessional = professionalState.professionals.find(
-        (professional) => String(professional.id) === String(id),
-      );
-
-      if (!currentProfessional) {
-        throw new Error('Profissional nao encontrado.');
-      }
-
-      const professional = buildUpdatedProfessionalFromForm(
+      const professional = await doctorApi.updateProfessional(
         updatedProfessional,
         currentProfessional,
       );
 
       professionalDispatch({
         type: professionalTypes.UPDATE_PROFESSIONAL_SUCCESS,
-        payload: { professional, id },
+        payload: { professional, id: currentProfessional.id },
       });
 
       return professional;
@@ -96,7 +86,7 @@ export default function ProfessionalProvider({ children }) {
         payload: { error: error.message },
       });
 
-      return null;
+      throw error;
     }
   };
 
@@ -106,13 +96,7 @@ export default function ProfessionalProvider({ children }) {
     });
 
     try {
-      const currentProfessional = professionalState.professionals.find(
-        (professional) => String(professional.id) === String(id),
-      );
-
-      if (!currentProfessional) {
-        throw new Error('Profissional nao encontrado.');
-      }
+      await doctorApi.deleteDoctor(id);
 
       professionalDispatch({
         type: professionalTypes.DELETE_PROFESSIONAL_SUCCESS,
@@ -126,7 +110,7 @@ export default function ProfessionalProvider({ children }) {
         payload: { error: error.message },
       });
 
-      return null;
+      throw error;
     }
   };
 
@@ -136,6 +120,7 @@ export default function ProfessionalProvider({ children }) {
         professionalState,
         professionalDispatch,
         getProfessionals,
+        getProfessionalById,
         createProfessional,
         updateProfessional,
         deleteProfessional,

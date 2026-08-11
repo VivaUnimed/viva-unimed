@@ -1,9 +1,9 @@
-import { IAppointment, IDoctor, ISpeciality, IUser, IPatient } from "shared";
+import { IAppointment, IDoctor, ISpeciality, IUser, IPatientProfile, DoctorCreateFacade } from "shared";
 
 interface IMatchNotification {
   speciality: ISpeciality;
   appointment: IAppointment;
-  patient: IPatient;
+  patient: IPatientProfile;
   doctor: IDoctor;
 }
 
@@ -32,7 +32,7 @@ export class ConsoleNotificationProvider {
   sendMatchNotification(notification: IMatchNotification) {
     const formattedDate = this.formatAppointmentDate(notification.appointment.date);
     const userName = notification.patient?.name || 'Paciente';
-    const doctorName = notification.doctor?.name ? `Dr(a). ${notification.doctor.name}` : 'nossa equipe';
+    const doctorName = notification.doctor.user?.name ? `Dr(a). ${notification.doctor.user?.name}` : 'nossa equipe';
 
     //TODO: temporário - remover depois.
     const colorCyan = "\x1b[36m";

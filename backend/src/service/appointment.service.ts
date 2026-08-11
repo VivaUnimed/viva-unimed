@@ -8,6 +8,7 @@ import { Op, Transaction } from "sequelize";
 import { db } from "../db";
 import provider from "../provider";
 import { IConfig } from "../config";
+import PatientModel from "../db/models/patient.model";
 
 export class AppointmentService {
   constructor(private config: IConfig) {}
@@ -27,7 +28,7 @@ export class AppointmentService {
 
     const allowed = this.ALLOWED_TRANSITIONS[current];
     if (!allowed || !allowed.includes(next)) {
-      console.error(`[AUDIT] Tentativa inválida de transição de status: de "${current}" para "${next}"`);
+      console.error(`Tentativa inválida de transição de status: de "${current}" para "${next}"`);
       throw new BadRequest(`Transição de status inválida: não é permitido alterar de "${current}" para "${next}".`);
     }
   }
@@ -257,9 +258,129 @@ export class AppointmentService {
     );
   }
 
+    /**
+   * Lista somente as consultas confirmadas
+   * pertencentes ao paciente autenticado.
+   */
+  async listForPatient(
+    patientUserId: number,
+  ): Promise<IAppointment[]> {
+
+    const patient = await PatientModel.findOne({
+      where: {
+        userId: patientUserId,
+      },
+      attributes: ["id"],
+    });
+
+    if (!patient) {
+      throw new NotFound(
+        "Paciente não encontrado.",
+      );
+    }
+
+    const matches =
+      await AppointmentMatchModel.findAll({
+        where: {
+          status: "accepted",
+        },
+
+        include: [
+          {
+            model: AppointmentRequestModel,
+            required: true,
+            where: {
+              patientId: patient.id,
+            },
+            attributes: ["id"],
+          },
+
+          {
+            model: AppointmentModel,
+            required: true,
+            where: {
+              status: "booked",
+
+              date: {
+                [Op.gte]: new Date(),
+              },
+
+            },
+
+
+            include: [
+              {
+                association: "doctor",
+                attributes: [
+                  "userId",
+                  "crm",
+                  "enabled",
+                ],
+
+                include: [
+                  {
+                    association: "user",
+                    attributes: [
+                      "id",
+                      "name",
+                    ],
+                  },
+                ],
+              },
+
+              {
+                association: "speciality",
+                attributes: [
+                  "id",
+                  "name",
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+    const appointments = matches
+      .map((match) => match.appointment)
+      .filter(
+        (appointment): appointment is AppointmentModel =>
+          Boolean(appointment),
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.date).getTime() -
+          new Date(b.date).getTime(),
+      )
+      .map(
+        (appointment) =>
+          appointment.get({
+            plain: true,
+          }) as IAppointment,
+      );
+
+    return appointments;
+  }
+
+
+
   /** Busca agendamento por ID */
   async getById(id: number): Promise<IAppointment> {
-    const model = await AppointmentModel.findByPk(id);
+    const model = await AppointmentModel.findByPk(id, {
+      include: [
+        {
+          association: 'doctor',
+          attributes: ['crm', 'enabled', 'userId']
+        },
+        {
+          association: 'speciality',
+          attributes: ['id', 'name']
+        },
+        {
+          association: 'user',
+          attributes: ['id', 'name', 'email', 'cpf', 'phone']
+        }
+      ]
+    });
     if (!model) {
       throw new NotFound();
     }
@@ -268,7 +389,22 @@ export class AppointmentService {
 
   /** Lista todos os agendamentos */
   async list(): Promise<IAppointment[]> {
-    const list = await AppointmentModel.findAll();
+    const list = await AppointmentModel.findAll({
+      include: [
+        {
+          association: 'doctor',
+          attributes: ['crm', 'enabled', 'userId']
+        },
+        {
+          association: 'speciality',
+          attributes: ['id', 'name']
+        },
+        {
+          association: 'user',
+          attributes: ['id', 'name', 'email', 'cpf', 'phone']
+        }
+      ]
+    });
     return list.map((model) => model.get({ plain: true }));
   }
 
@@ -330,9 +466,6 @@ export class AppointmentService {
           transaction: t
         }
       );
-
-      console.log(`[AUDIT] Exclusão segura executada para o Appointment ID: ${id}. Matches pendentes foram cancelados.`);
-
       await model.destroy({ transaction: t });
 
       await t.commit();

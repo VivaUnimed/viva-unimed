@@ -1,6 +1,6 @@
-import type { IDoctor, IDoctorCreate, IDoctorListParams } from "shared";
+import type { DoctorCreateFacade, IDoctor, IDoctorCreate, IDoctorListParams, IDoctorUpdate } from "shared";
 import service from "../service";
-import { Body, Controller, Delete, Get, Path, Post, Put, Queries, Route, Tags } from "tsoa";
+import { Body, Controller, Delete, Get, Patch, Path, Post, Put, Queries, Route, Tags } from "tsoa";
 import { Guard, Security } from "./guards";
 
 /**
@@ -15,16 +15,16 @@ export class DoctorController extends Controller {
    */
   @Post()
   @Security(Guard.JWT, ['doctor.create'])
-  create(@Body() data: IDoctorCreate): Promise<IDoctor> {
-    return service.doctor.create(data);
+  create(@Body() data: DoctorCreateFacade): Promise<IDoctor> {
+    return service.doctor.createComplete(data);
   }
 
   /**
    * Atualiza os dados de um médico existente.
    */
-  @Put("/{id}")
+  @Patch("/{id}")
   @Security(Guard.JWT, ['doctor.edit'])
-  update(@Path() id: number, @Body() data: IDoctorCreate): Promise<IDoctor> {
+  update(@Path() id: number, @Body() data: IDoctorUpdate): Promise<IDoctor> {
     return service.doctor.update(id, data);
   }
 
@@ -60,8 +60,8 @@ export class DoctorController extends Controller {
    */
   @Get()
   @Security(Guard.JWT, ['doctor.read'])
-  list(@Queries() searchTerm?: IDoctorListParams): Promise<IDoctor[]> {
-    return service.doctor.list(searchTerm);
+  list(@Queries() params?: IDoctorListParams): Promise<IDoctor[]> {
+    return service.doctor.list(params);
   }
 
   /**

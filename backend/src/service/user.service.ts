@@ -1,130 +1,78 @@
-import { IUser, IUserCreate, IUserListParams, IUserUpdate, Role } from "shared";
+import { IUser, IUserListParams, IUserUpdate, Role, StaffCreateRequest } from "shared";
 import UserModel from "../db/models/user.model";
-import { Op, Transaction, WhereOptions } from "sequelize";
+import { Op, WhereOptions } from "sequelize";
 import PasswordModel from "../db/models/password.model";
 import { hashPassword } from "../helpers/password";
 import RoleModel from "../db/models/role.model";
 import { getPermissionsFromRoles } from "../entities";
-import { Conflict } from "../error";
+import { BadRequest } from "../error";
+import { db } from "../db";
+import { assertUniqueUserIdentity } from "./helpers";
 
 export class UserService {
-  private normalizeUserPayload(user: Partial<IUserCreate | IUserUpdate>) {
-    return {
-      name: typeof user.name === "string" ? user.name.trim() : undefined,
-      email: typeof user.email === "string" ? user.email.trim() : undefined,
-      cpf: typeof user.cpf === "string" ? user.cpf.trim() || undefined : undefined,
-      phone: user.phone,
-    };
-  }
-
-  private async assertUniqueFields(
-    user: Partial<Pick<IUser, "email" | "cpf">>,
-    options?: { excludeUserId?: number, transaction?: Transaction },
-  ): Promise<void> {
-    const or: Array<Record<string, unknown>> = [];
-
-    if (user.email) {
-      or.push({ email: user.email });
+    /** Cria um usuário, salva sua senha (hasheada) e atribui cargos iniciais */
+  async createStaff(data: StaffCreateRequest): Promise<IUser> {
+    if (data.role !== 'Admin' && data.role !== 'Tecnico') {
+      throw new BadRequest("Utilize a rota /api/patient para cadastrar pacientes.");
     }
 
-    if (user.cpf) {
-      or.push({ cpf: user.cpf });
-    }
+    const { normalizedEmail, normalizedCpf } = await assertUniqueUserIdentity(data.email, data.cpf);
 
-    if (!or.length) {
-      return;
-    }
+    const t = await db.transaction();
 
-    const where: WhereOptions<IUser> = options?.excludeUserId
-      ? {
-        [Op.and]: [
-          { [Op.or]: or } as WhereOptions<IUser>,
-          { id: { [Op.ne]: options.excludeUserId } } as WhereOptions<IUser>,
-        ],
+    try {
+      // cria o registro na tabela base
+      const newUser = await UserModel.create({
+        name: data.name,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
+        phone: data.phone,
+      }, { transaction: t });
+
+      // atribui a role administrativa
+      await RoleModel.create({
+        userId: newUser.id,
+        role: data.role
+      }, { transaction: t });
+
+      if (data.password) {
+        const { hash, salt } = await hashPassword(data.password);
+
+        await PasswordModel.create({
+          userId: newUser.id,
+          hash,
+          salt,
+        }, { transaction: t });
       }
-      : {
-        [Op.or]: or,
-      };
 
-    const existingUser = await UserModel.findOne({
-      where,
-      transaction: options?.transaction,
-    });
+      await t.commit();
 
-    if (!existingUser) {
-      return;
+      // retorna o usuário recém-criado
+      return this.getById(newUser.id);
+
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-
-    if (user.email && existingUser.email === user.email) {
-      throw new Conflict("Já existe um usuário com este e-mail.");
-    }
-
-    if (user.cpf && existingUser.cpf === user.cpf) {
-      throw new Conflict("Já existe um usuário com este CPF.");
-    }
-
-    throw new Conflict("Já existe um usuário com os dados informados.");
   }
 
-  /** Cria um usuário, salva sua senha (hasheada) e atribui cargos iniciais */
-  async create(user: IUserCreate, options?: { transaction?: Transaction }): Promise<IUser> {
-    const normalizedUser = this.normalizeUserPayload(user);
-    await this.assertUniqueFields(normalizedUser, options);
-
-    const res = await UserModel.create({
-      name: normalizedUser.name as string,
-      email: normalizedUser.email as string,
-      cpf: normalizedUser.cpf,
-      phone: normalizedUser.phone,
-    }, {
-      transaction: options?.transaction,
-    });
-
-    if(user.password) {
-      const { hash, salt } = await hashPassword(user.password);
-      await PasswordModel.create({
-        userId: res.id,
-        hash,
-        salt,
-      }, {
-        transaction: options?.transaction,
-      });
-    }
-
-    if(user.roles?.length) {
-      await RoleModel.bulkCreate(user.roles.map(role => ({
-        role,
-        userId: res.id,
-      })), {
-        transaction: options?.transaction,
-      });
-    }
-
-    return res.get({ plain: true });
-  }
 
   /** Atribui um novo cargo ao usuário, evitando duplicidade */
-  async addUserRole(userId: number, role: Role, options?: { transaction?: Transaction }): Promise<void> {
-    const exists = await RoleModel.findOne({
-      where: { userId, role },
-      transaction: options?.transaction,
-    });
+  async addUserRole(userId: number, role: Role): Promise<void> {
+    if (role === 'Paciente') {
+      throw new BadRequest("Não é possível atribuir o perfil de Paciente por aqui. Um paciente precisa ter um prontuário criado no sistema.");
+    }
+    const exists = await RoleModel.findOne({ where: { userId, role }});
     if (exists) return;
-
     await RoleModel.create({
       role,
       userId,
-    }, {
-      transaction: options?.transaction,
     });
   }
 
   /** Remove um cargo específico associado ao usuário */
-  async removeUserRole(userId: number, role: Role, options?: { transaction?: Transaction }): Promise<void> {
-    await RoleModel.destroy({
-      where: { userId, role },
-      transaction: options?.transaction,
-    });
+  async removeUserRole(userId: number, role: Role): Promise<void> {
+    await RoleModel.destroy({ where: { userId, role }});
   }
 
   /** Filtra e lista usuários por nome ou email usando busca parcial (case-insensitive) */
@@ -138,19 +86,25 @@ export class UserService {
     }
     const res = await UserModel.findAll({
       where,
+      include: [RoleModel]
     });
-    return res.map(r => r.get({ plain: true }));
+
+    return res.map(user => {
+      const roles = user.roles?.map(r => r.role) || [];
+
+      return {
+        ...user.get({ plain: true }),
+        roles,
+      };
+    });
   }
 
   /** Busca usuário por ID, incluindo seus cargos e calculando permissões derivadas */
-  async getById(id: number, options?: { transaction?: Transaction }): Promise<IUser | null> {
+  async getById(id: number): Promise<IUser | null> {
     const res = await UserModel.findByPk(id, {
-      include: [RoleModel],
-      transaction: options?.transaction,
+      include: [RoleModel]
     });
-
     if (!res) return null;
-
     const roles = res.roles?.map(r => r.role);
     return {
       ...res.get({ plain: true }),
@@ -160,51 +114,45 @@ export class UserService {
   }
 
   /** Atualiza dados básicos do perfil do usuário */
-  async update(id: number, user: Partial<IUserUpdate>, options?: { transaction?: Transaction }): Promise<IUser | null> {
-    const res = await UserModel.findByPk(id, {
-      transaction: options?.transaction,
-    });
+  async update(id: number, user: Partial<IUserUpdate>): Promise<IUser | null> {
+    const res = await UserModel.findByPk(id);
     if (!res) return null;
+    await res.update(user);
+    return res.get({ plain: true });
+  }
+  async updateStaffRole(userId: number, newRole: 'Admin' | 'Tecnico'): Promise<void> {
+    const t = await db.transaction();
 
-    const normalizedUser = this.normalizeUserPayload(user);
-    await this.assertUniqueFields(normalizedUser, {
-      excludeUserId: id,
-      transaction: options?.transaction,
-    });
+    try {
+      // remove apenas os cargos de equipe (protegendo Medico ou Paciente se existirem)
+      await RoleModel.destroy({
+        where: {
+          userId,
+          role: {
+            [Op.in]: ['Admin', 'Tecnico']
+          }
+        },
+        transaction: t
+      });
 
-    const payload = Object.fromEntries(
-      Object.entries(normalizedUser).filter(([, value]) => value !== undefined),
-    );
+      // insere o cargo novo escolhido
+      await RoleModel.create({
+        userId,
+        role: newRole
+      }, { transaction: t });
 
-    await res.update(payload, {
-      transaction: options?.transaction,
-    });
-
-    return this.getById(id, options);
+      await t.commit();
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
   }
 
   /** Remove o registro do usuário do banco de dados */
-  async delete(id: number, options?: { transaction?: Transaction, force?: boolean }): Promise<boolean> {
-    const res = await UserModel.findByPk(id, {
-      transaction: options?.transaction,
-    });
+  async delete(id: number): Promise<boolean> {
+    const res = await UserModel.findByPk(id);
     if (!res) return false;
-
-    await PasswordModel.destroy({
-      where: { userId: id },
-      transaction: options?.transaction,
-    });
-
-    await RoleModel.destroy({
-      where: { userId: id },
-      transaction: options?.transaction,
-    });
-
-    await res.destroy({
-      transaction: options?.transaction,
-      force: options?.force,
-    });
-
+    await res.destroy();
     return true;
   }
 
@@ -216,11 +164,12 @@ export class UserService {
     })
     if(admin) return;
     console.log(`CREATING ADMIN USER WITH ${email}`);
-    await this.create({
+    await this.createStaff({
       email,
       password,
+      cpf: '00000000000',
       name: 'admin',
-      roles: ['Admin'],
+      role: 'Admin',
     });
   }
 }

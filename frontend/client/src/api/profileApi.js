@@ -1,42 +1,174 @@
-import { getRequest, putRequest } from './api';
+import {
+  getRequest,
+  patchRequest,
+} from './api';
 
 /**
- * Converte os dados da tabela users para o formato
- * utilizado pela página de perfil.
+ * Converte:
+ * 2000-05-20
+ * ou
+ * 2000-05-20T12:00:00.000Z
+ *
+ * Para:
+ * 20/05/2000
  */
-const normalizeProfile = (user = {}, currentProfile = {}) => ({
-  // Neste fluxo, id e userId são o ID da tabela users.
-  id: user.id ?? currentProfile.id ?? null,
-  userId: user.id ?? currentProfile.userId ?? null,
+const formatBirthFromApi = (birth) => {
+  if (!birth) {
+    return '';
+  }
 
-  name: user.name ?? currentProfile.name ?? '',
-  email: user.email ?? currentProfile.email ?? '',
-  phone: user.phone
-    ? String(user.phone)
-    : String(currentProfile.phone ?? ''),
-  cpf: user.cpf
-    ? String(user.cpf)
-    : String(currentProfile.cpf ?? ''),
+  const datePart = String(birth).split('T')[0];
+  const [year, month, day] = datePart.split('-');
+
+  if (!year || !month || !day) {
+    return '';
+  }
+
+  return `${day}/${month}/${year}`;
+};
+
+/**
+ * Converte:
+ * 20/05/2000
+ *
+ * Para:
+ * 2000-05-20
+ */
+const formatBirthToApi = (birthDate) => {
+  if (!birthDate) {
+    return undefined;
+  }
 
   /*
-   * A data não está na tabela users.
-   * Mantemos o valor atual para não apagá-lo no estado da tela.
+   * Caso a data já esteja no formato
+   * aceito pelo backend.
    */
-  birthDate: currentProfile.birthDate ?? '',
-});
+  if (/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return birthDate;
+  }
+
+  const [day, month, year] =
+    String(birthDate).split('/');
+
+  if (!day || !month || !year) {
+    return undefined;
+  }
+
+  return `${year}-${month}-${day}`;
+};
+
+const formatCpf = (value) => {
+  const numbers = String(value ?? '').replace(/\D/g, '');
+
+  if (numbers.length !== 11) {
+    return numbers;
+  }
+
+  return numbers.replace(
+    /(\d{3})(\d{3})(\d{3})(\d{2})/,
+    '$1.$2.$3-$4',
+  );
+};
 
 /**
- * Carrega os dados do usuário autenticado.
+ * Converte os dados retornados pelo backend
+ * para o formato utilizado pela tela de perfil.
+ */
+const normalizeProfile = (
+  response = {},
+  currentProfile = {},
+) => {
+  const patient =
+    response?.data ??
+    response ??
+    {};
+
+  return {
+    /*
+     * id e patientId representam o registro
+     * da tabela patients.
+     */
+    id:
+      patient.patientId ??
+      patient.id ??
+      currentProfile.id ??
+      null,
+
+    patientId:
+      patient.patientId ??
+      patient.id ??
+      currentProfile.patientId ??
+      null,
+
+    /*
+     * userId representa o registro
+     * correspondente na tabela users.
+     */
+    userId:
+      patient.userId ??
+      currentProfile.userId ??
+      null,
+
+    name:
+      patient.name ??
+      currentProfile.name ??
+      '',
+
+    email:
+      patient.email ??
+      currentProfile.email ??
+      '',
+
+    phone:
+      patient.phone !== undefined &&
+      patient.phone !== null
+        ? String(patient.phone)
+        : String(currentProfile.phone ?? ''),
+
+    cpf: formatCpf(
+        patient.cpf ??
+        currentProfile.cpf ??
+        '',
+      ),
+
+    birthDate:
+      formatBirthFromApi(patient.birth) ||
+      currentProfile.birthDate ||
+      '',
+
+    roles:
+      patient.roles ??
+      currentProfile.roles ??
+      [],
+
+    permissions:
+      patient.permissions ??
+      currentProfile.permissions ??
+      [],
+  };
+};
+
+/**
+ * Carrega o perfil completo do paciente
+ * autenticado pelo JWT.
  */
 export const getProfile = async () => {
   try {
-    const user = await getRequest('/api/user/me');
+    const patient = await getRequest(
+      '/api/patient/me',
+    );
 
-    console.log('Usuário carregado:', user);
+    console.log(
+      'Perfil do paciente carregado:',
+      patient,
+    );
 
-    return normalizeProfile(user);
+    return normalizeProfile(patient);
   } catch (error) {
-    console.error('Erro ao carregar perfil:', error);
+    console.error(
+      'Erro ao carregar perfil:',
+      error,
+    );
 
     throw new Error(
       error?.message ||
@@ -46,55 +178,74 @@ export const getProfile = async () => {
 };
 
 /**
- * Atualiza nome, e-mail, telefone e CPF.
+ * Atualiza o próprio perfil do paciente.
+ *
+ * O backend permite atualizar:
+ * - name
+ * - email
+ * - phone
+ * - birth
+ *
+ * O CPF não é enviado porque a nova rota
+ * não permite sua alteração.
  */
-export const updateProfile = async (profileData) => {
+export const updateProfile = async (
+  profileData,
+) => {
   try {
-    const userId = profileData.userId ?? profileData.id;
-
-    if (!userId) {
-      throw new Error('ID do usuário não encontrado.');
-    }
-
     const phoneNumbers = String(
       profileData.phone ?? '',
     ).replace(/\D/g, '');
 
-    const cpfNumbers = String(
-      profileData.cpf ?? '',
-    ).replace(/\D/g, '');
-
     const payload = {
-      name: profileData.name?.trim(),
-      email: profileData.email?.trim(),
+      name:
+        profileData.name?.trim() ||
+        undefined,
+
+      email:
+        profileData.email?.trim() ||
+        undefined,
 
       /*
-       * O backend trabalha com telefone numérico.
-       * Exemplo: (51) 99999-0004 -> 51999990004
+       * Envia somente os números do telefone.
+       * Exemplo:
+       * (51) 99999-0004
+       * vira:
+       * 51999990004
        */
-      phone: phoneNumbers
-        ? Number(phoneNumbers)
-        : undefined,
+      phone:
+        phoneNumbers ||
+        undefined,
 
-      /*
-       * O CPF é enviado sem pontos e traço.
-       */
-      cpf: cpfNumbers || undefined,
+      birth: formatBirthToApi(
+        profileData.birthDate,
+      ),
     };
 
-    console.log('Atualizando usuário:', {
-      userId,
-      payload,
-    });
-
-    const updatedUser = await putRequest(
-      `/api/user/${userId}`,
+    console.log(
+      'Atualizando perfil do paciente:',
       payload,
     );
 
-    return normalizeProfile(updatedUser, profileData);
+    const updatedPatient = await patchRequest(
+      '/api/patient/me',
+      payload,
+    );
+
+    console.log(
+      'Perfil atualizado:',
+      updatedPatient,
+    );
+
+    return normalizeProfile(
+      updatedPatient,
+      profileData,
+    );
   } catch (error) {
-    console.error('Erro ao atualizar perfil:', error);
+    console.error(
+      'Erro ao atualizar perfil:',
+      error,
+    );
 
     throw new Error(
       error?.message ||
@@ -102,3 +253,4 @@ export const updateProfile = async (profileData) => {
     );
   }
 };
+

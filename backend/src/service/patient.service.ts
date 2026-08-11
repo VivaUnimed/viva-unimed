@@ -1,234 +1,237 @@
-import { IPatient, IPatientCreate, IPatientListParams, IPatientUpdate, IUserCreate, IUserUpdate } from "shared";
+import { IPatient, IPatientListParams, IPatientProfile, IPatientCreateInput, IPatientProfileUpdate } from "shared";
 import PatientModel from "../db/models/patient.model";
-import { BadRequest, Conflict, NotFound } from "../error";
+import { NotFound } from "../error";
 import UserModel from "../db/models/user.model";
-import { paginate } from "./helpers";
-import { Op, Transaction } from "sequelize";
+import RoleModel from "../db/models/role.model";
+import { assertUniqueUserIdentity, paginate } from "./helpers";
+import { Op } from "sequelize";
+import { getPermissionsFromRoles } from "../entities";
 import { db } from "../db";
-import { UserService } from "./user.service";
-import AppointmentRequestModel from "../db/models/appointment_request.model";
-import AppointmentMatchModel from "../db/models/appointment_match.model";
+import { hashPassword } from "../helpers/password";
+import PasswordModel from "../db/models/password.model";
+
+
+/**
+ * Helper para blindar datas contra mudanças de fuso horário.
+ * Força a hora para 12:00:00 UTC, garantindo que shifts de -3h ou +3h
+ * não alterem o dia do mês.
+ */
+const getSafeDate = (dateInput: Date | string): Date => {
+  const d = new Date(dateInput);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
+};
 
 export class PatientService {
-  private userService = new UserService();
+ /**
+   * Cria o Usuário e o Paciente em uma única transação (Facade)
+   */
+  async createPatientComplete(data: IPatientCreateInput): Promise<IPatient> {
+    const { normalizedEmail, normalizedCpf } = await assertUniqueUserIdentity(data.email, data.cpf);
 
-  private buildUserCreatePayload(data: IPatientCreate): IUserCreate {
-    const name = data.name?.trim();
-    const email = data.email?.trim();
-
-    if (!name || !email) {
-      throw new BadRequest("Informe nome e e-mail para criar o paciente.");
-    }
-
-    return {
-      name,
-      email,
-      cpf: data.cpf?.trim() || undefined,
-      phone: data.phone,
-      password: data.password,
-      roles: ["Paciente"],
-    };
-  }
-
-  private buildUserUpdatePayload(data: IPatientUpdate): Partial<IUserUpdate> {
-    return Object.fromEntries(
-      Object.entries({
-        name: data.name?.trim(),
-        email: data.email?.trim(),
-        cpf: data.cpf?.trim() || undefined,
-        phone: data.phone,
-      }).filter(([, value]) => value !== undefined),
-    );
-  }
-
-  private async findPatientModel(id: number, options?: { transaction?: Transaction }): Promise<PatientModel> {
-    const model = await PatientModel.findByPk(id, {
-      include: [{
-        model: UserModel,
-        required: true,
-      }],
-      transaction: options?.transaction,
-    });
-
-    if (!model) {
-      throw new NotFound();
-    }
-
-    return model;
-  }
-
-  private async assertUserAvailable(userId: number, options?: { transaction?: Transaction }): Promise<void> {
-    const [user, existingPatient] = await Promise.all([
-      UserModel.findByPk(userId, {
-        transaction: options?.transaction,
-      }),
-      PatientModel.findOne({
-        where: { userId },
-        transaction: options?.transaction,
-      }),
-    ]);
-
-    if (!user) {
-      throw new NotFound("Usuário informado não foi encontrado.");
-    }
-
-    if (existingPatient) {
-      throw new Conflict("Já existe um paciente vinculado a este usuário.");
-    }
-  }
-
-  /** Cria um novo registro de paciente associado a um usuário */
-  async create(data: IPatientCreate): Promise<IPatient> {
-    const transaction = await db.transaction();
+    const t = await db.transaction();
 
     try {
-      let userId = data.userId;
+      // cria usuário base
+      const newUser = await UserModel.create({
+        name: data.name,
+        email: normalizedEmail,
+        cpf: normalizedCpf,
+        phone: data.phone,
+      }, { transaction: t });
 
-      if (userId !== undefined && userId !== null) {
-        await this.assertUserAvailable(userId, { transaction });
-        await this.userService.addUserRole(userId, "Paciente", { transaction });
-      } else {
-        const user = await this.userService.create(
-          this.buildUserCreatePayload(data),
-          { transaction },
-        );
-        userId = user.id;
+      // atribui a role de "Paciente" para esse usuário
+      await RoleModel.create({
+        userId: newUser.id,
+        role: 'Paciente'
+      }, { transaction: t });
+
+      if (data.password) {
+        const { hash, salt } = await hashPassword(data.password);
+
+        await PasswordModel.create({
+          userId: newUser.id,
+          hash,
+          salt,
+        }, { transaction: t });
       }
 
-      const model = await PatientModel.create({
-        birth: data.birth,
-        userId,
-      }, {
-        transaction,
-      });
+      // cria o perfil do Paciente
+      const newPatient = await PatientModel.create({
+        userId: newUser.id,
+        birth: getSafeDate(data.birth),
+      }, { transaction: t });
 
-      const patient = await this.getById(model.id, { transaction });
-      await transaction.commit();
+      // salva no banco
+      await t.commit();
 
-      return patient;
+      // retorna o paciente
+      return this.getById(newPatient.id);
+
     } catch (error) {
-      await transaction.rollback();
+      // se der erro, desfaz tudo
+      await t.rollback();
       throw error;
     }
   }
 
-  /** Atualiza dados do paciente */
-  async update(id: number, data: IPatientUpdate): Promise<IPatient> {
-    const transaction = await db.transaction();
+  /** Atualiza dados do paciente (Visão Admin/Técnico) */
+  async update(id: number, data: IPatientProfileUpdate): Promise<IPatient> {
+    // busca o paciente
+    const patient = await PatientModel.findByPk(id);
+    if (!patient) throw new NotFound();
+
+    // busca o usuário atrelado a este paciente
+    const user = await UserModel.findByPk(patient.userId);
+    if (!user) throw new NotFound();
+
+    const t = await db.transaction();
 
     try {
-      const model = await this.findPatientModel(id, { transaction });
-      const userPayload = this.buildUserUpdatePayload(data);
+      // payload apenas para os dados da tabela Users
+      const userPayload: Partial<{
+        name: string;
+        email: string;
+        phone: string;
+      }> = {};
 
-      if (Object.keys(userPayload).length) {
-        const user = await this.userService.update(model.userId, userPayload, { transaction });
-        if (!user) {
-          throw new NotFound("Usuário vinculado ao paciente não foi encontrado.");
-        }
+      if (data.name !== undefined) userPayload.name = data.name;
+      if (data.email !== undefined) userPayload.email = data.email;
+      if (data.phone !== undefined) userPayload.phone = data.phone;
+
+      // se houver dados de usuário para atualizar, executa na transação
+      if (Object.keys(userPayload).length > 0) {
+        await user.update(userPayload, { transaction: t });
       }
 
+      // prepara e atualiza os dados da tabela Patients
       if (data.birth !== undefined) {
-        await model.update({
-          birth: data.birth,
-        }, {
-          transaction,
-        });
+        await patient.update({ birth: getSafeDate(data.birth) }, { transaction: t });
       }
 
-      const patient = await this.getById(id, { transaction });
-      await transaction.commit();
+      // comita a transação se tudo estiver ok
+      await t.commit();
 
-      return patient;
+      // retorna o paciente atualizado com todos os relacionamentos montados
+      return this.getById(id);
+
     } catch (error) {
-      await transaction.rollback();
+      // desfaz tudo se der erro
+      await t.rollback();
       throw error;
     }
   }
 
   /** Busca paciente por ID */
-  async getById(id: number, options?: { transaction?: Transaction }): Promise<IPatient> {
-    const model = await this.findPatientModel(id, options);
+  async getById(id: number): Promise<IPatientProfile> {
+    const model = await PatientModel.findByPk(id, {
+      include: [
+        {
+          model: UserModel,
+          include: [RoleModel],
+        }
+      ],
+    });
+    if (!model) {
+      throw new NotFound();
+    }
     return PatientService.makePatient(model);
   }
 
+  async getMe(userId: number): Promise<IPatient> {
+  const model = await PatientModel.findOne({
+    where: { userId },
+    include: [
+      {
+        model: UserModel,
+        include: [RoleModel],
+      }
+    ],
+  });
+  if (!model) throw new NotFound();
+  return PatientService.makePatient(model);
+}
+
+// atualiza o próprio perfil
+
+async updateOwnProfile(userId: number, data: IPatientProfileUpdate): Promise<IPatient> {
+  const patient = await PatientModel.findOne({ where: { userId } });
+  if (!patient) throw new NotFound();
+
+  const user = await UserModel.findByPk(userId);
+  if (!user) throw new NotFound();
+
+  const t = await db.transaction();
+  try {
+    const userPayload: Partial<{
+      name: string;
+      email: string;
+      phone: string;
+    }> = {};
+
+    if (data.name !== undefined) userPayload.name = data.name;
+    if (data.email !== undefined) userPayload.email = data.email;
+    if (data.phone !== undefined) userPayload.phone = data.phone;
+
+    if (Object.keys(userPayload).length > 0) {
+      await user.update(userPayload, { transaction: t });
+    }
+
+    if (data.birth !== undefined) {
+      await patient.update({ birth: getSafeDate(data.birth) }, { transaction: t });
+    }
+
+    await t.commit();
+    return this.getMe(userId);
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+}
   /** Lista todos os pacientes */
-  async list(params?: IPatientListParams): Promise<IPatient[]> {
-    const searchTerm = params?.search ? `%${params.search}%` : undefined;
+  async list(params: IPatientListParams = {}): Promise<IPatient[]> {
     const list = await PatientModel.findAll({
       include: [{
         model: UserModel,
-        required: true,
-        where: searchTerm
+        include: [RoleModel],
+        where: params.search
           ? {
-            [Op.or]: [
-              { name: { [Op.iLike]: searchTerm } },
-              { cpf: { [Op.iLike]: searchTerm } },
-              { email: { [Op.iLike]: searchTerm } },
-            ],
+            [Op.or] : {
+              name: { [Op.iLike]: `%${params.search}%` },
+              cpf: { [Op.iLike]: `%${params.search}%` },
+              email: { [Op.iLike]: `%${params.search}%` },
+            }
           }
           : undefined,
       }],
       ...paginate(params),
-      order: [['id', 'DESC']],
+      order: [['userId', 'DESC']],
     });
-
     return list.map(PatientService.makePatient);
   }
 
   /** Remove um paciente */
   async delete(id: number): Promise<void> {
-    const transaction = await db.transaction();
-
-    try {
-      const model = await this.findPatientModel(id, { transaction });
-      const requests = await AppointmentRequestModel.findAll({
-        where: { patientId: id },
-        attributes: ["id"],
-        transaction,
-      });
-      const requestIds = requests.map(request => request.id);
-
-      if (requestIds.length) {
-        await AppointmentMatchModel.destroy({
-          where: {
-            requestId: requestIds,
-          },
-          transaction,
-        });
-      }
-
-      await AppointmentRequestModel.destroy({
-        where: { patientId: id },
-        transaction,
-      });
-
-      await model.destroy({
-        transaction,
-      });
-
-      await this.userService.delete(model.userId, {
-        transaction,
-        force: true,
-      });
-
-      await transaction.commit();
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
+    const model = await PatientModel.findByPk(id);
+    if (!model) {
+      throw new NotFound();
     }
+    await model.destroy();
   }
 
-  static makePatient(model: PatientModel): IPatient {
+
+  static makePatient(model: PatientModel): IPatientProfile {
+    const roles = model.user.roles?.map(role => role.role) ?? [];
     return {
       id: model.id,
+      patientId: model.id,
       userId: model.userId,
       birth: model.birth,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
       email: model.user.email,
       name: model.user.name,
       phone: model.user.phone,
       cpf: model.user.cpf,
-    };
+      roles,
+      permissions: getPermissionsFromRoles(roles),
+    }
   }
 }

@@ -6,34 +6,47 @@ import { toast } from 'react-toastify';
 /* --------------------------------------------------------------------------
  *  SIGN UP  –  POST /patient/signup
  * ------------------------------------------------------------------------*/
-export const signup = async (userCredentials, dispatch) => {
-  dispatch({ type: authTypes.SIGNUP_REQUEST });
+export const signup = async (
+  userCredentials,
+  dispatch,
+) => {
+  dispatch({
+    type: authTypes.SIGNUP_REQUEST,
+  });
 
   try {
-    const data = await toast.promise(
-      postRequest('/patient/signup', userCredentials),   // ⬅ rota pública
-      {
-        pending: 'Criando sua conta...',
-        success: 'Conta criada com sucesso!',
-        error: { render({ data }) {
-          return (
-            data?.response?.data?.message ||
-            data?.message ||
-            'Não foi possível concluir o cadastro no momento.'
-          );
-        }},
+      const data = await toast.promise(
+        postRequest('/api/patient', userCredentials),
+        {
+          pending: 'Criando sua conta...',
+          success: 'Conta criada com sucesso!',
+          error: {
+            render({ data: error }) {
+              return (
+                error?.message ||
+                'Não foi possível concluir o cadastro.'
+              );
+            },
+          },
+        },
+      );
+
+    dispatch({
+      type: authTypes.SIGNUP_SUCCESS,
+      payload: {
+        patient: data,
       },
-    );
+    });
 
-    const { message } = data || {};
-    if (!message) throw new Error('Resposta inválida do servidor');
-
-    dispatch({ type: authTypes.SIGNUP_SUCCESS, payload: { message } });
+    return data;
   } catch (error) {
     dispatch({
       type: authTypes.SIGNUP_FAILURE,
-      payload: { error: error.message },
+      payload: {
+        error: error.message,
+      },
     });
+
     throw error;
   }
 };

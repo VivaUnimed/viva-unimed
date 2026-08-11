@@ -1,48 +1,81 @@
-import { getRequest } from './api';
+import {
+  getRequest,
+} from './api';
 
-/*
- * Evita buscar várias vezes o mesmo médico e a mesma especialidade.
+/**
+ * Formata data + horário.
  *
- * No seu exemplo, as três vagas utilizam:
- * doctorId = 8
- * specialityId = 1
- *
- * Então cada informação será consultada apenas uma vez.
+ * Exemplo:
+ * 17/08/2026, 18:15
  */
-const doctorsCache = new Map();
-const specialitiesCache = new Map();
-
 const formatDate = (value) => {
   if (!value) {
     return '';
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
     return String(value);
   }
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    'pt-BR',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    },
+  ).format(date);
 };
 
-const getStatusLabel = (status) => {
+/**
+ * Traduz o status do backend.
+ */
+const getStatusLabel = (
+  status,
+) => {
   const labels = {
-    open: 'Disponível',
-    booked: 'Agendada',
-    cancelled: 'Cancelada',
-    no_show: 'Não compareceu',
-    expired: 'Expirada',
+    open:
+      'Disponível',
+
+    booked:
+      'Agendada',
+
+    cancelled:
+      'Cancelada',
+
+    no_show:
+      'Não compareceu',
+
+    expired:
+      'Expirada',
   };
 
-  return labels[status] ?? status ?? '';
+  return (
+    labels[status] ??
+    status ??
+    ''
+  );
 };
 
-const getStatusVariant = (status) => {
-  if (status === 'open' || status === 'booked') {
+/**
+ * Define a classe utilizada
+ * para mostrar o status.
+ */
+const getStatusVariant = (
+  status,
+) => {
+  if (
+    status === 'booked'
+  ) {
     return 'green';
   }
 
@@ -50,178 +83,107 @@ const getStatusVariant = (status) => {
 };
 
 /**
- * Busca o médico pelo doctorId.
+ * Converte o Appointment retornado
+ * pelo backend para o formato usado
+ * pela página Minhas Consultas.
  */
-const getDoctorById = async (doctorId) => {
-  if (!doctorId) {
-    return null;
-  }
+const normalizeConsulta = (
+  appointment = {},
+) => {
 
-  if (doctorsCache.has(doctorId)) {
-    return doctorsCache.get(doctorId);
-  }
+  const doctor =
+    appointment.doctor ??
+    {};
 
-  try {
-    const doctor = await getRequest(
-      `/api/doctor/${doctorId}`,
-    );
+  const doctorUser =
+    doctor.user ??
+    {};
 
-    doctorsCache.set(doctorId, doctor);
+  const speciality =
+    appointment.speciality ??
+    {};
 
-    return doctor;
-  } catch (error) {
-    console.warn(
-      `Não foi possível buscar o médico ${doctorId}:`,
-      error.message,
-    );
+  return {
+    id:
+      appointment.id ??
+      '',
 
-    doctorsCache.set(doctorId, null);
+    especialidade:
+      speciality.name ??
+      'Especialidade não informada',
 
-    return null;
-  }
+    status:
+      getStatusLabel(
+        appointment.status,
+      ),
+
+    statusVariant:
+      getStatusVariant(
+        appointment.status,
+      ),
+
+    medico:
+      doctorUser.name ??
+      'Profissional',
+
+    crm:
+      doctor.crm ??
+      '',
+
+    dataResumo:
+      formatDate(
+        appointment.date,
+      ),
+
+    /**
+     * Ainda não existe localização
+     * no modelo Appointment.
+     */
+    local:
+      'Local não informado',
+
+    original:
+      appointment,
+  };
 };
 
 /**
- * Busca a especialidade pelo specialityId.
+ * Lista somente as consultas
+ * do paciente autenticado.
  */
-const getSpecialityById = async (specialityId) => {
-  if (!specialityId) {
-    return null;
-  }
+export const getMinhasConsultas =
+  async () => {
 
-  if (specialitiesCache.has(specialityId)) {
-    return specialitiesCache.get(specialityId);
-  }
+    try {
 
-  try {
-    const speciality = await getRequest(
-      `/api/speciality/${specialityId}`,
-    );
+      const response =
+        await getRequest(
+          '/api/appointment/me',
+        );
 
-    specialitiesCache.set(
-      specialityId,
-      speciality,
-    );
+      const appointments =
+        Array.isArray(response)
+          ? response
+          : Array.isArray(
+              response?.data,
+            )
+            ? response.data
+            : [];
 
-    return speciality;
-  } catch (error) {
-    console.warn(
-      `Não foi possível buscar a especialidade ${specialityId}:`,
-      error.message,
-    );
+      return appointments.map(
+        normalizeConsulta,
+      );
 
-    specialitiesCache.set(specialityId, null);
+    } catch (error) {
 
-    return null;
-  }
-};
+      console.error(
+        'Erro ao carregar as consultas do paciente:',
+        error,
+      );
 
-const getDoctorName = (doctor, doctorId) => {
-  return (
-    doctor?.user?.name ??
-    doctor?.name ??
-    doctor?.userName ??
-    doctor?.nome ??
-    `Profissional #${doctorId}`
-  );
-};
-
-const getSpecialityName = (
-  speciality,
-  specialityId,
-) => {
-  return (
-    speciality?.name ??
-    speciality?.description ??
-    speciality?.nome ??
-    `Especialidade #${specialityId}`
-  );
-};
-
-const normalizeConsulta = ({
-  appointment,
-  doctor,
-  speciality,
-}) => ({
-  id: appointment.id ?? '',
-
-  especialidade: getSpecialityName(
-    speciality,
-    appointment.specialityId,
-  ),
-
-  status: getStatusLabel(
-    appointment.status,
-  ),
-
-  statusVariant: getStatusVariant(
-    appointment.status,
-  ),
-
-  medico: getDoctorName(
-    doctor,
-    appointment.doctorId,
-  ),
-
-  dataResumo: formatDate(
-    appointment.date,
-  ),
-
-  /*
-   * O contrato atual de Appointment não possui
-   * campo de local.
-   */
-  local: 'Local não informado',
-
-  original: appointment,
-});
-
-export const getMinhasConsultas = async () => {
-  try {
-    const response = await getRequest(
-      '/api/appointment',
-    );
-
-    const appointments = Array.isArray(response)
-      ? response
-      : response?.appointments ??
-        response?.data ??
-        [];
-
-    if (!Array.isArray(appointments)) {
-      return [];
+      throw new Error(
+        error?.message ||
+          'Não foi possível carregar suas consultas.',
+      );
     }
-
-    const consultas = await Promise.all(
-      appointments.map(async (appointment) => {
-        const [doctor, speciality] =
-          await Promise.all([
-            getDoctorById(
-              appointment.doctorId,
-            ),
-            getSpecialityById(
-              appointment.specialityId,
-            ),
-          ]);
-
-        return normalizeConsulta({
-          appointment,
-          doctor,
-          speciality,
-        });
-      }),
-    );
-
-    return consultas;
-  } catch (error) {
-    console.error(
-      'Erro ao carregar os agendamentos:',
-      error,
-    );
-
-    throw new Error(
-      error?.message ||
-        'Não foi possível carregar os agendamentos.',
-    );
-  }
-};
+  };

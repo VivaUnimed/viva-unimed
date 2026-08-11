@@ -662,19 +662,14 @@ export default function PerfilEditar() {
                 type="text"
                 value={formData.cpf}
                 placeholder={currentProfile.cpf}
-                onChange={handleChange}
-                inputMode="numeric"
-                maxLength={14}
-                aria-invalid={Boolean(
-                  errors.cpf,
-                )}
+                readOnly
+                title="O CPF não pode ser alterado pelo perfil."
               />
+              <span className="perfil-field-help">
+                Para alterar o CPF, entre em contato com o atendimento.
+              </span>
 
-              {errors.cpf && (
-                <span className="perfil-field-error">
-                  {errors.cpf}
-                </span>
-              )}
+              
             </div>
 
             <div

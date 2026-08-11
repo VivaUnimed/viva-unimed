@@ -80,6 +80,19 @@
   font-weight: 800;
 }
 
+.settings-feedback-banner--warning {
+  border-color: #f4dfb4;
+  background-color: #fff8e8;
+}
+
+.settings-feedback-banner--warning svg {
+  stroke: #b77100;
+}
+
+.settings-feedback-banner--warning span {
+  color: #8a5a00;
+}
+
 .settings-card {
   min-height: 0;
   padding: 22px;
@@ -170,6 +183,13 @@
   line-height: 28px;
   font-weight: 900;
   color: #202124;
+}
+
+.settings-card__note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #5f6368;
 }
 
 .settings-card__action {

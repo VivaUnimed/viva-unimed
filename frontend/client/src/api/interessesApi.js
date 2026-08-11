@@ -5,66 +5,8 @@ import {
 } from './api';
 
 /**
- * Lê os dados do usuário salvos durante o login.
- */
-const readStoredUser = () => {
-  const rawUser =
-    localStorage.getItem('user') ||
-    sessionStorage.getItem('user');
-
-  if (!rawUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(rawUser);
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Tenta descobrir o ID do paciente.
- *
- * É importante diferenciar:
- *
- * user.id    = ID da tabela users
- * patientId  = ID da tabela patients
- */
-const getPatientId = ({ required = true } = {}) => {
-  const user = readStoredUser();
-
-  const storedPatientId =
-    localStorage.getItem('patientId') ||
-    sessionStorage.getItem('patientId');
-
-  const patientId =
-    user?.patientId ??
-    user?.patient?.id ??
-    user?.paciente?.id ??
-    storedPatientId;
-
-  const numericPatientId = Number(patientId);
-
-  if (
-    !Number.isInteger(numericPatientId) ||
-    numericPatientId <= 0
-  ) {
-    if (required) {
-      throw new Error(
-        'ID do paciente não encontrado. O login ainda não retorna patientId.',
-      );
-    }
-
-    return null;
-  }
-
-  return numericPatientId;
-};
-
-/**
- * Extrai uma lista independentemente do formato
- * utilizado pela resposta do backend.
+ * Converte diferentes formatos
+ * de resposta em uma lista.
  */
 const extractList = (
   payload,
@@ -74,13 +16,22 @@ const extractList = (
     return payload;
   }
 
-  for (const propertyName of propertyNames) {
-    if (Array.isArray(payload?.[propertyName])) {
+  for (
+    const propertyName
+    of propertyNames
+  ) {
+    if (
+      Array.isArray(
+        payload?.[propertyName],
+      )
+    ) {
       return payload[propertyName];
     }
   }
 
-  if (Array.isArray(payload?.data)) {
+  if (
+    Array.isArray(payload?.data)
+  ) {
     return payload.data;
   }
 
@@ -88,8 +39,9 @@ const extractList = (
 };
 
 /**
- * Normaliza uma especialidade para o formato
- * utilizado pela página.
+ * Converte uma especialidade
+ * para o formato utilizado
+ * pela página Interesses.
  */
 const normalizeSpeciality = (
   speciality = {},
@@ -100,19 +52,23 @@ const normalizeSpeciality = (
     speciality.specialityId ??
     speciality.especialidadeId;
 
-  /*
-   * Verifica se já existe uma solicitação
-   * waiting para esta especialidade.
-   */
-  const activeRequest = activeRequests.find(
-    (request) =>
-      Number(request.specialityId) ===
-        Number(specialityId) &&
-      request.status === 'waiting',
-  );
+  const activeRequest =
+    activeRequests.find(
+      (request) =>
+        Number(
+          request.specialityId,
+        ) ===
+          Number(
+            specialityId,
+          ) &&
+        request.status ===
+          'waiting',
+    );
 
   return {
-    id: specialityId ?? '',
+    id:
+      specialityId ??
+      '',
 
     name:
       speciality.name ??
@@ -120,169 +76,208 @@ const normalizeSpeciality = (
       speciality.description ??
       'Especialidade sem nome',
 
-    status: activeRequest
-      ? 'NA FILA'
-      : 'ESPECIALIDADE',
+    status:
+      activeRequest
+        ? 'NA FILA'
+        : 'ESPECIALIDADE',
 
-    selected: Boolean(activeRequest),
+    selected:
+      Boolean(activeRequest),
 
-    queued: Boolean(activeRequest),
+    queued:
+      Boolean(activeRequest),
 
-    /*
-     * Para sair da fila, o DELETE precisa receber
-     * o ID de appointment_request, e não o ID
-     * da especialidade.
-     */
-    requestId: activeRequest?.id ?? null,
+    requestId:
+      activeRequest?.id ??
+      null,
 
     iconName:
       speciality.iconName ??
-      speciality.icon ??
       '',
   };
 };
 
 /**
- * Carrega:
+ * Busca as especialidades
+ * disponíveis e as filas
+ * do paciente autenticado.
  *
- * 1. Todas as especialidades;
- * 2. As filas atuais do paciente.
+ * O backend identifica o
+ * paciente pelo JWT.
  */
-export const getInteresses = async () => {
-  try {
-    const specialitiesResponse =
-      await getRequest('/api/speciality');
-
-    const specialities = extractList(
-      specialitiesResponse,
-      [
-        'specialities',
-        'specialties',
-        'especialidades',
-        'items',
-      ],
-    );
-
-    const patientId = getPatientId({
-      required: false,
-    });
-
-    let activeRequests = [];
-
-    if (patientId) {
-      const requestsResponse = await getRequest(
-        `/api/appointment-request?patientId=${patientId}&status=waiting`,
-      );
-
-      activeRequests = extractList(
+export const getInteresses =
+  async () => {
+    try {
+      const [
+        specialitiesResponse,
         requestsResponse,
-        [
-          'requests',
-          'appointmentRequests',
-          'items',
-        ],
-      );
-    }
-
-    return specialities
-      .map((speciality) =>
-        normalizeSpeciality(
-          speciality,
-          activeRequests,
+      ] = await Promise.all([
+        getRequest(
+          '/api/speciality',
         ),
-      )
-      .filter(
-        (speciality) =>
-          speciality.id &&
-          speciality.name,
-      )
-      .sort((a, b) =>
-        a.name.localeCompare(
-          b.name,
-          'pt-BR',
+
+        /**
+         * NÃO enviamos patientId.
+         *
+         * O backend pega o paciente
+         * através do JWT.
+         */
+        getRequest(
+          '/api/appointment-request/me?status=waiting',
         ),
+      ]);
+
+      const specialities =
+        extractList(
+          specialitiesResponse,
+          [
+            'specialities',
+            'specialties',
+            'especialidades',
+            'items',
+          ],
+        );
+
+      const activeRequests =
+        extractList(
+          requestsResponse,
+          [
+            'requests',
+            'appointmentRequests',
+            'items',
+          ],
+        );
+
+      return specialities
+        .map(
+          (speciality) =>
+            normalizeSpeciality(
+              speciality,
+              activeRequests,
+            ),
+        )
+        .filter(
+          (speciality) =>
+            speciality.id &&
+            speciality.name,
+        )
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(
+              b.name,
+              'pt-BR',
+            ),
+        );
+    } catch (error) {
+      console.error(
+        'Erro ao carregar interesses:',
+        error,
       );
-  } catch (error) {
-    console.error(
-      'Erro ao carregar interesses:',
-      error,
-    );
 
-    throw new Error(
-      error?.message ||
-        'Não foi possível carregar as especialidades.',
-    );
-  }
-};
-
-/**
- * Insere o paciente na fila de uma especialidade.
- */
-export const addInteresse = async (
-  specialityId,
-) => {
-  try {
-    const patientId = getPatientId();
-
-    const payload = {
-      patientId,
-      specialityId: Number(specialityId),
-      status: 'waiting',
-
-      /*
-       * O backend exige date.
-       *
-       * Como a tela atual não possui uma data
-       * preferencial, usamos a data atual.
-       */
-      date: new Date().toISOString(),
-    };
-
-    return await postRequest(
-      '/api/appointment-request',
-      payload,
-    );
-  } catch (error) {
-    console.error(
-      'Erro ao entrar na fila:',
-      error,
-    );
-
-    throw new Error(
-      error?.message ||
-        'Não foi possível entrar na fila.',
-    );
-  }
-};
-
-/**
- * Remove uma solicitação de fila.
- *
- * Este parâmetro é o ID de appointment_request,
- * não o ID da especialidade.
- */
-export const removeInteresse = async (
-  requestId,
-) => {
-  try {
-    if (!requestId) {
       throw new Error(
-        'Solicitação da fila não encontrada.',
+        error?.message ||
+          'Não foi possível carregar as especialidades.',
       );
     }
+  };
 
-    return await deleteRequest(
-      `/api/appointment-request/${requestId}`,
-    );
-  } catch (error) {
-    console.error(
-      'Erro ao sair da fila:',
-      error,
-    );
+/**
+ * Entra na fila.
+ *
+ * O patientId NÃO é enviado.
+ * O status NÃO é enviado.
+ * attempts NÃO é enviado.
+ * cooldownUntil NÃO é enviado.
+ *
+ * Tudo isso é controlado
+ * pelo backend.
+ */
+export const addInteresse =
+  async (
+    specialityId,
+  ) => {
+    try {
+      const numericSpecialityId =
+        Number(specialityId);
 
-    throw new Error(
-      error?.message ||
-        'Não foi possível sair da fila.',
-    );
-  }
-};
+      if (
+        !Number.isInteger(
+          numericSpecialityId,
+        ) ||
+        numericSpecialityId <= 0
+      ) {
+        throw new Error(
+          'Especialidade inválida.',
+        );
+      }
+
+      return await postRequest(
+        '/api/appointment-request/me',
+
+        {
+          specialityId:
+            numericSpecialityId,
+
+          /**
+           * O tipo atual do shared
+           * ainda exige date.
+           */
+          date:
+            new Date()
+              .toISOString(),
+        },
+      );
+    } catch (error) {
+      console.error(
+        'Erro ao entrar na fila:',
+        error,
+      );
+
+      throw new Error(
+        error?.message ||
+          'Não foi possível entrar na fila.',
+      );
+    }
+  };
+
+/**
+ * Sai da fila.
+ *
+ * O backend verifica se
+ * requestId realmente pertence
+ * ao paciente autenticado.
+ */
+export const removeInteresse =
+  async (
+    requestId,
+  ) => {
+    try {
+      const numericRequestId =
+        Number(requestId);
+
+      if (
+        !Number.isInteger(
+          numericRequestId,
+        ) ||
+        numericRequestId <= 0
+      ) {
+        throw new Error(
+          'Solicitação da fila não encontrada.',
+        );
+      }
+
+      return await deleteRequest(
+         `/api/appointment-request/me/${numericRequestId}`,
+      );
+    } catch (error) {
+      console.error(
+        'Erro ao sair da fila:',
+        error,
+      );
+
+      throw new Error(
+        error?.message ||
+          'Não foi possível sair da fila.',
+      );
+    }
+  };

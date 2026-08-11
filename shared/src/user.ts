@@ -1,30 +1,34 @@
 import { Permission, Role } from "./permissions";
 
-
-export interface IUserCreate {
+export interface IUserBase {
   name: string;
   email: string;
-  cpf?: string;
-  phone?: number;
-  password?: string;
+  phone?: string;
+}
+
+export interface IUserCreate extends IUserBase {
+  cpf?: string; //  corrigir um cpf cadastrado errado, usar um endpoint separado e mais restrito? - com validação extra ou aprovação administrativa.
+  password?: string; // TODO: revisar a obrigatoriedade, dependendo do tipo de criação do perfil (admin que criou ou a própria pessoa/paciente?)
   roles?: Role[];
 }
 
-export interface IUserUpdate {
-  name?: string;
-  email?: string;
-  cpf?: string;
-  phone?: number;
+
+export interface StaffCreateRequest extends IUserBase {
+  cpf: string;
+  password?: string;
+  role: 'Admin' | 'Tecnico';
 }
 
-export interface IUser {
+export type IUserUpdate = Partial<IUserBase>;
+
+export interface IUser extends IUserBase {
   id: number;
-  name: string;
-  email: string;
   cpf?: string;
-  phone?: number;
   roles?: Role[];
   permissions?: Permission[];
+  createdAt?: string;
+  updatedAt?: string;
+  active?: boolean;
 }
 
 export interface IUserListParams {

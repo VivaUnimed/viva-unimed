@@ -69,18 +69,68 @@ export default function Signup() {
   const userSignup = async (e) => {
     e.preventDefault();
 
-    const userCredentials = {
-      name: fullName,
-      email,
-      password,
-      confirmPassword,
-      date_of_birth: dateOfBirth,
-      phone_number: phoneNumber,
-      cpf,
-    };
+      if (!fullName.trim()) {
+        alert('Informe o nome completo.');
+        return;
+      }
 
-    await signup(userCredentials);
-  };
+      if (!email.trim()) {
+        alert('Informe o e-mail.');
+        return;
+      }
+
+      if (!dateOfBirth) {
+        alert('Informe a data de nascimento.');
+        return;
+      }
+
+      if (!password) {
+        alert('Informe a senha.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert('As senhas não coincidem.');
+        return;
+      }
+
+      const cpfNumbers = String(cpf ?? '').replace(/\D/g, '');
+
+      const phoneNumbers = String(
+        phoneNumber ?? '',
+      ).replace(/\D/g, '');
+
+      /*
+      * O input de data retorna 2005-10-14.
+      * Transformamos para o formato completo esperado pela API.
+      */
+      const birth = new Date(
+        `${dateOfBirth}T12:00:00.000Z`,
+      ).toISOString();
+
+      const userCredentials = {
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+        birth,
+        phone: phoneNumbers,
+        cpf: cpfNumbers || undefined,
+      };
+
+      console.log(
+        'Payload enviado no cadastro:',
+        userCredentials,
+      );
+
+      try {
+        await signup(userCredentials);
+      } catch (error) {
+        console.error(
+          'Erro ao cadastrar paciente:',
+          error,
+        );
+      }
+};
 
   return (
     <div className="signup-paciente-page">

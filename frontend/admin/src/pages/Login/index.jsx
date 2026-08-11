@@ -1,31 +1,38 @@
 import { NavLink, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
-import Input from '../../components/ui/input';
+import { toast } from 'react-toastify';
+import { LuMail, LuLock, LuEye, LuEyeOff, LuBadgeAlert } from 'react-icons/lu';
 import Logo from '../../components/ui/Logo';
-import PrimaryBtn from '../../components/ui/PrimaryBtn';
 import { useAuth } from '../../context/authContext/authContext';
 import './styles.css';
-import { toast } from 'react-toastify';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [hideError, setHideError] = useState(false);
   const { login, authState } = useAuth();
-
   const location = useLocation();
 
-  const handleEmailChange = (e) => setEmail(e.target.value);
-  const handlePasswordChange = (e) => setPassword(e.target.value);
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    setHideError(true);
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    setHideError(true);
+  };
+
+  const togglePassword = () => setShowPassword(!showPassword);
 
   const userLogin = (e) => {
     e.preventDefault();
-    console.log('eux');
-
+    setHideError(false);
     const userCredentials = {
-      email,
+      email: email.trim(),
       password,
     };
-
     login(userCredentials);
   };
 
@@ -34,7 +41,6 @@ export default function Login() {
     const params = new URLSearchParams(location.search);
     if (params.get('expired')) {
       toast.warn('Sua sessão expirou!');
-
       // Limpa a URL para não mostrar o toast de novo se ele der F5
       window.history.replaceState({}, document.title, '/login');
     }
@@ -43,43 +49,104 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-content">
-        <div className="welcome-login-section">
-          <div className="welcome-login-section-content">
-            <div className="logo-login-container">
+        
+        {/* Left Side: Institutional */}
+        <div className="login-institutional">
+          <div className="login-institutional__content">
+            <div className="login-institutional__logo">
               <Logo />
             </div>
-            <h1 className="welcome-login-title">
-              Agenda VivaUnimed <br />
-              Sistema de Fila Inteligente
-            </h1>
+            <div className="login-institutional__text">
+              <h1>Agenda VivaUnimed</h1>
+              <h2>Sistema de Fila Inteligente</h2>
+              <p>Gestão inteligente de vagas remanescentes, fila de espera e confirmação de consultas.</p>
+            </div>
+            {/* Elementos decorativos (opcionais via CSS) */}
+            <div className="login-institutional__decor-circle-1"></div>
+            <div className="login-institutional__decor-circle-2"></div>
           </div>
         </div>
-        <form className="login-section-form" onSubmit={userLogin}>
-          <div className="title-form-container">
-            <h1 className="form-title">Bem vindo</h1>
-            <p>Acesse o Painel Administrativo para gerenciar sua agenda.</p>
-          </div>
-          <div className="form-inputs-login">
-            <Input
-              label={'E-mail Corporativo'}
-              styles={{ minWidth: '150px' }}
-              onChange={handleEmailChange}
-              styles={{ minWidth: '150px' }}
-            />
-            <Input
-              label={'Senha'}
-              styles={{ width: '80%', minWidth: '150px' }}
-              value={password}
-              onChange={handlePasswordChange}
-            />
-          </div>
-          <a className="reset-password" href="/forgot-password">
-            Esqueci a minha senha
-          </a>
-          <div className="login-section-button">
-            <PrimaryBtn text={'Entrar no Painel'} styles={{ width: '250px' }} />
-          </div>
-        </form>
+
+        {/* Right Side: Form */}
+        <div className="login-form-container">
+          <form className="login-form" onSubmit={userLogin}>
+            
+            <div className="login-form__header">
+              <h1>Bem-vindo de volta</h1>
+              <p>Acesse o painel administrativo da Agenda VivaUnimed.</p>
+            </div>
+
+            {/* Error Message */}
+            {(authState?.error && !hideError) && (
+              <div className="login-form__error">
+                <LuBadgeAlert size={20} />
+                <span>{authState.error}</span>
+              </div>
+            )}
+
+            <div className="login-form__fields">
+              <div className="login-input-group">
+                <label htmlFor="email">E-mail corporativo</label>
+                <div className="login-input-wrapper">
+                  <LuMail className="login-input-icon" size={20} />
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="voce@unimed.coop.br"
+                    value={email}
+                    onChange={handleEmailChange}
+                    autoComplete="username"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="login-input-group">
+                <label htmlFor="password">Senha</label>
+                <div className="login-input-wrapper">
+                  <LuLock className="login-input-icon" size={20} />
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Sua senha de acesso"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    autoComplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="login-password-toggle"
+                    onClick={togglePassword}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? <LuEyeOff size={20} /> : <LuEye size={20} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="login-form__support">
+              <p>Problemas para acessar? Contate o administrador do sistema.</p>
+            </div>
+
+            <button
+              type="submit"
+              className="login-submit-btn"
+              disabled={authState?.isAuthenticating || authState?.isLoading}
+            >
+              {(authState?.isAuthenticating || authState?.isLoading) ? (
+                <div className="login-spinner"></div>
+              ) : (
+                'Entrar no painel'
+              )}
+            </button>
+
+            <p className="login-footer-notice">
+              Acesso restrito a usuários administrativos autorizados.
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );

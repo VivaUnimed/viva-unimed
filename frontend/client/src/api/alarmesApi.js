@@ -4,347 +4,257 @@ import {
 } from './api';
 
 /**
- * Retorna os matchIds guardados temporariamente
- * no navegador.
+ * Garante que o retorno seja tratado como array.
  */
-const getStoredMatchIds = () => {
-  const ids = [];
-
-  const singleMatchId =
-    localStorage.getItem('matchId') ||
-    sessionStorage.getItem('matchId');
-
-  const storedMatchIds =
-    localStorage.getItem('matchIds') ||
-    sessionStorage.getItem('matchIds');
-
-  if (singleMatchId) {
-    ids.push(singleMatchId);
+const extractList = (data) => {
+  if (Array.isArray(data)) {
+    return data;
   }
 
-  if (storedMatchIds) {
-    try {
-      const parsed = JSON.parse(
-        storedMatchIds,
-      );
-
-      if (Array.isArray(parsed)) {
-        ids.push(...parsed);
-      }
-    } catch {
-      ids.push(
-        ...String(storedMatchIds).split(','),
-      );
-    }
+  if (Array.isArray(data?.data)) {
+    return data.data;
   }
 
-  return [
-    ...new Set(
-      ids
-        .map((id) => Number(id))
-        .filter(
-          (id) =>
-            Number.isInteger(id) &&
-            id > 0,
-        ),
-    ),
-  ];
+  if (Array.isArray(data?.matches)) {
+    return data.matches;
+  }
+
+  return [];
 };
 
-const removeStoredMatchId = (
-  matchId,
-) => {
-  const numericMatchId =
-    Number(matchId);
+/**
+ * Converte uma data para um objeto Date válido.
+ */
+const parseDate = (value) => {
+  if (!value) {
+    return null;
+  }
 
-  const remainingIds =
-    getStoredMatchIds().filter(
-      (id) => id !== numericMatchId,
-    );
+  const date = new Date(value);
 
-  localStorage.removeItem('matchId');
-  sessionStorage.removeItem('matchId');
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
 
-  localStorage.setItem(
-    'matchIds',
-    JSON.stringify(remainingIds),
-  );
-
-  sessionStorage.removeItem('matchIds');
+  return date;
 };
 
-const unwrapResponse = (response) => {
-  return (
-    response?.data ??
-    response?.match ??
-    response
-  );
-};
-
+/**
+ * Formata somente a data.
+ * Exemplo: 17/08/2026
+ */
 const formatDate = (value) => {
-  if (!value) {
-    return 'Data não informada';
+  const date = parseDate(value);
+
+  if (!date) {
+    return '';
   }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Data não informada';
-  }
-
-  return new Intl.DateTimeFormat(
-    'pt-BR',
-    {
-      dateStyle: 'short',
-    },
-  ).format(date);
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
 };
 
+/**
+ * Formata somente o horário.
+ * Exemplo: 18:15
+ */
 const formatTime = (value) => {
-  if (!value) {
-    return '--:--';
+  const date = parseDate(value);
+
+  if (!date) {
+    return '';
   }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '--:--';
-  }
-
-  return new Intl.DateTimeFormat(
-    'pt-BR',
-    {
-      hour: '2-digit',
-      minute: '2-digit',
-    },
-  ).format(date);
-};
-
-const isExpired = (expiresAt) => {
-  if (!expiresAt) {
-    return false;
-  }
-
-  const timestamp =
-    new Date(expiresAt).getTime();
-
-  if (Number.isNaN(timestamp)) {
-    return false;
-  }
-
-  return timestamp <= Date.now();
-};
-
-const isUrgent = (expiresAt) => {
-  if (!expiresAt) {
-    return false;
-  }
-
-  const timestamp =
-    new Date(expiresAt).getTime();
-
-  if (Number.isNaN(timestamp)) {
-    return false;
-  }
-
-  const remainingTime =
-    timestamp - Date.now();
-
-  return (
-    remainingTime > 0 &&
-    remainingTime <=
-      5 * 60 * 1000
-  );
-};
-
-const getDoctorName = (
-  appointment = {},
-) => {
-  return (
-    appointment?.doctor?.user?.name ??
-    appointment?.doctor?.name ??
-    appointment?.doctorName ??
-    (
-      appointment?.doctorId
-        ? `Profissional #${appointment.doctorId}`
-        : 'Profissional não informado'
-    )
-  );
-};
-
-const getSpecialityName = (
-  appointment = {},
-) => {
-  return (
-    appointment?.speciality?.name ??
-    appointment?.speciality?.description ??
-    appointment?.specialityName ??
-    (
-      appointment?.specialityId
-        ? `Especialidade #${appointment.specialityId}`
-        : 'Especialidade não informada'
-    )
-  );
+  return new Intl.DateTimeFormat('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 };
 
 /**
- * Carrega uma oferta pelo ID.
+ * Normaliza o match retornado pelo backend
+ * para o formato usado no frontend.
  */
-export const getMatchById = async (
-  matchId,
-) => {
-  const response = await getRequest(
-    `/api/match/${matchId}`,
-  );
+const normalizeVaga = (match = {}) => {
+  const appointment =
+    match.appointment ??
+    match.Appointment ??
+    {};
 
-  return unwrapResponse(response);
-};
+  const speciality =
+    appointment.speciality ??
+    appointment.Speciality ??
+    match.speciality ??
+    {};
 
-/**
- * Carrega as vagas que estão esperando
- * uma resposta do paciente.
- */
-export const getVagasTempoReal =
-  async () => {
-    const matchIds =
-      getStoredMatchIds();
+  const doctor =
+    appointment.doctor ??
+    appointment.Doctor ??
+    {};
 
-    console.log(
-      'Match IDs encontrados:',
-      matchIds,
-    );
+  const doctorUser =
+    doctor.user ??
+    doctor.User ??
+    {};
 
-    if (matchIds.length === 0) {
-      return [];
-    }
+  const appointmentDate =
+    appointment.date ??
+    match.date ??
+    null;
 
-    const vagas = await Promise.all(
-      matchIds.map(async (matchId) => {
-        try {
-          const match =
-            await getMatchById(matchId);
+  return {
+    // ID do appointment_match.
+    // É este ID que usamos para aceitar/recusar.
+    id:
+      match.id ??
+      match.matchId ??
+      '',
 
-          const status = String(
-            match?.status ?? '',
-          )
-            .trim()
-            .toLowerCase();
+    matchId:
+      match.id ??
+      match.matchId ??
+      '',
 
-          const expired = isExpired(
-            match?.expiresAt,
-          );
+    requestId:
+      match.requestId ??
+      null,
 
-          console.log(
-            `Match ${matchId}:`,
-            {
-              status,
-              expiresAt:
-                match?.expiresAt,
-              expired,
-            },
-          );
+    appointmentId:
+      match.appointmentId ??
+      appointment.id ??
+      null,
 
-          if (
-            status !==
-              'waiting_response' ||
-            expired
-          ) {
-            return null;
-          }
+    status:
+      match.status ??
+      '',
 
-          /*
-           * Algumas respostas de match não
-           * trazem o appointment completo.
-           */
-          let appointment =
-            match?.appointment ??
-            null;
+    expiresAt:
+      match.expiresAt ??
+      null,
 
-          if (
-            !appointment &&
-            match?.appointmentId
-          ) {
-            const appointmentResponse =
-              await getRequest(
-                `/api/appointment/${match.appointmentId}`,
-              );
+    // Dados da consulta.
+    date:
+      appointmentDate,
 
-            appointment =
-              unwrapResponse(
-                appointmentResponse,
-              );
-          }
+    data:
+      formatDate(appointmentDate),
 
-          const urgent = isUrgent(
-            match?.expiresAt,
-          );
+    horario:
+      formatTime(appointmentDate),
 
-          return {
-            id: match.id,
-            matchId: match.id,
+    dataResumo:
+      appointmentDate
+        ? `${formatDate(appointmentDate)} às ${formatTime(appointmentDate)}`
+        : '',
 
-            appointmentId:
-              match.appointmentId ??
-              appointment?.id,
+    // Especialidade.
+    especialidade:
+      speciality.name ??
+      speciality.nome ??
+      'Especialidade não informada',
 
-            medico:
-              getDoctorName(
-                appointment,
-              ),
+    specialityId:
+      appointment.specialityId ??
+      speciality.id ??
+      null,
 
-            especialidade:
-              getSpecialityName(
-                appointment,
-              ),
+    // Médico.
+    medico:
+      doctorUser.name ??
+      doctor.name ??
+      'Profissional',
 
-            horario:
-              formatTime(
-                appointment?.date,
-              ),
+    doctorId:
+      appointment.doctorId ??
+      doctor.userId ??
+      doctor.id ??
+      null,
 
-            dataFormatada:
-              formatDate(
-                appointment?.date,
-              ),
+    crm:
+      doctor.crm ??
+      '',
 
-            expiresAt:
-              match.expiresAt,
+    appointmentStatus:
+      appointment.status ??
+      '',
 
-            urgente: urgent,
-
-            variant: urgent
-              ? 'urgent'
-              : 'success',
-
-            original: match,
-          };
-        } catch (error) {
-          console.error(
-            `Erro ao carregar match ${matchId}:`,
-            error,
-          );
-
-          return null;
-        }
-      }),
-    );
-
-    const normalizedVagas =
-      vagas.filter(Boolean);
-
-    console.log(
-      'Vagas retornadas pelo alarmesApi:',
-      normalizedVagas,
-    );
-
-    /*
-     * ESTE RETURN É O PONTO MAIS IMPORTANTE.
-     */
-    return normalizedVagas;
+    // Ainda não existe informação de local
+    // no retorno atual do backend.
+    local:
+      appointment.location ??
+      appointment.local ??
+      'Local não informado',
   };
+};
 
 /**
- * Confirma uma vaga.
+ * GET /api/match/mine
+ *
+ * Busca somente as ofertas de vaga
+ * pertencentes ao paciente autenticado.
+ */
+export const getVagasTempoReal = async () => {
+  try {
+    const response = await getRequest(
+      '/api/match/mine',
+    );
+
+    const matches = extractList(response);
+
+    const now = Date.now();
+
+    return matches
+      .filter((match) => {
+        /**
+         * O backend novo já deve retornar
+         * waiting_response, mas mantemos essa
+         * validação também no frontend.
+         */
+        if (
+          match.status &&
+          match.status !== 'waiting_response'
+        ) {
+          return false;
+        }
+
+        /**
+         * Não mostra vaga expirada.
+         */
+        if (match.expiresAt) {
+          const expiration =
+            new Date(match.expiresAt).getTime();
+
+          if (
+            !Number.isNaN(expiration) &&
+            expiration <= now
+          ) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+      .map(normalizeVaga);
+  } catch (error) {
+    console.error(
+      'Erro ao carregar vagas em tempo real:',
+      error,
+    );
+
+    throw new Error(
+      error?.message ||
+        'Não foi possível carregar as vagas disponíveis.',
+    );
+  }
+};
+
+/**
+ * POST /api/match/:matchId/confirm
+ *
+ * Paciente aceita a vaga.
  */
 export const aceitarVaga = async (
   matchId,
@@ -355,18 +265,28 @@ export const aceitarVaga = async (
     );
   }
 
-  const response = await postRequest(
-    `/api/match/${matchId}/confirm`,
-    {},
-  );
+  try {
+    return await postRequest(
+      `/api/match/${matchId}/confirm`,
+      {},
+    );
+  } catch (error) {
+    console.error(
+      'Erro ao aceitar vaga:',
+      error,
+    );
 
-  removeStoredMatchId(matchId);
-
-  return response;
+    throw new Error(
+      error?.message ||
+        'Não foi possível aceitar a vaga.',
+    );
+  }
 };
 
 /**
- * Recusa uma vaga.
+ * POST /api/match/:matchId/reject
+ *
+ * Paciente recusa a vaga.
  */
 export const recusarVaga = async (
   matchId,
@@ -377,68 +297,66 @@ export const recusarVaga = async (
     );
   }
 
-  const response = await postRequest(
-    `/api/match/${matchId}/reject`,
-    {},
-  );
+  try {
+    return await postRequest(
+      `/api/match/${matchId}/reject`,
+      {},
+    );
+  } catch (error) {
+    console.error(
+      'Erro ao recusar vaga:',
+      error,
+    );
 
-  removeStoredMatchId(matchId);
-
-  return response;
+    throw new Error(
+      error?.message ||
+        'Não foi possível recusar a vaga.',
+    );
+  }
 };
 
 /**
- * Funções mantidas para compatibilidade
- * com outras páginas.
+ * Mantemos estes métodos porque outras telas
+ * podem ainda importá-los.
+ *
+ * Por enquanto, o backend novo disponibiliza
+ * as ofertas através de /api/match/mine.
  */
-export const getTodasNotificacoes =
-  async () => {
-    const vagas =
-      await getVagasTempoReal();
+export const getTodasNotificacoes = async () => {
+  const vagas = await getVagasTempoReal();
 
-    return {
-      urgentes: vagas.filter(
-        ({ urgente }) => urgente,
-      ),
-      consultas: [],
-      vagas,
-      exames: [],
-      informativos: [],
-    };
+  return {
+    urgentes: [],
+    consultas: [],
+    vagas,
+    exames: [],
+    informativos: [],
   };
+};
 
-export const getAlertaUrgente =
-  async () => {
-    const vagas =
-      await getVagasTempoReal();
+export const getAlertaUrgente = async () => {
+  return null;
+};
 
-    return (
-      vagas.find(
-        ({ urgente }) => urgente,
-      ) ?? null
-    );
-  };
-
-export const getAlertasUrgentes =
-  async () => {
-    const vagas =
-      await getVagasTempoReal();
-
-    return vagas.filter(
-      ({ urgente }) => urgente,
-    );
-  };
+export const getAlertasUrgentes = async () => {
+  return [];
+};
 
 export const getNotificacoesConsultas =
-  async () => [];
+  async () => {
+    return [];
+  };
 
 export const getResultadosExames =
-  async () => [];
+  async () => {
+    return [];
+  };
 
-export const getInformativos =
-  async () => [];
+export const getInformativos = async () => {
+  return [];
+};
 
 export const getNotificacoesRecentes =
   async () => {
-    return getAlertasUrgentes();
+    return [];
   };

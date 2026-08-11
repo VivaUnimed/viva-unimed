@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LuCalendarDays,
@@ -8,13 +8,16 @@ import {
   LuCirclePlus,
   LuChevronLeft,
   LuChevronRight,
-  LuUsers,
   LuRefreshCw,
   LuX,
+  LuBadgeAlert,
 } from 'react-icons/lu';
-import { normalizeText } from '../../data/professionals';
+import { useVacancies } from '../../context/vacancyContext/vacancyContext';
+import { normalizeText } from '../../data/vacancies';
 import './styles.css';
 
+// Grade de horários — convenção visual da interface.
+// O backend aceita qualquer horário; esta grade é apenas uma referência para o calendário.
 const timeSlots = [
   '08:00',
   '09:00',
@@ -27,33 +30,56 @@ const timeSlots = [
   '18:00',
 ];
 
-const specialtyOptions = [
-  'Cardiologia',
-  'Ortopedia',
-  'Clínica Geral',
-  'Dermatologia',
-  'Pediatria',
-];
-
-const professionalOptions = [
-  'Dr. Ricardo Almeida',
-  'Dra. Mariana Lopes',
-  'Dr. Carlos Mendes',
-  'Dra. Juliana Castro',
-];
+// Status reais do backend, mapeados para apresentação visual.
+// Reutiliza os CSS modifiers existentes para preservar as cores da interface.
+const statusPresentation = {
+  open: {
+    label: 'Aberta',
+    modifier: 'available-vacancy',
+  },
+  booked: {
+    label: 'Reservada',
+    modifier: 'occupied',
+  },
+  cancelled: {
+    label: 'Cancelada',
+    modifier: 'cancelled',
+  },
+  expired: {
+    label: 'Expirada',
+    modifier: 'expired',
+  },
+  no_show: {
+    label: 'No-show',
+    modifier: 'no-show',
+  },
+};
 
 const statusFilterOptions = [
   { value: '', label: 'Todos os status' },
-  { value: 'occupied', label: 'Ocupado' },
+  { value: 'open', label: 'Aberta' },
+  { value: 'booked', label: 'Reservada' },
   { value: 'free', label: 'Livre' },
-  { value: 'cancelled', label: 'Cancelado' },
-  { value: 'available_vacancy', label: 'Vaga remanescente' },
-  { value: 'confirmed_by_queue', label: 'Confirmada pela fila' },
+  { value: 'cancelled', label: 'Cancelada' },
   { value: 'expired', label: 'Expirada' },
+  { value: 'no_show', label: 'No-show' },
 ];
 
 const weekdayLabels = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 const workdayLabels = ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
+
+const legendItems = [
+  { label: 'Reservada', legendClass: 'legend-color--occupied' },
+  { label: 'Aberta', legendClass: 'legend-color--available-vacancy' },
+  { label: 'Livre', legendClass: 'legend-color--free' },
+  { label: 'Cancelada', legendClass: 'legend-color--cancelled' },
+  { label: 'Expirada', legendClass: 'legend-color--expired' },
+  { label: 'No-show', legendClass: 'legend-color--no-show' },
+];
+
+// ==============================
+// Utilitários de calendário
+// ==============================
 
 function capitalizeText(text) {
   if (!text) {
@@ -251,139 +277,59 @@ function getMonthDays(currentDate) {
   return monthDays;
 }
 
-function buildOperationalEvents(referenceDate) {
-  const today = getCalendarDate(referenceDate);
-  const tomorrow = addDays(today, 1);
-  const inTwoDays = addDays(today, 2);
-  const inThreeDays = addDays(today, 3);
-  const startOfWeek = getStartOfWeek(today);
-  const monday = addDays(startOfWeek, 0);
-  const wednesday = addDays(startOfWeek, 2);
+// ==============================
+// Transformação de dados
+// ==============================
 
-  return [
-    {
-      id: 1,
-      date: formatDateKey(today),
-      time: '08:00',
-      type: 'OCUPADO',
-      patient: 'Beatriz Oliveira',
-      details: 'Cardiologia - Dra. Mariana Lopes',
-      specialty: 'Cardiologia',
-      professional: 'Dra. Mariana Lopes',
-      status: 'occupied',
-    },
-    {
-      id: 2,
-      date: formatDateKey(today),
-      time: '16:00',
-      type: 'AGUARDANDO ACEITE',
-      patient: 'Vaga remanescente',
-      details: 'Pediatria - Expira em 10 min',
-      specialty: 'Pediatria',
-      professional: 'Dr. Carlos Mendes',
-      status: 'available_vacancy',
-    },
-    {
-      id: 3,
-      date: formatDateKey(tomorrow),
-      time: '09:00',
-      type: 'CANCELADO',
-      patient: 'Atendimento cancelado',
-      details: 'Horário disponível para reaproveitamento',
-      specialty: 'Ortopedia',
-      professional: 'Dra. Juliana Castro',
-      status: 'cancelled',
-    },
-    {
-      id: 4,
-      date: formatDateKey(inTwoDays),
-      time: '17:00',
-      type: 'CONFIRMADA PELA FILA',
-      patient: 'Lucas Ferreira',
-      details: 'Dermatologia - Dra. Juliana Castro',
-      specialty: 'Dermatologia',
-      professional: 'Dra. Juliana Castro',
-      status: 'confirmed_by_queue',
-    },
-    {
-      id: 5,
-      date: formatDateKey(inThreeDays),
-      time: '14:00',
-      type: 'EXPIRADA',
-      patient: 'Sem aceite no prazo',
-      details: 'Clínica Geral - Expirou há 8 min',
-      specialty: 'Clínica Geral',
-      professional: 'Dra. Mariana Lopes',
-      status: 'expired',
-    },
-    {
-      id: 6,
-      date: formatDateKey(monday),
-      time: '10:00',
-      type: 'OCUPADO',
-      patient: 'Marcos Silva',
-      details: 'Ortopedia - Sala 02',
-      specialty: 'Ortopedia',
-      professional: 'Dr. Carlos Mendes',
-      status: 'occupied',
-    },
-    {
-      id: 7,
-      date: formatDateKey(wednesday),
-      time: '15:00',
-      type: 'CONFIRMADA PELA FILA',
-      patient: 'Ana Paula',
-      details: 'Cardiologia - Dr. Ricardo Almeida',
-      specialty: 'Cardiologia',
-      professional: 'Dr. Ricardo Almeida',
-      status: 'confirmed_by_queue',
-    },
-  ];
+// Converte uma vacancy (do vacancyContext) para o formato de evento de calendário.
+function mapVacancyToCalendarEvent(vacancy) {
+  return {
+    id: vacancy.id,
+    date: vacancy.dateKey,
+    time: vacancy.time,
+    specialty: vacancy.specialty,
+    professional: vacancy.professional,
+    status: vacancy.vacancyStatus,
+    statusText: vacancy.vacancyStatusText,
+    rawDate: vacancy.rawDate,
+    queuePatients: vacancy.queuePatients || 0,
+    formattedDate: vacancy.date,
+    doctorId: vacancy.doctorId,
+    specialityId: vacancy.specialityId,
+  };
 }
 
-const statusPresentation = {
-  occupied: {
-    label: 'Ocupado',
-    modifier: 'occupied',
-  },
-  cancelled: {
-    label: 'Cancelado',
-    modifier: 'cancelled',
-  },
-  available_vacancy: {
-    label: 'Vaga remanescente',
-    modifier: 'available-vacancy',
-    badge: 'Disponível',
-    badgeVariant: 'highlight',
-  },
-  confirmed_by_queue: {
-    label: 'Confirmada pela fila',
-    modifier: 'confirmed',
-    badge: 'Fila confirmou',
-    badgeVariant: 'success',
-    badgeIcon: LuUsers,
-  },
-  expired: {
-    label: 'Expirada',
-    modifier: 'expired',
-  },
-};
+// Extrai opções únicas de especialidade a partir das vagas carregadas.
+function getUniqueValues(items, field) {
+  const values = new Set();
 
-const legendItems = [
-  { label: 'Ocupado', legendClass: 'legend-color--occupied' },
-  { label: 'Livre', legendClass: 'legend-color--free' },
-  { label: 'Cancelado', legendClass: 'legend-color--cancelled' },
-  { label: 'Vaga remanescente', legendClass: 'legend-color--available-vacancy' },
-  { label: 'Confirmada pela fila', legendClass: 'legend-color--confirmed' },
-  { label: 'Expirada', legendClass: 'legend-color--expired' },
-];
+  items.forEach((item) => {
+    const value = item[field];
+
+    if (value && !value.startsWith('Especialidade #') && !value.startsWith('Profissional #')) {
+      values.add(value);
+    }
+  });
+
+  return [...values].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+// ==============================
+// Helpers de busca e filtro
+// ==============================
 
 function getStatusPresentation(status) {
-  return statusPresentation[status] || statusPresentation.occupied;
+  return statusPresentation[status] || statusPresentation.open;
 }
 
-function getAppointment(date, time, appointments = []) {
-  return appointments.find((item) => item.date === date && item.time === time);
+// Busca appointments para um slot específico.
+// Compara pela hora (ignora minutos) para que vagas às 14:30 apareçam no slot 14:00.
+function getAppointmentsForSlot(date, timeSlot, appointments = []) {
+  const slotHour = timeSlot.split(':')[0];
+
+  return appointments.filter(
+    (item) => item.date === date && item.time.split(':')[0] === slotHour,
+  );
 }
 
 function getAppointmentsByDate(date, appointments = []) {
@@ -414,7 +360,7 @@ function formatAppointmentDate(dateString) {
 function countAvailableSlots(days, appointments) {
   return days.reduce(
     (total, day) =>
-      total + timeSlots.filter((time) => !getAppointment(day.date, time, appointments)).length,
+      total + timeSlots.filter((time) => getAppointmentsForSlot(day.date, time, appointments).length === 0).length,
     0,
   );
 }
@@ -428,10 +374,16 @@ function appointmentMatchesFilters(appointment, filters) {
   const matchesProfessional =
     !normalizedProfessionalFilter
     || normalizeText(appointment.professional) === normalizedProfessionalFilter;
+  // "free" não é um status real — quando selecionado, nenhum appointment faz match,
+  // resultando em slots todos livres visualmente.
   const matchesStatus = !filters.statusFilter || appointment.status === filters.statusFilter;
 
   return matchesSpecialty && matchesProfessional && matchesStatus;
 }
+
+// ==============================
+// Sub-componentes
+// ==============================
 
 function EmptySlotButton({ date, time, onEmptySlotClick }) {
   return (
@@ -446,53 +398,69 @@ function EmptySlotButton({ date, time, onEmptySlotClick }) {
   );
 }
 
-function AppointmentCard({ appointment, onOpenDetails }) {
+function AppointmentCard({ appointment, onOpenDetails, isCompact }) {
   if (!appointment) {
     return null;
   }
 
   const presentation = getStatusPresentation(appointment.status);
-  const BadgeIcon = presentation.badgeIcon;
+  const cardClasses = `schedule-event schedule-event--filled schedule-event--${presentation.modifier} schedule-event--button ${isCompact ? 'schedule-event--compact' : ''}`;
 
   return (
     <button
       type="button"
-      className={`schedule-event schedule-event--filled schedule-event--${presentation.modifier} schedule-event--button`}
+      className={cardClasses}
       aria-haspopup="dialog"
-      aria-label={`Ver detalhes de ${appointment.patient} às ${appointment.time}`}
+      aria-label={`Ver detalhes da vaga #${appointment.id} às ${appointment.time}`}
       onClick={() => onOpenDetails(appointment)}
     >
       <div className="schedule-event__header">
-        <span className="schedule-event__type">{appointment.type}</span>
-
-        {presentation.badge ? (
-          <span className={`schedule-event__badge schedule-event__badge--${presentation.badgeVariant}`}>
-            {BadgeIcon ? <BadgeIcon size={12} /> : null}
-            {presentation.badge}
-          </span>
-        ) : null}
+        <span className="schedule-event__type">
+          {appointment.time} &middot; {presentation.label}
+        </span>
       </div>
 
-      <strong className="schedule-event__title">{appointment.patient}</strong>
-      <small className="schedule-event__details">{appointment.details}</small>
+      {isCompact ? (
+        <strong className="schedule-event__title schedule-event__title--compact">
+          {appointment.specialty} <span style={{ fontWeight: 'normal', color: '#4b5563' }}>&middot; {appointment.professional}</span>
+        </strong>
+      ) : (
+        <>
+          <strong className="schedule-event__title">{appointment.specialty}</strong>
+          <small className="schedule-event__details">{appointment.professional}</small>
+        </>
+      )}
     </button>
   );
 }
 
 function ScheduleSlotContent({
-  appointment,
-  hasAppointment,
+  appointments,
+  hasAppointments,
   showEmptySlot,
   date,
   time,
   onEmptySlotClick,
   onOpenDetails,
 }) {
-  if (appointment) {
-    return <AppointmentCard appointment={appointment} onOpenDetails={onOpenDetails} />;
+  if (appointments && appointments.length > 0) {
+    const isCompact = appointments.length > 1;
+
+    return (
+      <div className="calendar-cell-events">
+        {appointments.map((appointment) => (
+          <AppointmentCard
+            key={appointment.id}
+            appointment={appointment}
+            onOpenDetails={onOpenDetails}
+            isCompact={isCompact}
+          />
+        ))}
+      </div>
+    );
   }
 
-  if (!hasAppointment && showEmptySlot) {
+  if (!hasAppointments && showEmptySlot) {
     return (
       <EmptySlotButton
         date={date}
@@ -511,7 +479,6 @@ function AppointmentDetailsModal({ appointment, onClose }) {
   }
 
   const presentation = getStatusPresentation(appointment.status);
-  const shouldShowType = normalizeText(appointment.type) !== normalizeText(presentation.label);
 
   return (
     <div className="schedule-details-backdrop" onClick={onClose}>
@@ -524,8 +491,8 @@ function AppointmentDetailsModal({ appointment, onClose }) {
       >
         <div className="schedule-details-modal__header">
           <div>
-            <h3 id="schedule-details-title">Detalhes do registro</h3>
-            <p>Confira todas as informações operacionais deste horário.</p>
+            <h3 id="schedule-details-title">Detalhes da vaga</h3>
+            <p>Informações operacionais desta vaga no calendário.</p>
           </div>
 
           <button
@@ -544,22 +511,12 @@ function AppointmentDetailsModal({ appointment, onClose }) {
           >
             {presentation.label}
           </span>
-
-          {shouldShowType ? (
-            <span className="schedule-details-modal__type">{appointment.type}</span>
-          ) : null}
-
-          {presentation.badge ? (
-            <span className="schedule-details-modal__supporting-badge">
-              {presentation.badge}
-            </span>
-          ) : null}
         </div>
 
         <div className="schedule-details-modal__meta">
           <article>
-            <span>Paciente / registro</span>
-            <strong>{appointment.patient}</strong>
+            <span>ID da vaga</span>
+            <strong>#{appointment.id}</strong>
           </article>
 
           <article>
@@ -568,7 +525,7 @@ function AppointmentDetailsModal({ appointment, onClose }) {
           </article>
 
           <article>
-            <span>Médico responsável</span>
+            <span>Profissional</span>
             <strong>{appointment.professional}</strong>
           </article>
 
@@ -583,41 +540,132 @@ function AppointmentDetailsModal({ appointment, onClose }) {
           </article>
 
           <article>
-            <span>Status operacional</span>
+            <span>Status</span>
             <strong>{presentation.label}</strong>
           </article>
-        </div>
 
-        <div className="schedule-details-modal__description">
-          <span>Detalhamento</span>
-          <p>{appointment.details}</p>
+          {appointment.queuePatients > 0 && (
+            <article>
+              <span>Pacientes na fila compatível</span>
+              <strong>
+                {appointment.queuePatients}
+                {' '}
+                {appointment.queuePatients === 1 ? 'paciente' : 'pacientes'}
+              </strong>
+            </article>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
+function MonthDayAppointmentsModal({ date, appointments, onClose, onOpenDetails }) {
+  if (!appointments || appointments.length === 0) {
+    return null;
+  }
+
+  const dateObj = new Date(date + 'T12:00:00');
+  const dateTitle = formatDayMonthYear(dateObj);
+
+  return (
+    <div className="schedule-details-backdrop" onClick={onClose}>
+      <section
+        className="schedule-details-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="month-day-modal-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="schedule-details-modal__header">
+          <div>
+            <h3 id="month-day-modal-title">{dateTitle}</h3>
+            <p>Vagas operacionais do dia.</p>
+          </div>
+
+          <button
+            type="button"
+            className="schedule-details-modal__close"
+            aria-label="Fechar modal"
+            onClick={onClose}
+          >
+            <LuX size={20} />
+          </button>
+        </div>
+
+        <div className="schedule-details-modal__content" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '50vh', overflowY: 'auto' }}>
+          {appointments.map((appointment) => (
+            <AppointmentCard
+              key={appointment.id}
+              appointment={appointment}
+              onOpenDetails={onOpenDetails}
+              isCompact={true}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ==============================
+// Componente Principal
+// ==============================
+
 export default function WeeklySchedule() {
   const navigate = useNavigate();
-  const [referenceDate] = useState(() => getCalendarDate(new Date()));
+  const { vacancyState, getVacancies } = useVacancies();
+  const { vacancies, isLoading, error } = vacancyState;
+  const hasLoadedRef = useRef(false);
+
   const [currentDate, setCurrentDate] = useState(() => getCalendarDate(new Date()));
   const [view, setView] = useState('week');
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [professionalFilter, setProfessionalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedMonthDay, setSelectedMonthDay] = useState(null);
 
-  const operationalEvents = buildOperationalEvents(referenceDate);
-  const currentDay = getDaySummary(currentDate, true);
-  const weekDays = getWeekDays(currentDate);
-  const monthDays = getMonthDays(currentDate);
-  const filteredAppointments = operationalEvents.filter((appointment) =>
+  // Carrega vagas reais do backend na montagem do componente.
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      return;
+    }
+
+    hasLoadedRef.current = true;
+
+    const loadVacancies = async () => {
+      try {
+        await getVacancies();
+      } catch {
+        // O erro de carregamento permanece disponível em vacancyState.error.
+      }
+    };
+
+    loadVacancies();
+  }, [getVacancies]);
+
+  // Transforma vagas do contexto em eventos de calendário.
+  const calendarEvents = vacancies.map(mapVacancyToCalendarEvent);
+
+  // Extrai opções de filtro a partir dos dados reais.
+  const specialtyOptions = getUniqueValues(calendarEvents, 'specialty');
+  const professionalOptions = getUniqueValues(calendarEvents, 'professional');
+
+  // Aplica filtros.
+  const filteredAppointments = calendarEvents.filter((appointment) =>
     appointmentMatchesFilters(appointment, {
       specialtyFilter,
       professionalFilter,
       statusFilter,
     }),
   );
+
+  // Estruturas de calendário.
+  const currentDay = getDaySummary(currentDate, true);
+  const weekDays = getWeekDays(currentDate);
+  const monthDays = getMonthDays(currentDate);
+
   const selectedDayAppointments = getAppointmentsByDate(currentDay.date, filteredAppointments);
   const visibleMonthDates = new Set(
     monthDays
@@ -631,12 +679,14 @@ export default function WeeklySchedule() {
   const monthAppointments = filteredAppointments.filter((appointment) =>
     visibleMonthDates.has(appointment.date),
   );
+
+  // "Livre" é um conceito visual (ausência de appointment no slot), não um status real.
   const isFreeSlotsOnlyView = statusFilter === 'free' && !specialtyFilter && !professionalFilter;
   const totalAppointments = isFreeSlotsOnlyView
     ? view === 'day'
-      ? countAvailableSlots([currentDay], operationalEvents)
+      ? countAvailableSlots([currentDay], calendarEvents)
       : view === 'week'
-        ? countAvailableSlots(weekDays, operationalEvents)
+        ? countAvailableSlots(weekDays, calendarEvents)
         : 0
     : view === 'day'
       ? selectedDayAppointments.length
@@ -702,6 +752,14 @@ export default function WeeklySchedule() {
     ));
   };
 
+  const handleRefresh = async () => {
+    try {
+      await getVacancies();
+    } catch {
+      // O erro de atualização permanece disponível em vacancyState.error.
+    }
+  };
+
   useEffect(() => {
     if (!selectedAppointment) {
       return undefined;
@@ -739,7 +797,9 @@ export default function WeeklySchedule() {
             </span>
 
             <p>
-              Visualizando: {totalAppointments} {totalLabel}
+              {isLoading
+                ? 'Carregando agenda...'
+                : `Visualizando: ${totalAppointments} ${totalLabel}`}
             </p>
           </div>
         </div>
@@ -769,6 +829,17 @@ export default function WeeklySchedule() {
         </div>
       </section>
 
+      {error ? (
+        <div className="schedule-error-banner" role="alert">
+          <LuBadgeAlert size={18} />
+          <span>{error}</span>
+          <button type="button" onClick={handleRefresh}>
+            <LuRefreshCw size={14} />
+            Tentar novamente
+          </button>
+        </div>
+      ) : null}
+
       <section className="weekly-schedule-top">
         <div className="weekly-schedule-filters" aria-label="Filtros da agenda operacional">
           <label className="weekly-schedule-filter">
@@ -793,9 +864,9 @@ export default function WeeklySchedule() {
             <select
               value={professionalFilter}
               onChange={(event) => setProfessionalFilter(event.target.value)}
-              aria-label="Filtrar por médico responsável"
+              aria-label="Filtrar por profissional"
             >
-              <option value="">Médico responsável</option>
+              <option value="">Profissional</option>
               {professionalOptions.map((professional) => (
                 <option key={professional} value={professional}>
                   {professional}
@@ -886,22 +957,28 @@ export default function WeeklySchedule() {
               </div>
             </div>
 
-            {timeSlots.map((time) => (
-              <div key={time} className="weekly-calendar-grid weekly-calendar-grid--day calendar-row">
-                <div className="calendar-time">{time}</div>
-                <div className="calendar-cell">
-                  <ScheduleSlotContent
-                    appointment={getAppointment(currentDay.date, time, filteredAppointments)}
-                    hasAppointment={Boolean(getAppointment(currentDay.date, time, operationalEvents))}
-                    showEmptySlot={canShowEmptySlots}
-                    date={currentDay.date}
-                    time={time}
-                    onEmptySlotClick={handleCreateVacancy}
-                    onOpenDetails={handleOpenDetails}
-                  />
-                </div>
+            {isLoading && calendarEvents.length === 0 ? (
+              <div className="schedule-empty-state">
+                <p>Carregando vagas...</p>
               </div>
-            ))}
+            ) : (
+              timeSlots.map((time) => (
+                <div key={time} className="weekly-calendar-grid weekly-calendar-grid--day calendar-row">
+                  <div className="calendar-time">{time}</div>
+                  <div className="calendar-cell">
+                    <ScheduleSlotContent
+                      appointments={getAppointmentsForSlot(currentDay.date, time, filteredAppointments)}
+                      hasAppointments={getAppointmentsForSlot(currentDay.date, time, calendarEvents).length > 0}
+                      showEmptySlot={canShowEmptySlots}
+                      date={currentDay.date}
+                      time={time}
+                      onEmptySlotClick={handleCreateVacancy}
+                      onOpenDetails={handleOpenDetails}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -922,34 +999,40 @@ export default function WeeklySchedule() {
                 </div>
               ))}
 
-              {timeSlots.map((time, timeIndex) => {
-                const isLastRow = timeIndex === timeSlots.length - 1;
+              {isLoading && calendarEvents.length === 0 ? (
+                <div className="schedule-empty-state" style={{ gridColumn: '1 / -1' }}>
+                  <p>Carregando vagas...</p>
+                </div>
+              ) : (
+                timeSlots.map((time, timeIndex) => {
+                  const isLastRow = timeIndex === timeSlots.length - 1;
 
-                return (
-                  <React.Fragment key={time}>
-                    <div className={`calendar-time ${isLastRow ? 'calendar-time--last-row' : ''}`}>
-                      {time}
-                    </div>
-
-                    {weekDays.map((day) => (
-                      <div
-                        key={`${day.date}-${time}`}
-                        className={`calendar-cell ${isLastRow ? 'calendar-cell--last-row' : ''}`}
-                      >
-                        <ScheduleSlotContent
-                          appointment={getAppointment(day.date, time, filteredAppointments)}
-                          hasAppointment={Boolean(getAppointment(day.date, time, operationalEvents))}
-                          showEmptySlot={canShowEmptySlots}
-                          date={day.date}
-                          time={time}
-                          onEmptySlotClick={handleCreateVacancy}
-                          onOpenDetails={handleOpenDetails}
-                        />
+                  return (
+                    <React.Fragment key={time}>
+                      <div className={`calendar-time ${isLastRow ? 'calendar-time--last-row' : ''}`}>
+                        {time}
                       </div>
-                    ))}
-                  </React.Fragment>
-                );
-              })}
+
+                      {weekDays.map((day) => (
+                        <div
+                          key={`${day.date}-${time}`}
+                          className={`calendar-cell ${isLastRow ? 'calendar-cell--last-row' : ''}`}
+                        >
+                          <ScheduleSlotContent
+                            appointments={getAppointmentsForSlot(day.date, time, filteredAppointments)}
+                            hasAppointments={getAppointmentsForSlot(day.date, time, calendarEvents).length > 0}
+                            showEmptySlot={canShowEmptySlots}
+                            date={day.date}
+                            time={time}
+                            onEmptySlotClick={handleCreateVacancy}
+                            onOpenDetails={handleOpenDetails}
+                          />
+                        </div>
+                      ))}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
@@ -985,41 +1068,61 @@ export default function WeeklySchedule() {
             </div>
 
             <div className="month-grid-body">
-              {monthDays.map((day) => {
-                const dayAppointments = day.date
-                  ? getAppointmentsByDate(day.date, filteredAppointments)
-                  : [];
+              {isLoading && calendarEvents.length === 0 ? (
+                <div className="schedule-empty-state" style={{ gridColumn: '1 / -1' }}>
+                  <p>Carregando vagas...</p>
+                </div>
+              ) : (
+                monthDays.map((day) => {
+                  const dayAppointments = day.date
+                    ? getAppointmentsByDate(day.date, filteredAppointments)
+                    : [];
 
-                return (
-                  <div
-                    key={day.id}
-                    className={`month-cell ${day.active ? 'month-cell--active' : ''} ${day.muted ? 'month-cell--muted' : ''}`}
-                  >
-                    <span className="month-day-number">{day.number}</span>
+                  return (
+                    <div
+                      key={day.id}
+                      className={`month-cell ${day.active ? 'month-cell--active' : ''} ${day.muted ? 'month-cell--muted' : ''} ${dayAppointments.length > 0 ? 'month-cell--clickable' : ''}`}
+                      onClick={() => {
+                        if (dayAppointments.length > 0) {
+                          setSelectedMonthDay({ date: day.date, appointments: dayAppointments });
+                        }
+                      }}
+                    >
+                      <span className="month-day-number">{day.number}</span>
 
-                    <div className="month-events-list">
-                      {dayAppointments.slice(0, 2).map((appointment) => {
-                        const presentation = getStatusPresentation(appointment.status);
+                      <div className="month-events-list">
+                        {dayAppointments.slice(0, 2).map((appointment) => {
+                          const presentation = getStatusPresentation(appointment.status);
 
-                        return (
+                          return (
+                            <button
+                              type="button"
+                              key={appointment.id}
+                              className={`month-event-pill month-event-pill--${presentation.modifier} month-event-pill--button`}
+                              onClick={() => handleOpenDetails(appointment)}
+                            >
+                              {appointment.time} {presentation.label}
+                            </button>
+                          );
+                        })}
+
+                        {dayAppointments.length > 2 && (
                           <button
                             type="button"
-                            key={appointment.id}
-                            className={`month-event-pill month-event-pill--${presentation.modifier} month-event-pill--button`}
-                            onClick={() => handleOpenDetails(appointment)}
+                            className="month-events-more"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMonthDay({ date: day.date, appointments: dayAppointments });
+                            }}
                           >
-                            {appointment.time} {appointment.type}
+                            +{dayAppointments.length - 2} registro(s)
                           </button>
-                        );
-                      })}
-
-                      {dayAppointments.length > 2 && (
-                        <small>+{dayAppointments.length - 2} registro(s)</small>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         )}
@@ -1039,10 +1142,24 @@ export default function WeeklySchedule() {
         <LuCirclePlus size={28} />
       </button>
 
-      <AppointmentDetailsModal
-        appointment={selectedAppointment}
-        onClose={handleCloseDetails}
-      />
+      {selectedAppointment && (
+        <AppointmentDetailsModal
+          appointment={selectedAppointment}
+          onClose={handleCloseDetails}
+        />
+      )}
+
+      {selectedMonthDay && (
+        <MonthDayAppointmentsModal
+          date={selectedMonthDay.date}
+          appointments={selectedMonthDay.appointments}
+          onClose={() => setSelectedMonthDay(null)}
+          onOpenDetails={(appointment) => {
+            setSelectedMonthDay(null);
+            setSelectedAppointment(appointment);
+          }}
+        />
+      )}
     </main>
   );
 }

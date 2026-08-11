@@ -5,6 +5,10 @@ import {
   LuRefreshCw,
   LuSearch,
   LuX,
+  LuPencil,
+  LuTrash,
+  LuBadgeAlert,
+  LuCircleCheck
 } from 'react-icons/lu';
 import { useSpecialties } from '../../context/specialtyContext/specialtyContext';
 import './styles.css';
@@ -18,10 +22,6 @@ function normalizeText(value = '') {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
-}
-
-function getSummaryLabel(total) {
-  return `${total} ${total === 1 ? 'especialidade cadastrada' : 'especialidades cadastradas'} no ambiente administrativo.`;
 }
 
 function SpecialtiesModal({
@@ -70,13 +70,18 @@ function DeleteSpecialtyModal({
   return (
     <SpecialtiesModal
       title="Excluir especialidade"
-      description="Essa ação removerá a especialidade cadastrada no ambiente administrativo."
+      description="Essa ação removerá a especialidade permanentemente."
       onClose={onClose}
     >
       <div className="specialties-modal__body specialties-confirmation">
-        <p>
-          Tem certeza que deseja excluir{' '}
-          <strong>{specialty?.name}</strong>?
+        <div className="specialties-confirmation__alert">
+          <LuBadgeAlert size={24} />
+          <p>
+            Tem certeza que deseja excluir <strong>{specialty?.name}</strong>?
+          </p>
+        </div>
+        <p className="specialties-confirmation__warning">
+          Essa ação pode impactar profissionais ou vagas que estejam vinculados a esta especialidade.
         </p>
 
         <div className="specialties-form__actions">
@@ -95,7 +100,7 @@ function DeleteSpecialtyModal({
             onClick={onConfirm}
             disabled={isLoading}
           >
-            {isLoading ? 'Excluindo...' : 'Excluir'}
+            {isLoading ? 'Excluindo...' : 'Sim, excluir'}
           </button>
         </div>
       </div>
@@ -124,10 +129,9 @@ export default function Specialties() {
       try {
         await getSpecialties();
       } catch {
-        // O estado global já armazena a falha para a interface.
+        // Erro global
       }
     };
-
     loadSpecialties();
   }, []);
 
@@ -146,7 +150,7 @@ export default function Specialties() {
     try {
       await getSpecialties();
     } catch {
-      // O estado global já armazena a falha para a interface.
+      // Erro global
     }
   };
 
@@ -206,7 +210,7 @@ export default function Specialties() {
 
       handleCloseFormModal();
     } catch {
-      // O estado global já armazena a falha para a interface.
+      // Erro global
     }
   };
 
@@ -219,30 +223,17 @@ export default function Specialties() {
       await deleteSpecialty(specialtyPendingDelete.id);
       handleCloseDeleteModal();
     } catch {
-      // O estado global já armazena a falha para a interface.
+      // Erro global
     }
-  };
-
-  const getEmptyStateMessage = () => {
-    if (isLoading) {
-      return 'Carregando especialidades...';
-    }
-
-    if (hasActiveFilters) {
-      return 'Nenhuma especialidade encontrada para a busca informada.';
-    }
-
-    return 'Nenhuma especialidade cadastrada.';
   };
 
   return (
     <main className="specialties-page">
       <section className="specialties-header">
-        <div>
-          <h1>Gestão de Especialidades</h1>
+        <div className="specialties-header__title">
+          <h1>Especialidades</h1>
           <p>
-            Gerencie as especialidades utilizadas nas vagas, profissionais e fila
-            inteligente.
+            Gerencie as especialidades médicas utilizadas no cadastro de profissionais, vagas e fila inteligente.
           </p>
         </div>
 
@@ -258,30 +249,12 @@ export default function Specialties() {
 
       {error ? (
         <div className="specialties-feedback-banner specialties-feedback-banner--error" role="alert">
-          <LuX size={16} />
+          <LuBadgeAlert size={20} />
           <span>{error}</span>
         </div>
       ) : null}
 
-      {isLoading ? (
-        <div className="specialties-feedback-banner" role="status">
-          <LuRefreshCw size={16} className="specialties-feedback-banner__spinner" />
-          <span>Sincronizando especialidades com o backend...</span>
-        </div>
-      ) : null}
-
-      <section className="specialties-table-card">
-        <div className="specialties-table-card__header">
-          <div>
-            <div className="specialties-table-card__title">
-              <LuClipboardList size={20} />
-              <h2>Especialidades cadastradas</h2>
-            </div>
-
-            <p>{getSummaryLabel(specialtiesList.length)}</p>
-          </div>
-        </div>
-
+      <section className="specialties-main-card">
         <div className="specialties-filters">
           <div className="specialties-filters__search">
             <LuSearch size={18} />
@@ -296,22 +269,24 @@ export default function Specialties() {
           <div className="specialties-filters__actions">
             <button
               type="button"
-              className="specialties-filter-action-button"
+              className="specialties-filter-btn"
               onClick={handleRefresh}
               disabled={isLoading}
+              title="Atualizar dados"
             >
-              <LuRefreshCw size={16} />
+              <LuRefreshCw size={16} className={isLoading ? 'spin' : ''} />
               Atualizar
             </button>
 
             <button
               type="button"
-              className="specialties-filter-action-button"
+              className="specialties-filter-btn specialties-filter-btn--outline"
               onClick={handleClearFilters}
               disabled={!hasActiveFilters}
+              title="Limpar busca"
             >
               <LuX size={16} />
-              Limpar busca
+              Limpar
             </button>
           </div>
         </div>
@@ -321,8 +296,8 @@ export default function Specialties() {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>ESPECIALIDADE</th>
-                <th>AÇÕES</th>
+                <th>NOME DA ESPECIALIDADE</th>
+                <th className="align-right">AÇÕES</th>
               </tr>
             </thead>
 
@@ -330,34 +305,34 @@ export default function Specialties() {
               {filteredSpecialties.length > 0 ? (
                 filteredSpecialties.map((specialty) => (
                   <tr key={specialty.id}>
-                    <td>
+                    <td width="100">
                       <span className="specialty-id-badge">#{specialty.id}</span>
                     </td>
 
                     <td>
-                      <div className="specialty-info">
-                        <strong>{specialty.name}</strong>
-                      </div>
+                      <strong className="specialty-name">{specialty.name}</strong>
                     </td>
 
-                    <td>
+                    <td width="140">
                       <div className="specialties-actions">
                         <button
                           type="button"
-                          className="specialties-actions__edit"
+                          className="action-btn action-btn--edit"
                           onClick={() => handleOpenEditModal(specialty)}
                           disabled={isLoading}
+                          title="Editar"
                         >
-                          Editar
+                          <LuPencil size={16} />
                         </button>
 
                         <button
                           type="button"
-                          className="specialties-actions__delete"
+                          className="action-btn action-btn--delete"
                           onClick={() => handleOpenDeleteModal(specialty)}
                           disabled={isLoading}
+                          title="Excluir"
                         >
-                          Excluir
+                          <LuTrash size={16} />
                         </button>
                       </div>
                     </td>
@@ -366,19 +341,31 @@ export default function Specialties() {
               ) : (
                 <tr>
                   <td colSpan="3" className="specialties-table__empty">
-                    {getEmptyStateMessage()}
+                    {isLoading ? (
+                      <div className="empty-state">
+                         <div className="empty-spinner" />
+                         <p>Carregando especialidades...</p>
+                      </div>
+                    ) : hasActiveFilters ? (
+                      <div className="empty-state">
+                         <div className="empty-state__icon">
+                            <LuSearch size={28} />
+                         </div>
+                         <p>Nenhuma especialidade encontrada para "{searchTerm}".</p>
+                      </div>
+                    ) : (
+                      <div className="empty-state">
+                         <div className="empty-state__icon">
+                            <LuClipboardList size={28} />
+                         </div>
+                         <p>Nenhuma especialidade cadastrada ainda.<br/>Cadastre uma especialidade para começar a organizar profissionais e vagas.</p>
+                      </div>
+                    )}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-
-        <div className="specialties-table-card__footer">
-          <span>
-            Exibindo {filteredSpecialties.length} de {specialtiesList.length}{' '}
-            especialidades
-          </span>
         </div>
       </section>
 
@@ -391,18 +378,19 @@ export default function Specialties() {
           }
           description={
             editingSpecialtyId !== null
-              ? 'Atualize o nome da especialidade utilizada no sistema.'
-              : 'Cadastre uma nova especialidade para uso nas filas, vagas e profissionais.'
+              ? 'Atualize o nome da especialidade.'
+              : 'Cadastre uma nova especialidade para uso no sistema.'
           }
           onClose={handleCloseFormModal}
         >
           <form className="specialties-form" onSubmit={handleSubmit}>
-            <label>
+            <label className="specialties-form__label">
               Nome da especialidade
               <input
                 type="text"
                 name="name"
-                placeholder="Ex: Oftalmologia"
+                className="specialties-form__input"
+                placeholder="Ex: Cardiologia"
                 value={formData.name}
                 onChange={handleChangeForm}
                 maxLength={80}
@@ -425,13 +413,7 @@ export default function Specialties() {
                 className="specialties-form__submit"
                 disabled={isLoading}
               >
-                {isLoading
-                  ? editingSpecialtyId !== null
-                    ? 'Salvando...'
-                    : 'Cadastrando...'
-                  : editingSpecialtyId !== null
-                    ? 'Salvar alterações'
-                    : 'Cadastrar especialidade'}
+                {isLoading ? 'Salvando...' : 'Salvar especialidade'}
               </button>
             </div>
           </form>

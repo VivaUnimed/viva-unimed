@@ -226,15 +226,20 @@ export default function Patients() {
         </div>
 
         <div className="patients-header__actions">
-          <button
-            type="button"
-            className="patients-header__button patients-header__button--secondary"
-            disabled
-            title="TODO: importação em lote depende de endpoint confirmado."
+          <span
+            className="patients-header__button-wrapper"
+            title="Funcionalidade prevista para etapa futura."
           >
-            <LuDownload size={18} />
-            Importar pacientes
-          </button>
+            <button
+              type="button"
+              className="patients-header__button patients-header__button--secondary"
+              disabled
+              aria-label="Funcionalidade prevista para etapa futura."
+            >
+              <LuDownload size={18} />
+              Importar pacientes
+            </button>
+          </span>
 
           <NavLink
             to="/patients/new"

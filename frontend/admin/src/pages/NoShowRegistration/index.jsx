@@ -1,47 +1,34 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  LuBadgeAlert,
   LuCalendarDays,
-  LuChevronLeft,
   LuChevronDown,
+  LuChevronLeft,
   LuClock3,
-  LuMapPin,
   LuMoveRight,
 } from 'react-icons/lu';
+import { useProfessionals } from '../../context/professionalContext/professionalContext';
+import { useSpecialties } from '../../context/specialtyContext/specialtyContext';
+import { useVacancies } from '../../context/vacancyContext/vacancyContext';
 import './styles.css';
 
-const professionals = [
-  'Dra. Mariana Lopes',
-  'Dr. Ricardo Almeida',
-  'Dra. Heloisa Santos',
-];
+const getProfessionalOptionLabel = (professional) => {
+  const statusSuffix = professional.status === 'Inativo' ? ' • Inativo' : '';
+  const crmSuffix = professional.crm ? ` • CRM ${professional.crm}` : '';
 
-const specialties = ['Cardiologia', 'Ortopedia', 'Pediatria'];
-
-const units = ['Unidade Centro', 'Unidade Zona Sul', 'Unidade Norte'];
-
-const vacancyTypes = [
-  'No-show',
-  'Cancelamento',
-  'Desistência',
-  'Horário ocioso',
-  'Remanejamento',
-  'Outro',
-];
-
-const expirationOptions = [
-  '5 minutos',
-  '10 minutos',
-  '15 minutos',
-  '30 minutos',
-  'Personalizado',
-];
+  return `${professional.name}${crmSuffix}${statusSuffix}`;
+};
 
 export default function NoShowRegistration() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { professionalState, getProfessionals } = useProfessionals();
+  const { specialtyState, getSpecialties } = useSpecialties();
+  const { createVacancy } = useVacancies();
   const vacancyDateInputRef = useRef(null);
   const vacancyTimeInputRef = useRef(null);
+  const hasLoadedDependenciesRef = useRef(false);
   const returnTo = typeof location.state?.returnTo === 'string'
     ? location.state.returnTo
     : '/vacancies';
@@ -50,6 +37,72 @@ export default function NoShowRegistration() {
     : 'vagas';
   const prefilledDate = typeof location.state?.date === 'string' ? location.state.date : '';
   const prefilledTime = typeof location.state?.time === 'string' ? location.state.time : '';
+  const [formValues, setFormValues] = useState({
+    doctorId: '',
+    specialityId: '',
+    date: prefilledDate,
+    time: prefilledTime,
+  });
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (hasLoadedDependenciesRef.current) {
+      return;
+    }
+
+    hasLoadedDependenciesRef.current = true;
+
+    const loadDependencies = async () => {
+      try {
+        await Promise.all([
+          getProfessionals(),
+          getSpecialties(),
+        ]);
+      } catch {
+        // Os erros de dependência permanecem visíveis nos estados globais.
+      }
+    };
+
+    loadDependencies();
+  }, [getProfessionals, getSpecialties]);
+
+  const selectedProfessional = professionalState.professionals.find(
+    (professional) => String(professional.id) === String(formValues.doctorId),
+  );
+  const availableSpecialties = selectedProfessional
+    ? specialtyState.specialties.filter((specialty) => (
+      selectedProfessional.specialityIds.includes(Number(specialty.id))
+    ))
+    : specialtyState.specialties;
+  const dependencyError = professionalState.error || specialtyState.error;
+  const isLoadingDependencies = professionalState.isLoading || specialtyState.isLoading;
+  const isSubmitDisabled = (
+    isSubmitting
+    || isLoadingDependencies
+    || !formValues.doctorId
+    || !formValues.specialityId
+    || !formValues.date
+    || !formValues.time
+    || !availableSpecialties.length
+  );
+
+  useEffect(() => {
+    if (!formValues.specialityId) {
+      return;
+    }
+
+    const hasSelectedSpecialty = availableSpecialties.some(
+      (specialty) => String(specialty.id) === String(formValues.specialityId),
+    );
+
+    if (!hasSelectedSpecialty) {
+      setFormValues((currentValues) => ({
+        ...currentValues,
+        specialityId: '',
+      }));
+    }
+  }, [availableSpecialties, formValues.specialityId]);
 
   const openNativePicker = (input) => {
     if (!input) {
@@ -73,6 +126,36 @@ export default function NoShowRegistration() {
     navigate(returnTo);
   };
 
+  const handleChange = (fieldName) => (event) => {
+    const { value } = event.target;
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [fieldName]: value,
+      ...(fieldName === 'doctorId' ? { specialityId: '' } : {}),
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const createdVacancy = await createVacancy(formValues);
+
+      navigate('/vacancies', {
+        state: {
+          successMessage: `Vaga #${createdVacancy.id} cadastrada com sucesso.`,
+        },
+      });
+    } catch (error) {
+      setSubmitError(error?.message || 'Não foi possível cadastrar a vaga.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="no-show-registration-page">
       <section className="no-show-registration-header">
@@ -87,27 +170,47 @@ export default function NoShowRegistration() {
           </button>
           <h1>Nova Vaga Remanescente</h1>
           <p>
-            Preencha as informações para registrar uma disponibilidade e
-            acionar a fila inteligente.
+            Preencha os dados atualmente aceitos pelo backend para registrar uma vaga.
           </p>
         </div>
       </section>
 
       <section className="no-show-registration-card">
+        {dependencyError ? (
+          <div className="no-show-registration-feedback" role="alert">
+            <LuBadgeAlert size={18} />
+            <span>{dependencyError}</span>
+          </div>
+        ) : null}
+
+        {submitError ? (
+          <div className="no-show-registration-feedback" role="alert">
+            <LuBadgeAlert size={18} />
+            <span>{submitError}</span>
+          </div>
+        ) : null}
+
         <form
           className="no-show-registration-form"
-          onSubmit={(event) => event.preventDefault()}
+          onSubmit={handleSubmit}
         >
           <label className="no-show-registration-field no-show-registration-field--full">
             <span>Profissional de Saúde</span>
             <div className="no-show-registration-input no-show-registration-input--select">
-              <select defaultValue="">
+              <select
+                value={formValues.doctorId}
+                onChange={handleChange('doctorId')}
+                disabled={isLoadingDependencies || !professionalState.professionals.length}
+                required
+              >
                 <option value="" disabled>
-                  Selecione o profissional
+                  {isLoadingDependencies
+                    ? 'Carregando profissionais...'
+                    : 'Selecione o profissional'}
                 </option>
-                {professionals.map((professional) => (
-                  <option key={professional} value={professional}>
-                    {professional}
+                {professionalState.professionals.map((professional) => (
+                  <option key={professional.id} value={professional.id}>
+                    {getProfessionalOptionLabel(professional)}
                   </option>
                 ))}
               </select>
@@ -118,39 +221,32 @@ export default function NoShowRegistration() {
           <label className="no-show-registration-field no-show-registration-field--full">
             <span>Especialidade</span>
             <div className="no-show-registration-input no-show-registration-input--select">
-              <select defaultValue="">
+              <select
+                value={formValues.specialityId}
+                onChange={handleChange('specialityId')}
+                disabled={isLoadingDependencies || !availableSpecialties.length}
+                required
+              >
                 <option value="" disabled>
-                  Selecione a especialidade
+                  {selectedProfessional && !availableSpecialties.length
+                    ? 'Profissional sem especialidades vinculadas'
+                    : isLoadingDependencies
+                      ? 'Carregando especialidades...'
+                      : 'Selecione a especialidade'}
                 </option>
-                {specialties.map((specialty) => (
-                  <option key={specialty} value={specialty}>
-                    {specialty}
+                {availableSpecialties.map((specialty) => (
+                  <option key={specialty.id} value={specialty.id}>
+                    {specialty.name}
                   </option>
                 ))}
               </select>
               <LuChevronDown size={18} />
             </div>
-          </label>
-
-          <label className="no-show-registration-field">
-            <span>Unidade</span>
-            <div className="no-show-registration-input no-show-registration-input--select">
-              <select defaultValue="">
-                <option value="" disabled>
-                  Selecione a unidade
-                </option>
-                {units.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-              <LuMapPin
-                size={17}
-                className="no-show-registration-input__icon no-show-registration-input__icon--aux"
-              />
-              <LuChevronDown size={18} />
-            </div>
+            {selectedProfessional && !availableSpecialties.length ? (
+              <small className="no-show-registration-helper">
+                O profissional selecionado não possui vínculo de especialidade disponível.
+              </small>
+            ) : null}
           </label>
 
           <label className="no-show-registration-field">
@@ -159,7 +255,13 @@ export default function NoShowRegistration() {
               className="no-show-registration-input no-show-registration-input--picker"
               onClick={() => openNativePicker(vacancyDateInputRef.current)}
             >
-              <input ref={vacancyDateInputRef} type="date" defaultValue={prefilledDate} />
+              <input
+                ref={vacancyDateInputRef}
+                type="date"
+                value={formValues.date}
+                onChange={handleChange('date')}
+                required
+              />
               <LuCalendarDays
                 size={18}
                 className="no-show-registration-input__icon"
@@ -168,12 +270,18 @@ export default function NoShowRegistration() {
           </label>
 
           <label className="no-show-registration-field">
-            <span>Horário Específico</span>
+            <span>Horário da Vaga</span>
             <div
               className="no-show-registration-input no-show-registration-input--picker"
               onClick={() => openNativePicker(vacancyTimeInputRef.current)}
             >
-              <input ref={vacancyTimeInputRef} type="time" defaultValue={prefilledTime} />
+              <input
+                ref={vacancyTimeInputRef}
+                type="time"
+                value={formValues.time}
+                onChange={handleChange('time')}
+                required
+              />
               <LuClock3
                 size={18}
                 className="no-show-registration-input__icon"
@@ -181,43 +289,19 @@ export default function NoShowRegistration() {
             </div>
           </label>
 
-          <label className="no-show-registration-field">
-            <span>Tipo de Vaga</span>
-            <div className="no-show-registration-input no-show-registration-input--select">
-              <select defaultValue="No-show">
-                {vacancyTypes.map((vacancyType) => (
-                  <option key={vacancyType} value={vacancyType}>
-                    {vacancyType}
-                  </option>
-                ))}
-              </select>
-              <LuChevronDown size={18} />
-            </div>
-          </label>
-
-          <label className="no-show-registration-field no-show-registration-field--full">
-            <span>Tempo de Expiração da Oferta</span>
-            <div className="no-show-registration-input no-show-registration-input--select">
-              <select defaultValue="15 minutos" required>
-                {expirationOptions.map((expirationOption) => (
-                  <option key={expirationOption} value={expirationOption}>
-                    {expirationOption}
-                  </option>
-                ))}
-              </select>
-              <LuChevronDown size={18} />
-            </div>
-          </label>
-
           <div className="no-show-registration-actions">
-            <button type="submit" className="no-show-registration-submit">
-              Cadastrar vaga e processar fila
+            <button
+              type="submit"
+              className="no-show-registration-submit"
+              disabled={isSubmitDisabled}
+            >
+              {isSubmitting ? 'Cadastrando vaga...' : 'Cadastrar vaga'}
               <LuMoveRight size={18} />
             </button>
 
             <p>
-              Após o cadastro, a vaga será enviada para pacientes elegíveis na
-              fila da especialidade.
+              Após o cadastro, o processamento da fila continua seguindo a automação
+              atual do backend.
             </p>
           </div>
         </form>

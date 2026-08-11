@@ -1,7 +1,7 @@
 import { Column, DataType, ForeignKey, Table, BelongsTo, Model, BelongsToMany } from "sequelize-typescript";
 import UserModel from "./user.model";
 import SpecialityModel from "./speciality.model";
-import { IDoctor, IDoctorCreate, IDoctorInternal } from "shared";
+import { IDoctorCreate } from "shared";
 import DoctorSpecialityModel from "./doctor.speciality.model";
 
 
@@ -12,7 +12,7 @@ import DoctorSpecialityModel from "./doctor.speciality.model";
     attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
   },
 })
-export default class DoctorModel extends Model<IDoctorInternal, IDoctorCreate> {
+export default class DoctorModel extends Model<IDoctorCreate, IDoctorCreate> {
   @ForeignKey(() => UserModel)
   @Column({ type: DataType.INTEGER, allowNull: false, unique: true, primaryKey: true })
   declare userId: number;
