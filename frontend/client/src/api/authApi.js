@@ -2,152 +2,188 @@ import * as authTypes from '../context/authContext/authTypes';
 import { postRequest } from './api';
 import { toast } from 'react-toastify';
 
-export const signup = async (userCredentials, dispatch) => {
-  dispatch({ type: authTypes.SIGNUP_REQUEST });
+
+/* --------------------------------------------------------------------------
+ *  SIGN UP  –  POST /patient/signup
+ * ------------------------------------------------------------------------*/
+export const signup = async (
+  userCredentials,
+  dispatch,
+) => {
+  dispatch({
+    type: authTypes.SIGNUP_REQUEST,
+  });
 
   try {
-    const data = await toast.promise(
-      postRequest('/usuarios/signup', userCredentials),
-      {
-        pending: 'Criando sua conta...',
-        success: 'Conta criada com sucesso!',
-        error: {
-          render({ data }) {
-            // "data" aqui é o erro lançado pelo postRequest
-            return (
-              data?.response?.data?.message ||
-              data?.message ||
-              'Erro ao cadastrar'
-            );
+      const data = await toast.promise(
+        postRequest('/api/patient', userCredentials),
+        {
+          pending: 'Criando sua conta...',
+          success: 'Conta criada com sucesso!',
+          error: {
+            render({ data: error }) {
+              return (
+                error?.message ||
+                'Não foi possível concluir o cadastro.'
+              );
+            },
           },
         },
+      );
+
+    dispatch({
+      type: authTypes.SIGNUP_SUCCESS,
+      payload: {
+        patient: data,
       },
-    );
+    });
 
-    if (!data) {
-      throw new Error('Resposta inválida do servidor');
-    }
-
-    const { message } = data;
-
-    dispatch({ type: authTypes.SIGNUP_SUCCESS, payload: { message } });
+    return data;
   } catch (error) {
     dispatch({
       type: authTypes.SIGNUP_FAILURE,
-      payload: { error: error.message },
+      payload: {
+        error: error.message,
+      },
     });
+
     throw error;
   }
 };
 
-export const login = async (userCredentials, rememberMe=true, dispatch) => {
+/* --------------------------------------------------------------------------
+ *  LOGIN  –  POST /auth/login
+ * ------------------------------------------------------------------------*/
+export const login = async (
+  userCredentials,
+  rememberMe = true,
+  dispatch,
+) => {
   dispatch({ type: authTypes.LOGIN_REQUEST });
+
   try {
     const data = await toast.promise(
-      postRequest('/api/auth/login', userCredentials),
+      postRequest('/api/auth/login', userCredentials, {
+        withAuth: false,
+        skipUnauthorizedRedirect: true,
+      }),
       {
         pending: 'Autenticando...',
         success: 'Login realizado!',
         error: {
           render({ data }) {
             return (
-              data?.response?.data?.message || 'E-mail ou senha incorretos'
+              data?.response?.data?.message ||
+              data?.message ||
+              'Não foi possível concluir o login no momento.'
             );
           },
         },
       },
     );
-    if (!data || !data.id) {
-      throw new Error('Resposta inválida do servidor');
+
+    const responseData = data?.data || data;
+
+    const token =
+      responseData?.token ||
+      responseData?.accessToken ||
+      responseData?.access_token;
+
+    if (!token) {
+      throw new Error('Token não encontrado na resposta do servidor');
     }
 
-    const user = {
-      id: data.id,
-      name: data.name,
-      email: data.email,
-    };
+    const user =
+      responseData?.user ||
+      responseData?.usuario ||
+      responseData?.patient ||
+      responseData?.paciente ||
+      {
+        id: responseData?.id,
+        name: responseData?.name,
+        cpf: responseData?.cpf,
+        email: responseData?.email,
+        phone: responseData?.phone,
+      };
 
-    if (rememberMe) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      sessionStorage.setItem('user', JSON.stringify(user));
-    }
+    const storage = rememberMe ? localStorage : sessionStorage;
+
+    storage.setItem('token', token);
+    storage.setItem('user', JSON.stringify(user));
 
     dispatch({
       type: authTypes.LOGIN_SUCCESS,
       payload: {
+        token,
         user,
       },
     });
+
+    return {
+      token,
+      user,
+    };
   } catch (error) {
     dispatch({
       type: authTypes.LOGIN_FAILURE,
       payload: { error: error.message },
     });
+
+    throw error;
   }
 };
 
+/* --------------------------------------------------------------------------
+ *  LOGOUT  –  POST /auth/logout   (opcional no backend)
+ * ------------------------------------------------------------------------*/
 export const logout = async (dispatch) => {
   dispatch({ type: authTypes.LOGOUT_REQUEST });
 
-  try {
-    await toast.promise(postRequest('/api/auth/logout', {}), {
-      pending: 'Saindo...',
-      error: {
-        render({ data }) {
-          return data?.response?.data?.message || 'Nao foi possivel sair no servidor';
-        },
-      },
-    });
-  } catch (error) {
-    console.warn('Falha ao invalidar token no servidor:', error.message);
-  } finally {
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('user');
-    dispatch({ type: authTypes.LOGOUT_SUCCESS });
-  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
+
+  dispatch({ type: authTypes.LOGOUT_SUCCESS });
 };
 
+/* --------------------------------------------------------------------------
+ *  PASSWORD RESET
+ *  (as duas funções permaneceram iguais – só mude /auth/... se precisar)
+ * ------------------------------------------------------------------------*/
 export const requestPasswordReset = async (email, dispatch) => {
   dispatch({ type: authTypes.PASSWORD_RESET_REQUEST_REQUEST });
 
   try {
     const data = await toast.promise(
-      postRequest('/usuarios/reset-password-request', { email }),
+      postRequest('/api/auth/reset-password-request', { email }),
       {
         pending: 'Enviando código de recuperação...',
-        success: 'Código de recuperação enviado com sucesso!',
-        error: {
-          render({ data }) {
-            return (
-              data?.response?.data?.message ||
-              data?.message ||
-              'Não foi possível enviar o código de recuperação.'
-            );
-          },
-        },
+        success: 'Código de recuperação enviado!',
+        error: { render({ data }) {
+          return (
+            data?.response?.data?.message ||
+            data?.message ||
+            'Não foi possível enviar o código de recuperação.'
+          );
+        }},
       },
     );
 
-    if (!data) {
-      throw new Error('Resposta inválida do servidor');
-    }
-
-    const { message } = data;
+    const { message } = data || {};
+    if (!message) throw new Error('Resposta inválida do servidor');
 
     dispatch({
       type: authTypes.PASSWORD_RESET_REQUEST_SUCCESS,
       payload: { message, email },
     });
-
     return data;
-
   } catch (error) {
     dispatch({
       type: authTypes.PASSWORD_RESET_REQUEST_FAILURE,
       payload: { error: error.message },
     });
-
     throw error;
   }
 };
@@ -157,40 +193,33 @@ export const confirmPasswordReset = async (resetData, dispatch) => {
 
   try {
     const data = await toast.promise(
-      postRequest('/usuarios/reset-password-confirm', resetData),
+      postRequest('/api/auth/reset-password-confirm', resetData),
       {
-        pending: 'Validando Token e Redefinindo senha...',
+        pending: 'Validando token e redefinindo senha...',
         success: 'Senha redefinida com sucesso!',
-        error: {
-          render({ data }) {
-            return (
-              data?.response?.data?.message ||
-              data?.message ||
-              'Não foi possível redefinir a senha.'
-            );
-          },
-        },
+        error: { render({ data }) {
+          return (
+            data?.response?.data?.message ||
+            data?.message ||
+            'Não foi possível redefinir a senha.'
+          );
+        }},
       },
     );
 
-    if (!data) {
-      throw new Error('Resposta inválida do servidor');
-    }
-
-    const { message } = data;
+    const { message } = data || {};
+    if (!message) throw new Error('Resposta inválida do servidor');
 
     dispatch({
       type: authTypes.PASSWORD_RESET_CONFIRM_SUCCESS,
       payload: { message },
     });
-
     return data;
   } catch (error) {
     dispatch({
       type: authTypes.PASSWORD_RESET_CONFIRM_FAILURE,
       payload: { error: error.message },
     });
-
     throw error;
   }
 };

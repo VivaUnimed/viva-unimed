@@ -3,39 +3,29 @@ import AppNav from '../../components/layouts/AppNav';
 import AppLogo from '../../components/layouts/AppLogo';
 import { CalendarDays, MapPin, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-const consultas = [
-  {
-    id: 'ana-silva',
-    especialidade: 'CARDIOLOGIA',
-    status: 'VAGA ACEITA',
-    statusVariant: 'light-green',
-    medico: 'Dra. Ana Silva',
-    dataResumo: 'Hoje, 14:15',
-    local: 'Unidade Litoral Sul',
-  },
-  {
-    id: 'amanda-costa',
-    especialidade: 'DERMATOLOGIA',
-    status: 'CONFIRMADO',
-    statusVariant: 'gray',
-    medico: 'Dra. Amanda Costa',
-    dataResumo: 'Amanha, 09:30',
-    local: 'Unidade Litoral Sul',
-  },
-  {
-    id: 'marcos-lima',
-    especialidade: 'ORTOPEDIA',
-    status: 'CONFIRMADO',
-    statusVariant: 'gray',
-    medico: 'Dr. Marcos Lima',
-    dataResumo: '24 de Out, 15:40',
-    local: 'Unidade Central',
-  },
-];
+import { useEffect, useState } from 'react';
+import { getMinhasConsultas } from '../../api/consultasApi';
 
 export default function MinhasConsultas() {
   const navigate = useNavigate();
+  const [consultas, setConsultas] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadConsultas = async () => {
+      try {
+        const data = await getMinhasConsultas();
+        setConsultas(data);
+      } catch (error) {
+        console.warn('Erro ao carregar consultas:', error.message);
+        setConsultas([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConsultas();
+  }, []);
 
   return (
     <div className="consultas-page">
@@ -64,46 +54,54 @@ export default function MinhasConsultas() {
           </section>
 
           <section className="consultas-list">
-            {consultas.map((consulta) => (
-              <div className="consulta-item" key={consulta.id}>
-                <div className="consulta-top-tags">
-                  <span className="consulta-tag green">
-                    {consulta.especialidade}
-                  </span>
+            {isLoading ? (
+              <p className="consultas-empty-state">Carregando consultas...</p>
+            ) : consultas.length === 0 ? (
+              <p className="consultas-empty-state">Nenhuma consulta encontrada</p>
+            ) : (
+              consultas.map((consulta) => (
+                <div className="consulta-item" key={consulta.id}>
+                  <div className="consulta-top-tags">
+                    <span className="consulta-tag green">
+                      {consulta.especialidade}
+                    </span>
 
-                  <span className={`consulta-tag ${consulta.statusVariant}`}>
-                    {consulta.status}
-                  </span>
-                </div>
-
-                <div className="consulta-main">
-                  <div>
-                    <h3>{consulta.medico}</h3>
-
-                    <div className="consulta-info">
-                      <CalendarDays size={14} />
-                      <span>{consulta.dataResumo}</span>
-                    </div>
-
-                    <div className="consulta-info">
-                      <MapPin size={14} />
-                      <span>{consulta.local}</span>
-                    </div>
+                    <span className={`consulta-tag ${consulta.statusVariant}`}>
+                      {consulta.status}
+                    </span>
                   </div>
 
-                  <button
-                    type="button"
-                    className="consulta-details-btn"
-                    onClick={() => navigate(`/consultas-detalhes/${consulta.id}`)}
-                  >
-                    Detalhes
-                  </button>
+                  <div className="consulta-main">
+                    <div>
+                      <h3>{consulta.medico}</h3>
+
+                      <div className="consulta-info">
+                        <CalendarDays size={14} />
+                        <span>{consulta.dataResumo}</span>
+                      </div>
+
+                      <div className="consulta-info">
+                        <MapPin size={14} />
+                        <span>{consulta.local}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="consulta-details-btn"
+                      onClick={() => navigate(`/consultas-detalhes/${consulta.id}`)}
+                    >
+                      Detalhes
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </section>
 
-          <div className="consultas-end-text">FIM DA LISTA</div>
+          {!isLoading && consultas.length > 0 && (
+            <div className="consultas-end-text">FIM DA LISTA</div>
+          )}
         </main>
 
         <AppNav className="consultas-bottom-nav" active="home" />

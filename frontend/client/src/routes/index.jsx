@@ -9,6 +9,7 @@ import Consultas from '../pages/Consultas';
 import ConsultasDetalhes from '../pages/ConsultasDetalhes';
 import Interesses from '../pages/Interesses';
 import Perfil from '../pages/Perfil';
+import PerfilEditar from '../pages/PerfilEditar';
 import ResetPassword from '../pages/ResetPassword';
 import Vagas from '../pages/Vagas';
 
@@ -41,6 +42,7 @@ export const RoutesApp = () => {
             element={<Interesses />}
           />
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/perfil/editar" element={<PerfilEditar />} />
           <Route path="/vagas" element={<Vagas />} />
         </Route>
       </Route>

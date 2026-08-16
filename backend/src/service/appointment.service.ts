@@ -8,6 +8,10 @@ import { Op, Transaction } from "sequelize";
 import { db } from "../db";
 import provider from "../provider";
 import { IConfig } from "../config";
+import PatientModel from "../db/models/patient.model";
+import DoctorModel from "../db/models/doctor.model";
+import UserModel from "../db/models/user.model";
+import SpecialityModel from "../db/models/speciality.model";
 
 export class AppointmentService {
   constructor(private config: IConfig) {}
@@ -255,6 +259,166 @@ export class AppointmentService {
       }
     }
     );
+  }
+
+    /**
+   * Lista somente consultas futuras confirmadas
+   * do paciente autenticado.
+   *
+   * JWT -> User -> Patient -> Request -> Match -> Appointment
+   */
+  async listForPatient(
+    patientUserId: number,
+  ): Promise<IAppointment[]> {
+
+    const patient =
+      await PatientModel.findOne({
+        where: {
+          userId: patientUserId,
+        },
+
+        attributes: [
+          "id",
+        ],
+      });
+
+    if (!patient) {
+      throw new NotFound(
+        "Paciente não encontrado.",
+      );
+    }
+
+    const matches =
+      await AppointmentMatchModel.findAll({
+        where: {
+          status:
+            "accepted" satisfies AppointmentMatchStatus,
+        },
+
+        include: [
+          {
+            model:
+              AppointmentRequestModel,
+
+            // IMPORTANTE:
+            // nome da associação no model
+            as: "request",
+
+            required: true,
+
+            where: {
+              patientId:
+                patient.id,
+            },
+
+            attributes: [
+              "id",
+              "patientId",
+            ],
+          },
+
+          {
+            model:
+              AppointmentModel,
+
+            // IMPORTANTE:
+            // nome da associação no model
+            as: "appointment",
+
+            required: true,
+
+            where: {
+              status:
+                "booked" satisfies AppointmentStatus,
+
+              /**
+               * Mostra somente
+               * consultas futuras.
+               */
+              date: {
+                [Op.gte]:
+                  new Date(),
+              },
+            },
+
+            include: [
+              {
+                model:
+                  DoctorModel,
+
+                as:
+                  "doctor",
+
+                attributes: [
+                  "userId",
+                  "crm",
+                  "enabled",
+                ],
+
+                include: [
+                  {
+                    model:
+                      UserModel,
+
+                    as:
+                      "user",
+
+                    attributes: [
+                      "id",
+                      "name",
+                    ],
+                  },
+                ],
+              },
+
+              {
+                model:
+                  SpecialityModel,
+
+                as:
+                  "speciality",
+
+                attributes: [
+                  "id",
+                  "name",
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+    const appointments =
+      matches
+        .map(
+          (match) =>
+            match.appointment,
+        )
+        .filter(
+          (
+            appointment,
+          ): appointment is AppointmentModel =>
+            Boolean(
+              appointment,
+            ),
+        )
+        .sort(
+          (a, b) =>
+            new Date(
+              a.date,
+            ).getTime() -
+            new Date(
+              b.date,
+            ).getTime(),
+        )
+        .map(
+          (appointment) =>
+            appointment.get({
+              plain: true,
+            }) as IAppointment,
+        );
+
+    return appointments;
   }
 
   /** Busca agendamento por ID */

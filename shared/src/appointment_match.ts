@@ -1,4 +1,3 @@
-
 import { IAppointment } from "./appointment";
 import { IAppointmentRequest } from "./appointment_request";
 
@@ -22,7 +21,8 @@ export interface IAppointmentMatch extends IAppointmentMatchCreate {
   id: number;
   appointment?: IAppointment;
   request?: IAppointmentRequest;
-  createAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  createAt?: Date;
+  updatedAt?: Date;
   respondedAt?: Date;
 }

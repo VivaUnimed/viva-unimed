@@ -17,12 +17,17 @@
   align-items: center;
   justify-content: center;
   padding: 28px 24px 16px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .login-paciente-header .app-logo-small {
   width: min(100%, 430px);
   height: 136px;
   margin: 0 auto;
+  position: absolute;
 }
 
 .login-paciente-content {
@@ -129,19 +134,38 @@
 /* DESKTOP */
 @media (min-width: 1024px) {
   .login-paciente-page {
-    padding: 40px;
+    padding: 0;
+    display: block;
   }
 
   .login-paciente-card {
-    max-width: 720px;
+    max-width: 100%;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    margin-top: 0;
   }
 
   .login-paciente-header {
-    padding: 40px 56px 20px;
+    position: static;
+    padding: 0;
+  }
+
+  .login-paciente-header .app-logo-small {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    z-index: 70;
+    width: 240px;
+    height: 62px;
+    margin: 0;
+    transform: translateX(-50%);
   }
 
   .login-paciente-content {
-    padding: 0 56px 40px;
+    padding: 160px 56px 40px 56px;
+    margin-top: 0;
   }
 
   .login-paciente-title-group {
@@ -189,5 +213,51 @@
 
   .login-paciente-content {
     padding: 0 72px 48px;
+  }
+}
+
+/* DESKTOP FULL PAGE */
+@media (min-width: 768px) {
+  .login-paciente-page {
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .login-paciente-card {
+    max-width: none;
+    min-height: 100vh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login-paciente-header {
+    padding: 0;
+  }
+
+  .login-paciente-content {
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+    padding-top: 112px;
+  }
+
+  .login-paciente-header .app-logo-small {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    z-index: 70;
+    width: 240px;
+    height: 62px;
+    margin: 0;
+    transform: translateX(-50%);
+    align-self: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .login-paciente-card {
+    max-width: none;
   }
 }

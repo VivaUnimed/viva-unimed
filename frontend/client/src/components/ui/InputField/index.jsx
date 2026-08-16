@@ -8,6 +8,9 @@ export default function InputField({
   value,
   onChange,
   name,
+  maxLength,
+  inputMode,
+  autoComplete,
 }) {
   return (
     <div className="input-field-group">
@@ -20,6 +23,9 @@ export default function InputField({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        maxLength={maxLength}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
       />
     </div>
   );

@@ -155,6 +155,8 @@ export class DoctorService {
       crm: model.crm,
       enabled: model.enabled,
       id: model.user.id,
+      userId: model.userId,
+      cpf: model.user.cpf,
       email: model.user.email,
       name: model.user.name,
       phone: model.user.phone,

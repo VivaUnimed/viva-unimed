@@ -16,6 +16,7 @@ export const authReducer = (state, action) => {
     case authTypes.LOGIN_SUCCESS:
       return {
         ...state,
+        token: action.payload.token,
         user: action.payload.user,
         isAuthenticated: true,
         isAuthenticating: false,

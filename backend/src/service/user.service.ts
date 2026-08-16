@@ -13,7 +13,7 @@ export class UserService {
       name: typeof user.name === "string" ? user.name.trim() : undefined,
       email: typeof user.email === "string" ? user.email.trim() : undefined,
       cpf: typeof user.cpf === "string" ? user.cpf.trim() || undefined : undefined,
-      phone: user.phone,
+      phone: user.phone !== undefined && user.phone !== null ? String(user.phone) : undefined,
     };
   }
 

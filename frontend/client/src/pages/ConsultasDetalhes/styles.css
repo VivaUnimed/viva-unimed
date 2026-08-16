@@ -265,3 +265,120 @@
   color: #0a8f4c;
 }
 
+/* TABLET */
+@media (min-width: 768px) {
+  .consulta-detalhes-page {
+    padding: 24px;
+  }
+
+  .consulta-detalhes-card {
+    max-width: 520px;
+    min-height: calc(100vh - 48px);
+    max-height: 820px;
+    border: 1px solid #d9dee3;
+    border-radius: 24px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .consulta-detalhes-header {
+    height: 86px;
+    padding: 0 32px;
+  }
+
+  .consulta-detalhes-background {
+    height: 200px;
+  }
+
+  .consulta-modal {
+    padding: 32px 32px 34px;
+    overflow-y: auto;
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 1024px) {
+  .consulta-detalhes-page {
+    padding: 40px;
+  }
+
+  .consulta-detalhes-card {
+    max-width: 720px;
+    min-height: calc(100vh - 80px);
+    max-height: 860px;
+  }
+
+  .consulta-detalhes-header {
+    height: 92px;
+    padding: 0 56px;
+  }
+
+  .consulta-detalhes-background {
+    height: 220px;
+  }
+
+  .consulta-modal {
+    margin-top: -72px;
+    padding: 38px 56px 40px;
+  }
+
+  .consulta-modal-top {
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .consulta-doctor-image {
+    width: 82px;
+    height: 82px;
+  }
+
+  .consulta-doctor-info h2 {
+    font-size: 36px;
+  }
+
+  .consulta-info-grid {
+    gap: 16px;
+  }
+
+  .consulta-actions {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}
+
+/* DESKTOP MAIOR */
+@media (min-width: 1280px) {
+  .consulta-detalhes-card {
+    max-width: 840px;
+  }
+
+  .consulta-modal {
+    padding: 42px 72px 44px;
+  }
+}
+
+/* DESKTOP FULL PAGE */
+@media (min-width: 768px) {
+  .consulta-detalhes-page {
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .consulta-detalhes-card {
+    max-width: none;
+    min-height: 100vh;
+    max-height: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding-left: 136px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .consulta-detalhes-card {
+    max-width: none;
+    padding-left: 156px;
+  }
+}
+

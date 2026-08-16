@@ -1,0 +1,88 @@
+@import "../Perfil/styles.css";
+
+.perfil-edit-page .perfil-input-group input {
+  background: #ffffff;
+  border: 1px solid #d9dee3;
+}
+
+.perfil-edit-page .perfil-input-group input::placeholder {
+  color: #9aa0a6;
+  opacity: 1;
+}
+
+.perfil-edit-page .perfil-input-group input:focus {
+  border-color: #0a8f4c;
+  box-shadow: 0 0 0 3px rgba(10, 143, 76, 0.12);
+}
+
+.perfil-edit-page .perfil-input-group.has-error input,
+.perfil-edit-page .perfil-phone-field.has-error input {
+  border-color: #b42318;
+}
+
+.perfil-field-error {
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.perfil-phone-inputs {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.perfil-phone-field {
+  position: relative;
+}
+
+.perfil-phone-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: 16px;
+}
+
+.perfil-phone-field-label {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  color: #7a8087;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.perfil-cancel-btn {
+  height: 52px;
+  margin: 0 26px 24px;
+  border: 1px solid #d9dee3;
+  border-radius: 16px;
+  background: #f7f7f7;
+  color: #0a8f4c;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.perfil-cancel-btn:hover {
+  background: #eef2f1;
+}
+
+@media (min-width: 1024px) {
+  .perfil-cancel-btn {
+    margin-right: 0;
+    margin-left: 0;
+  }
+}
+
+.perfil-field-help {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #6b7280;
+}
