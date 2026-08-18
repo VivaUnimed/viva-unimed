@@ -213,3 +213,120 @@
   color: #0a8f4c;
 }
 
+/* TABLET */
+@media (min-width: 768px) {
+  .consultas-page {
+    padding: 24px;
+  }
+
+  .consultas-card {
+    max-width: 520px;
+    min-height: calc(100vh - 48px);
+    max-height: 820px;
+    border: 1px solid #d9dee3;
+    border-radius: 24px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  .consultas-header {
+    padding: 24px 32px 14px;
+  }
+
+  .consultas-content {
+    padding: 28px 32px 32px;
+    overflow-y: auto;
+  }
+
+  .consultas-title-group h2 {
+    font-size: 34px;
+  }
+
+  .consulta-item {
+    border-radius: 16px;
+    padding: 18px;
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 1024px) {
+  .consultas-page {
+    padding: 40px;
+  }
+
+  .consultas-card {
+    max-width: 720px;
+    min-height: calc(100vh - 80px);
+    max-height: 860px;
+  }
+
+  .consultas-header {
+    padding: 30px 56px 18px;
+  }
+
+  .consultas-content {
+    padding: 34px 56px 40px;
+  }
+
+  .consultas-title-group {
+    margin-bottom: 32px;
+  }
+
+  .consultas-title-group h2 {
+    font-size: 38px;
+  }
+
+  .consultas-list {
+    gap: 16px;
+  }
+
+  .consulta-item {
+    padding: 20px;
+  }
+
+  .consulta-main h3 {
+    font-size: 19px;
+  }
+
+  .consulta-info {
+    font-size: 14px;
+  }
+}
+
+/* DESKTOP MAIOR */
+@media (min-width: 1280px) {
+  .consultas-card {
+    max-width: 840px;
+  }
+
+  .consultas-content {
+    padding: 38px 72px 44px;
+  }
+}
+
+/* DESKTOP FULL PAGE */
+@media (min-width: 768px) {
+  .consultas-page {
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .consultas-card {
+    max-width: none;
+    min-height: 100vh;
+    max-height: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding-left: 136px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .consultas-card {
+    max-width: none;
+    padding-left: 156px;
+  }
+}
+

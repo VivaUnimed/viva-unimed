@@ -1,43 +1,86 @@
 import service from "../service";
-import { Controller, Get, Path, Post, Route, Tags } from "tsoa";
-import type { IAppointmentMatch } from "shared";
+import {
+  Body,
+  Controller,
+  Get,
+  Path,
+  Post,
+  Query,
+  Request,
+  Route,
+  Security,
+  SuccessResponse,
+  Tags,
+} from "tsoa";
+import type {
+  AppointmentMatchStatus,
+  IAppointmentMatch,
+  IAppointmentMatchCreate,
+} from "shared";
+import { Guard } from "./guards";
 
 @Route("/api/match")
 @Tags("Match")
 export class MatchController extends Controller {
-
-  /**
-   * Confirmação de agendamento pelo paciente.
-   */
-  @Post('/{matchId}/confirm')
-  async confirm(@Path() matchId: number): Promise<void> {
-    return service.request.confirmMatch(matchId);
+  /** Criação manual/sistêmica de match: somente perfis administrativos. */
+  @Post("/")
+  @Security(Guard.JWT, ["appointment.edit"])
+  @SuccessResponse("201", "Created")
+  async createMatch(
+    @Body() requestBody: IAppointmentMatchCreate,
+  ): Promise<IAppointmentMatch> {
+    this.setStatus(201);
+    return service.appointment.addMatch(requestBody);
   }
 
-  /**
-   * Recusa a vaga oferecida pela fila.
-   * Aplica a penalidade (cooldown) e passa a vaga para o próximo.
-   */
-  @Post('/{matchId}/reject')
-  async reject(@Path() matchId: number): Promise<void> {
-    return service.request.rejectMatch(matchId);
+  /** Lista somente ofertas do paciente identificado pelo JWT. */
+  @Get("/mine")
+  @Security(Guard.JWT)
+  listMine(
+    @Request() req: Express.Request,
+    @Query() status?: AppointmentMatchStatus,
+    @Query() includeHistory: boolean = false,
+  ): Promise<IAppointmentMatch[]> {
+    return service.request.listPatientMatches(
+      req.user.userId,
+      status,
+      includeHistory,
+    );
   }
 
-  /**
-   * Desfaz uma confirmação de agendamento feita por engano ou desistência.
-   * Ação: O paciente se arrependeu APÓS já ter aceitado a vaga.
-   * Respeita as regras de limite de tempo (15 min ou 24h).
-   */
-  @Post('/{matchId}/cancel')
-  async cancel(@Path() matchId: number): Promise<void> {
-    return service.request.cancelMatch(matchId);
+  @Post("/{matchId}/confirm")
+  @Security(Guard.JWT)
+  confirm(
+    @Request() req: Express.Request,
+    @Path() matchId: number,
+  ): Promise<void> {
+    return service.request.confirmMatch(matchId, req.user.userId);
   }
 
-  /**
-   * Busca os detalhes e o status atual de uma oferta de vaga.
-   */
+  @Post("/{matchId}/reject")
+  @Security(Guard.JWT)
+  reject(
+    @Request() req: Express.Request,
+    @Path() matchId: number,
+  ): Promise<void> {
+    return service.request.rejectMatch(matchId, req.user.userId);
+  }
+
+  @Post("/{matchId}/cancel")
+  @Security(Guard.JWT)
+  cancel(
+    @Request() req: Express.Request,
+    @Path() matchId: number,
+  ): Promise<void> {
+    return service.request.cancelMatch(matchId, req.user.userId);
+  }
+
   @Get("/{matchId}")
-  getById(@Path() matchId: number): Promise<IAppointmentMatch> {
-    return service.request.getMatch(matchId);
+  @Security(Guard.JWT)
+  getById(
+    @Request() req: Express.Request,
+    @Path() matchId: number,
+  ): Promise<IAppointmentMatch> {
+    return service.request.getPatientMatch(matchId, req.user.userId);
   }
 }

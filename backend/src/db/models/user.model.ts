@@ -33,7 +33,7 @@ export default  class UserModel extends Model<IUserModel> {
   declare email: string;
 
   @Column({ type: DataType.STRING(20) })
-  declare phone: number;
+  declare phone: string | number;
 
   @HasOne(() => PasswordModel)
   declare password?: PasswordModel;
